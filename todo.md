@@ -174,3 +174,12 @@
 
 ## New Features
 - [x] Add connection type selector (Public IP / VPN PPTP / VPN SSTP) to NAS device creation page
+- [x] Add MikroTik setup page with dynamic copy/paste commands for router integration
+  - [x] PPP Profile creation command
+  - [x] PPTP Client command with dynamic server/user/password
+  - [x] RADIUS server command with dynamic IP/secret
+  - [x] Hotspot profile RADIUS integration command
+  - [x] RADIUS incoming (CoA/Disconnect) command
+  - [x] require-message-auth command
+  - [x] Copy button for each command
+  - [x] Arabic explanations for each step

@@ -17,6 +17,7 @@ import Invoices from "./pages/Invoices";
 import NasDevices from "./pages/NasDevices";
 import Settings from "./pages/Settings";
 import Sessions from "./pages/Sessions";
+import MikrotikSetup from "./pages/MikrotikSetup";
 import DashboardLayout from "./components/DashboardLayout";
 
 function Router() {
@@ -78,6 +79,7 @@ function Router() {
           <Sessions />
         </DashboardLayout>
       </Route>
+      <Route path="/mikrotik-setup" component={MikrotikSetup} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

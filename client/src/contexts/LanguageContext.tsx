@@ -76,6 +76,7 @@ export const translations: Translations = {
   "nav.reports": { ar: "التقارير", en: "Reports" },
   "nav.settings": { ar: "الإعدادات", en: "Settings" },
   "nav.notifications": { ar: "الإشعارات", en: "Notifications" },
+  "nav.mikrotikSetup": { ar: "اتصال ميكروتك", en: "MikroTik Setup" },
   
   // Dashboard
   "dashboard.welcome": { ar: "مرحباً", en: "Welcome" },
