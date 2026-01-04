@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -51,8 +52,20 @@ import {
   RefreshCw,
   CheckCircle,
   XCircle,
+  Globe,
+  Shield,
+  Link2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useState } from "react";
+
+// Connection type options
+const connectionTypes = [
+  { value: "public_ip", labelAr: "اي بي عالمي", labelEn: "Public IP", icon: Globe },
+  { value: "vpn_pptp", labelAr: "اتصال VPN PPTP", labelEn: "VPN PPTP", icon: Shield },
+  { value: "vpn_sstp", labelAr: "اتصال VPN SSTP", labelEn: "VPN SSTP", icon: Link2 },
+];
 
 export default function NasDevices() {
   const { user } = useAuth();
@@ -60,6 +73,9 @@ export default function NasDevices() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingDevice, setEditingDevice] = useState<any>(null);
+  const [connectionType, setConnectionType] = useState("public_ip");
+  const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState("create");
 
   // Fetch NAS devices
   const { data: devices, isLoading, refetch } = trpc.nas.list.useQuery();
@@ -67,7 +83,7 @@ export default function NasDevices() {
   // Mutations
   const createDevice = trpc.nas.create.useMutation({
     onSuccess: () => {
-      toast.success(language === "ar" ? "تم إضافة الجهاز بنجاح" : "Device added successfully");
+      toast.success(language === "ar" ? "تم إضافة الشبكة بنجاح" : "Network added successfully");
       setIsAddDialogOpen(false);
       refetch();
     },
@@ -78,7 +94,7 @@ export default function NasDevices() {
 
   const updateDevice = trpc.nas.update.useMutation({
     onSuccess: () => {
-      toast.success(language === "ar" ? "تم تحديث الجهاز بنجاح" : "Device updated successfully");
+      toast.success(language === "ar" ? "تم تحديث الشبكة بنجاح" : "Network updated successfully");
       setEditingDevice(null);
       refetch();
     },
@@ -89,7 +105,7 @@ export default function NasDevices() {
 
   const deleteDevice = trpc.nas.delete.useMutation({
     onSuccess: () => {
-      toast.success(language === "ar" ? "تم حذف الجهاز" : "Device deleted");
+      toast.success(language === "ar" ? "تم حذف الشبكة" : "Network deleted");
       refetch();
     },
     onError: (error: any) => {
@@ -119,6 +135,18 @@ export default function NasDevices() {
     }
   };
 
+  const getConnectionTypeBadge = (type: string) => {
+    const connType = connectionTypes.find(c => c.value === type);
+    if (!connType) return null;
+    const Icon = connType.icon;
+    return (
+      <Badge variant="outline" className="gap-1">
+        <Icon className="h-3 w-3" />
+        {language === "ar" ? connType.labelAr : connType.labelEn}
+      </Badge>
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -128,6 +156,7 @@ export default function NasDevices() {
       ipAddress: formData.get("ipAddress") as string,
       secret: formData.get("secret") as string,
       type: formData.get("type") as "mikrotik" | "cisco" | "other",
+      connectionType: connectionType as "public_ip" | "vpn_pptp" | "vpn_sstp",
       description: formData.get("description") as string || undefined,
     };
 
@@ -143,88 +172,187 @@ export default function NasDevices() {
     device.nasname.includes(searchQuery)
   );
 
+  // Create Network Form Component
+  const CreateNetworkForm = () => (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Connection Type Selector */}
+      <div className="space-y-3">
+        <Label className="text-base font-medium">
+          {language === "ar" ? "نوع الاتصال" : "Connection Type"}
+        </Label>
+        <div className="grid grid-cols-3 gap-3">
+          {connectionTypes.map((type) => {
+            const Icon = type.icon;
+            const isSelected = connectionType === type.value;
+            return (
+              <button
+                key={type.value}
+                type="button"
+                onClick={() => setConnectionType(type.value)}
+                className={`
+                  relative flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all
+                  ${isSelected 
+                    ? "border-primary bg-primary/5 text-primary" 
+                    : "border-border hover:border-primary/50 hover:bg-muted/50"
+                  }
+                `}
+              >
+                <Icon className={`h-6 w-6 mb-2 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                <span className="text-sm font-medium text-center">
+                  {language === "ar" ? type.labelAr : type.labelEn}
+                </span>
+                {isSelected && (
+                  <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Form Fields */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">{language === "ar" ? "إسم الشبكة" : "Network Name"}</Label>
+          <Input 
+            id="name" 
+            name="name" 
+            required 
+            placeholder={language === "ar" ? "أدخل اسم الشبكة" : "Enter network name"}
+            className="bg-background"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="ipAddress">IP</Label>
+          <Input 
+            id="ipAddress" 
+            name="ipAddress" 
+            placeholder="192.168.7.85" 
+            required 
+            className="bg-background"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="secret">{language === "ar" ? "كلمة السر" : "Secret"}</Label>
+          <div className="relative">
+            <Input 
+              id="secret" 
+              name="secret" 
+              type={showPassword ? "text" : "password"} 
+              required 
+              className="bg-background pr-10"
+              placeholder="••••••••••••"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="type">{language === "ar" ? "نوع" : "Type"}</Label>
+          <Select name="type" defaultValue="mikrotik">
+            <SelectTrigger className="bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="mikrotik">{language === "ar" ? "مايكروتك" : "MikroTik"}</SelectItem>
+              <SelectItem value="cisco">Cisco</SelectItem>
+              <SelectItem value="ubiquiti">Ubiquiti</SelectItem>
+              <SelectItem value="other">{language === "ar" ? "أخرى" : "Other"}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">{language === "ar" ? "وصف" : "Description"}</Label>
+        <Input 
+          id="description" 
+          name="description" 
+          className="bg-background"
+          placeholder={language === "ar" ? "وصف اختياري للشبكة" : "Optional network description"}
+        />
+      </div>
+
+      <div className="flex justify-center pt-4">
+        <Button 
+          type="submit" 
+          disabled={createDevice.isPending}
+          className="min-w-[200px]"
+        >
+          {createDevice.isPending 
+            ? (language === "ar" ? "جاري الحفظ..." : "Saving...") 
+            : (language === "ar" ? "حفظ التغييرات" : "Save Changes")
+          }
+        </Button>
+      </div>
+    </form>
+  );
+
+  // Special Tools Tab Content
+  const SpecialToolsContent = () => (
+    <div className="space-y-6 py-4">
+      <div className="text-center text-muted-foreground">
+        {language === "ar" ? "أدوات خاصة للشبكات - قريباً" : "Special network tools - Coming soon"}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("nav.nas")}</h1>
-          <p className="text-muted-foreground">
-            {language === "ar" ? "إدارة أجهزة MikroTik و RADIUS NAS" : "Manage MikroTik and RADIUS NAS devices"}
+          <h1 className="text-2xl font-bold tracking-tight">
+            {language === "ar" ? "إنشاء شبكة جديدة" : "Create New Network"}
+          </h1>
+          <p className="text-muted-foreground flex items-center gap-2 mt-1">
+            <span>{language === "ar" ? "الرئيسية" : "Home"}</span>
+            <span>›</span>
+            <span>{language === "ar" ? "قائمة الشبكات" : "Network List"}</span>
           </p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
-              {language === "ar" ? "إضافة جهاز" : "Add Device"}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{language === "ar" ? "إضافة جهاز NAS جديد" : "Add New NAS Device"}</DialogTitle>
-              <DialogDescription>
-                {language === "ar" ? "أدخل بيانات جهاز MikroTik الجديد" : "Enter the new MikroTik device information"}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">{language === "ar" ? "اسم الجهاز" : "Device Name"}</Label>
-                    <Input id="name" name="name" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="shortName">{language === "ar" ? "الاسم المختصر" : "Short Name"}</Label>
-                    <Input id="shortName" name="shortName" required />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ipAddress">{language === "ar" ? "عنوان IP" : "IP Address"}</Label>
-                  <Input id="ipAddress" name="ipAddress" placeholder="192.168.1.1" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="secret">{language === "ar" ? "كلمة السر (Secret)" : "RADIUS Secret"}</Label>
-                  <Input id="secret" name="secret" type="password" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="type">{language === "ar" ? "نوع الجهاز" : "Device Type"}</Label>
-                  <Select name="type" defaultValue="mikrotik">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mikrotik">MikroTik</SelectItem>
-                      <SelectItem value="cisco">Cisco</SelectItem>
-                      <SelectItem value="ubiquiti">Ubiquiti</SelectItem>
-                      <SelectItem value="other">{language === "ar" ? "أخرى" : "Other"}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">{t("common.description")}</Label>
-                  <Input id="description" name="description" />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  {t("common.cancel")}
-                </Button>
-                <Button type="submit" disabled={createDevice.isPending}>
-                  {createDevice.isPending ? (language === "ar" ? "جاري الإضافة..." : "Adding...") : t("common.save")}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Main Card with Tabs */}
+      <Card className="border-0 shadow-lg">
+        <CardContent className="p-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+              <TabsTrigger value="create" className="gap-2">
+                <Edit className="h-4 w-4" />
+                {language === "ar" ? "إنشاء شبكة جديدة" : "Create Network"}
+              </TabsTrigger>
+              <TabsTrigger value="tools" className="gap-2">
+                <Settings className="h-4 w-4" />
+                {language === "ar" ? "ادوات خاصة" : "Special Tools"}
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="create">
+              <CreateNetworkForm />
+            </TabsContent>
+            
+            <TabsContent value="tools">
+              <SpecialToolsContent />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {language === "ar" ? "إجمالي الأجهزة" : "Total Devices"}
+              {language === "ar" ? "إجمالي الشبكات" : "Total Networks"}
             </CardTitle>
             <Router className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -290,57 +418,48 @@ export default function NasDevices() {
 
       {/* Devices Table */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{language === "ar" ? "اسم الجهاز" : "Device Name"}</TableHead>
-                <TableHead>{language === "ar" ? "عنوان IP" : "IP Address"}</TableHead>
-                <TableHead>{language === "ar" ? "النوع" : "Type"}</TableHead>
-                <TableHead>{t("common.status")}</TableHead>
-                <TableHead>{t("common.description")}</TableHead>
-                <TableHead>{t("common.created_at")}</TableHead>
-                <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+        <CardHeader>
+          <CardTitle>{language === "ar" ? "قائمة الشبكات" : "Network List"}</CardTitle>
+          <CardDescription>
+            {language === "ar" ? "جميع الشبكات المسجلة في النظام" : "All registered networks in the system"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredDevices && filteredDevices.length > 0 ? (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    {t("common.loading")}
-                  </TableCell>
+                  <TableHead>{language === "ar" ? "الاسم" : "Name"}</TableHead>
+                  <TableHead>IP</TableHead>
+                  <TableHead>{language === "ar" ? "نوع الاتصال" : "Connection Type"}</TableHead>
+                  <TableHead>{language === "ar" ? "النوع" : "Type"}</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
+                  <TableHead>{language === "ar" ? "آخر اتصال" : "Last Seen"}</TableHead>
+                  <TableHead className="text-center">{t("common.actions")}</TableHead>
                 </TableRow>
-              ) : filteredDevices?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    {language === "ar" ? "لا توجد أجهزة" : "No devices found"}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredDevices?.map((device) => (
+              </TableHeader>
+              <TableBody>
+                {filteredDevices.map((device) => (
                   <TableRow key={device.id}>
-                    <TableCell>
+                    <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Router className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <span className="font-medium">{device.shortname || device.nasname}</span>
-                          <p className="text-xs text-muted-foreground">{device.nasname}</p>
-                        </div>
+                        <Router className="h-4 w-4 text-muted-foreground" />
+                        {device.shortname || device.nasname}
                       </div>
                     </TableCell>
+                    <TableCell className="font-mono">{device.nasname}</TableCell>
                     <TableCell>
-                      <code className="text-sm bg-muted px-2 py-1 rounded">{device.nasname}</code>
+                      {getConnectionTypeBadge((device as any).connectionType || "public_ip")}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="capitalize">{device.type}</Badge>
+                      <Badge variant="outline">{device.type || "mikrotik"}</Badge>
                     </TableCell>
                     <TableCell>{getStatusBadge(device.status)}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {device.description || "-"}
-                    </TableCell>
-                    <TableCell>{formatDate(device.createdAt)}</TableCell>
+                    <TableCell>{formatDate(device.lastSeen)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -348,24 +467,16 @@ export default function NasDevices() {
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align={direction === "rtl" ? "start" : "end"}>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => setEditingDevice(device)}>
                             <Edit className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
                             {t("common.edit")}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast.info(language === "ar" ? "قريباً" : "Coming soon")}>
-                            <Settings className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
-                            {language === "ar" ? "الإعدادات" : "Settings"}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast.info(language === "ar" ? "قريباً" : "Coming soon")}>
-                            <RefreshCw className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
-                            {language === "ar" ? "اختبار الاتصال" : "Test Connection"}
-                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem
+                          <DropdownMenuItem 
                             className="text-destructive"
                             onClick={() => {
-                              if (confirm(language === "ar" ? "هل أنت متأكد من حذف هذا الجهاز؟" : "Are you sure you want to delete this device?")) {
+                              if (confirm(language === "ar" ? "هل أنت متأكد من حذف هذه الشبكة؟" : "Are you sure you want to delete this network?")) {
                                 deleteDevice.mutate({ id: device.id });
                               }
                             }}
@@ -377,65 +488,145 @@ export default function NasDevices() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Router className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">
+                {language === "ar" ? "لا توجد شبكات" : "No Networks"}
+              </h3>
+              <p className="text-muted-foreground mt-1">
+                {language === "ar" ? "قم بإضافة شبكة جديدة للبدء" : "Add a new network to get started"}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingDevice} onOpenChange={(open) => !open && setEditingDevice(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{language === "ar" ? "تعديل الجهاز" : "Edit Device"}</DialogTitle>
+            <DialogTitle>{language === "ar" ? "تعديل الشبكة" : "Edit Network"}</DialogTitle>
+            <DialogDescription>
+              {language === "ar" ? "تعديل بيانات الشبكة" : "Edit network information"}
+            </DialogDescription>
           </DialogHeader>
           {editingDevice && (
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-name">{language === "ar" ? "اسم الجهاز" : "Device Name"}</Label>
-                    <Input id="edit-name" name="name" defaultValue={editingDevice.name} required />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Connection Type Selector */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">
+                  {language === "ar" ? "نوع الاتصال" : "Connection Type"}
+                </Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {connectionTypes.map((type) => {
+                    const Icon = type.icon;
+                    const isSelected = connectionType === type.value;
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setConnectionType(type.value)}
+                        className={`
+                          relative flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all
+                          ${isSelected 
+                            ? "border-primary bg-primary/5 text-primary" 
+                            : "border-border hover:border-primary/50 hover:bg-muted/50"
+                          }
+                        `}
+                      >
+                        <Icon className={`h-6 w-6 mb-2 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                        <span className="text-sm font-medium text-center">
+                          {language === "ar" ? type.labelAr : type.labelEn}
+                        </span>
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">{language === "ar" ? "إسم الشبكة" : "Network Name"}</Label>
+                  <Input 
+                    id="edit-name" 
+                    name="name" 
+                    defaultValue={editingDevice.shortname || ""} 
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ipAddress">IP</Label>
+                  <Input 
+                    id="edit-ipAddress" 
+                    name="ipAddress" 
+                    defaultValue={editingDevice.nasname} 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-secret">{language === "ar" ? "كلمة السر" : "Secret"}</Label>
+                  <div className="relative">
+                    <Input 
+                      id="edit-secret" 
+                      name="secret" 
+                      type={showPassword ? "text" : "password"} 
+                      defaultValue={editingDevice.secret || ""} 
+                      required 
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-shortName">{language === "ar" ? "الاسم المختصر" : "Short Name"}</Label>
-                    <Input id="edit-shortName" name="shortName" defaultValue={editingDevice.shortName} required />
-                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-ipAddress">{language === "ar" ? "عنوان IP" : "IP Address"}</Label>
-                  <Input id="edit-ipAddress" name="ipAddress" defaultValue={editingDevice.ipAddress} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-secret">{language === "ar" ? "كلمة السر (Secret)" : "RADIUS Secret"}</Label>
-                  <Input id="edit-secret" name="secret" type="password" placeholder="Leave empty to keep current" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-type">{language === "ar" ? "نوع الجهاز" : "Device Type"}</Label>
-                  <Select name="type" defaultValue={editingDevice.type}>
+                  <Label htmlFor="edit-type">{language === "ar" ? "نوع" : "Type"}</Label>
+                  <Select name="type" defaultValue={editingDevice.type || "mikrotik"}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="mikrotik">MikroTik</SelectItem>
+                      <SelectItem value="mikrotik">{language === "ar" ? "مايكروتك" : "MikroTik"}</SelectItem>
                       <SelectItem value="cisco">Cisco</SelectItem>
                       <SelectItem value="ubiquiti">Ubiquiti</SelectItem>
                       <SelectItem value="other">{language === "ar" ? "أخرى" : "Other"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-description">{t("common.description")}</Label>
-                  <Input id="edit-description" name="description" defaultValue={editingDevice.description || ""} />
-                </div>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">{language === "ar" ? "وصف" : "Description"}</Label>
+                <Input 
+                  id="edit-description" 
+                  name="description" 
+                  defaultValue={editingDevice.description || ""} 
+                />
+              </div>
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setEditingDevice(null)}>
                   {t("common.cancel")}
                 </Button>
                 <Button type="submit" disabled={updateDevice.isPending}>
-                  {updateDevice.isPending ? (language === "ar" ? "جاري التحديث..." : "Updating...") : t("common.save")}
+                  {updateDevice.isPending 
+                    ? (language === "ar" ? "جاري الحفظ..." : "Saving...") 
+                    : t("common.save")
+                  }
                 </Button>
               </DialogFooter>
             </form>

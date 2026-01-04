@@ -171,3 +171,6 @@
 
 ## Bug Fixes
 - [x] Fix radacct table schema mismatch causing query errors (added missing groupname column)
+
+## New Features
+- [x] Add connection type selector (Public IP / VPN PPTP / VPN SSTP) to NAS device creation page

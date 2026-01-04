@@ -98,6 +98,7 @@ export const nasDevices = mysqlTable("nas", {
   server: varchar("server", { length: 64 }),
   community: varchar("community", { length: 50 }),
   description: varchar("description", { length: 200 }),
+  connectionType: mysqlEnum("connectionType", ["public_ip", "vpn_pptp", "vpn_sstp"]).default("public_ip"),
   // Extended fields for our system
   location: varchar("location", { length: 255 }),
   mikrotikApiPort: int("mikrotikApiPort").default(8728),

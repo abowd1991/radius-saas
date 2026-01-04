@@ -34,6 +34,7 @@ export async function createNas(data: {
   ipAddress: string;
   secret: string;
   type?: string;
+  connectionType?: "public_ip" | "vpn_pptp" | "vpn_sstp";
   description?: string;
   location?: string;
   ports?: number;
@@ -49,6 +50,7 @@ export async function createNas(data: {
     shortname: data.name,
     secret: data.secret,
     type: data.type || "other",
+    connectionType: data.connectionType || "public_ip",
     description: data.description,
     location: data.location,
     ports: data.ports,
@@ -70,6 +72,7 @@ export async function updateNas(id: number, data: {
   location?: string;
   ports?: number;
   status?: "active" | "inactive";
+  connectionType?: "public_ip" | "vpn_pptp" | "vpn_sstp";
   mikrotikApiPort?: number;
   mikrotikApiUser?: string;
   mikrotikApiPassword?: string;
@@ -86,6 +89,7 @@ export async function updateNas(id: number, data: {
   if (data.location !== undefined) updateData.location = data.location;
   if (data.ports !== undefined) updateData.ports = data.ports;
   if (data.status) updateData.status = data.status;
+  if (data.connectionType) updateData.connectionType = data.connectionType;
   if (data.mikrotikApiPort !== undefined) updateData.mikrotikApiPort = data.mikrotikApiPort;
   if (data.mikrotikApiUser !== undefined) updateData.mikrotikApiUser = data.mikrotikApiUser;
   if (data.mikrotikApiPassword !== undefined) updateData.mikrotikApiPassword = data.mikrotikApiPassword;

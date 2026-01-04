@@ -168,6 +168,7 @@ const nasRouter = router({
       ipAddress: z.string().min(1),
       secret: z.string().min(1),
       type: z.enum(['mikrotik', 'cisco', 'other']).default('mikrotik'),
+      connectionType: z.enum(['public_ip', 'vpn_pptp', 'vpn_sstp']).default('public_ip'),
       description: z.string().optional(),
       location: z.string().optional(),
       ports: z.number().optional(),
@@ -188,6 +189,7 @@ const nasRouter = router({
       description: z.string().optional(),
       location: z.string().optional(),
       status: z.enum(['active', 'inactive']).optional(),
+      connectionType: z.enum(['public_ip', 'vpn_pptp', 'vpn_sstp']).optional(),
     }))
     .mutation(async ({ input }) => {
       return nasDb.updateNas(input.id, input);
