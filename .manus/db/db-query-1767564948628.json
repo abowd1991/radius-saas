@@ -1,0 +1,94 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'radacct' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'radacct' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "radacctid"
+    },
+    {
+      "COLUMN_NAME": "acctsessionid"
+    },
+    {
+      "COLUMN_NAME": "acctuniqueid"
+    },
+    {
+      "COLUMN_NAME": "username"
+    },
+    {
+      "COLUMN_NAME": "realm"
+    },
+    {
+      "COLUMN_NAME": "nasipaddress"
+    },
+    {
+      "COLUMN_NAME": "nasportid"
+    },
+    {
+      "COLUMN_NAME": "nasporttype"
+    },
+    {
+      "COLUMN_NAME": "acctstarttime"
+    },
+    {
+      "COLUMN_NAME": "acctupdatetime"
+    },
+    {
+      "COLUMN_NAME": "acctstoptime"
+    },
+    {
+      "COLUMN_NAME": "acctinterval"
+    },
+    {
+      "COLUMN_NAME": "acctsessiontime"
+    },
+    {
+      "COLUMN_NAME": "acctauthentic"
+    },
+    {
+      "COLUMN_NAME": "connectinfo_start"
+    },
+    {
+      "COLUMN_NAME": "connectinfo_stop"
+    },
+    {
+      "COLUMN_NAME": "acctinputoctets"
+    },
+    {
+      "COLUMN_NAME": "acctoutputoctets"
+    },
+    {
+      "COLUMN_NAME": "calledstationid"
+    },
+    {
+      "COLUMN_NAME": "callingstationid"
+    },
+    {
+      "COLUMN_NAME": "acctterminatecause"
+    },
+    {
+      "COLUMN_NAME": "servicetype"
+    },
+    {
+      "COLUMN_NAME": "framedprotocol"
+    },
+    {
+      "COLUMN_NAME": "framedipaddress"
+    },
+    {
+      "COLUMN_NAME": "framedipv6address"
+    },
+    {
+      "COLUMN_NAME": "framedipv6prefix"
+    },
+    {
+      "COLUMN_NAME": "framedinterfaceid"
+    },
+    {
+      "COLUMN_NAME": "delegatedipv6prefix"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nradacctid\nacctsessionid\nacctuniqueid\nusername\nrealm\nnasipaddress\nnasportid\nnasporttype\nacctstarttime\nacctupdatetime\nacctstoptime\nacctinterval\nacctsessiontime\nacctauthentic\nconnectinfo_start\nconnectinfo_stop\nacctinputoctets\nacctoutputoctets\ncalledstationid\ncallingstationid\nacctterminatecause\nservicetype\nframedprotocol\nframedipaddress\nframedipv6address\nframedipv6prefix\nframedinterfaceid\ndelegatedipv6prefix\n",
+  "stderr": "",
+  "execution_time_ms": 1568
+}

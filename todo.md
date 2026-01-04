@@ -167,3 +167,7 @@
 - [ ] API Token protection
 - [x] HTTPS enforcement
 - [x] Role-based permissions audit
+
+
+## Bug Fixes
+- [x] Fix radacct table schema mismatch causing query errors (added missing groupname column)

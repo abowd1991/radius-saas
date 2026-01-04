@@ -1,0 +1,234 @@
+{
+  "query": "SHOW COLUMNS FROM radacct;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SHOW COLUMNS FROM radacct;",
+  "rows": [
+    {
+      "Field": "radacctid",
+      "Type": "bigint(20)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "acctsessionid",
+      "Type": "varchar(64)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "",
+      "Extra": ""
+    },
+    {
+      "Field": "acctuniqueid",
+      "Type": "varchar(32)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "",
+      "Extra": ""
+    },
+    {
+      "Field": "username",
+      "Type": "varchar(64)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "",
+      "Extra": ""
+    },
+    {
+      "Field": "realm",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "",
+      "Extra": ""
+    },
+    {
+      "Field": "nasipaddress",
+      "Type": "varchar(15)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "",
+      "Extra": ""
+    },
+    {
+      "Field": "nasportid",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "nasporttype",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "acctstarttime",
+      "Type": "datetime",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "acctupdatetime",
+      "Type": "datetime",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "acctstoptime",
+      "Type": "datetime",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "acctinterval",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "acctsessiontime",
+      "Type": "int(10) unsigned",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "acctauthentic",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "connectinfo_start",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "connectinfo_stop",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "acctinputoctets",
+      "Type": "bigint(20)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "acctoutputoctets",
+      "Type": "bigint(20)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "calledstationid",
+      "Type": "varchar(50)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "",
+      "Extra": ""
+    },
+    {
+      "Field": "callingstationid",
+      "Type": "varchar(50)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "",
+      "Extra": ""
+    },
+    {
+      "Field": "acctterminatecause",
+      "Type": "varchar(32)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "",
+      "Extra": ""
+    },
+    {
+      "Field": "servicetype",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "framedprotocol",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "framedipaddress",
+      "Type": "varchar(15)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "",
+      "Extra": ""
+    },
+    {
+      "Field": "framedipv6address",
+      "Type": "varchar(45)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "framedipv6prefix",
+      "Type": "varchar(45)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "framedinterfaceid",
+      "Type": "varchar(44)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "delegatedipv6prefix",
+      "Type": "varchar(45)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nradacctid\tbigint(20)\tNO\tPRI\tNULL\tauto_increment\nacctsessionid\tvarchar(64)\tNO\tMUL\t\t\nacctuniqueid\tvarchar(32)\tNO\tMUL\t\t\nusername\tvarchar(64)\tNO\tMUL\t\t\nrealm\tvarchar(64)\tYES\t\t\t\nnasipaddress\tvarchar(15)\tNO\tMUL\t\t\nnasportid\tvarchar(32)\tYES\t\tNULL\t\nnasporttype\tvarchar(32)\tYES\t\tNULL\t\nacctstarttime\tdatetime\tYES\tMUL\tNULL\t\nacctupdatetime\tdatetime\tYES\t\tNULL\t\nacctstoptime\tdatetime\tYES\t\tNULL\t\nacctinterval\tint(11)\tYES\t\tNULL\t\nacctsessiontime\tint(10) unsigned\tYES\tMUL\tNULL\t\nacctauthentic\tvarchar(32)\tYES\t\tNULL\t\nconnectinfo_start\tvarchar(128)\tYES\t\tNULL\t\nconnectinfo_stop\tvarchar(128)\tYES\t\tNULL\t\nacctinputoctets\tbigint(20)\tYES\t\tNULL\t\nacctoutputoctets\tbigint(20)\tYES\t\tNULL\t\ncalledstationid\tvarchar(50)\tNO\t\t\t\ncallingstationid\tvarchar(50)\tNO\t\t\t\nacctterminatecause\tvarchar(32)\tNO\t\t\t\nservicetype\tvarchar(32)\tYES\t\tNULL\t\nframedprotocol\tvarchar(32)\tYES\t\tNULL\t\nframedipaddress\tvarchar(15)\tNO\t\t\t\nframedipv6address\tvarchar(45)\tYES\t\tNULL\t\nframedipv6prefix\tvarchar(45)\tYES\t\tNULL\t\nframedinterfaceid\tvarchar(44)\tYES\t\tNULL\t\ndelegatedipv6prefix\tvarchar(45)\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 1511
+}
