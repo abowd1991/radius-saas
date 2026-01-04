@@ -24,23 +24,73 @@ export async function getNasById(id: number) {
 export async function getNasByIp(ipAddress: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(nasDevices).where(eq(nasDevices.ipAddress, ipAddress)).limit(1);
+  const result = await db.select().from(nasDevices).where(eq(nasDevices.nasname, ipAddress)).limit(1);
   return result[0] || null;
 }
 
-export async function createNas(data: Omit<InsertNasDevice, "id" | "createdAt" | "updatedAt">) {
+// Create NAS device (FreeRADIUS compatible)
+export async function createNas(data: {
+  name: string;
+  ipAddress: string;
+  secret: string;
+  type?: string;
+  description?: string;
+  location?: string;
+  ports?: number;
+  mikrotikApiPort?: number;
+  mikrotikApiUser?: string;
+  mikrotikApiPassword?: string;
+}) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(nasDevices).values(data);
+  const result = await db.insert(nasDevices).values({
+    nasname: data.ipAddress, // FreeRADIUS uses nasname for IP
+    shortname: data.name,
+    secret: data.secret,
+    type: data.type || "other",
+    description: data.description,
+    location: data.location,
+    ports: data.ports,
+    mikrotikApiPort: data.mikrotikApiPort,
+    mikrotikApiUser: data.mikrotikApiUser,
+    mikrotikApiPassword: data.mikrotikApiPassword,
+    status: "active",
+  });
+  
   return { success: true, id: result[0].insertId };
 }
 
-export async function updateNas(id: number, data: Partial<InsertNasDevice>) {
+export async function updateNas(id: number, data: {
+  name?: string;
+  ipAddress?: string;
+  secret?: string;
+  type?: string;
+  description?: string;
+  location?: string;
+  ports?: number;
+  status?: "active" | "inactive";
+  mikrotikApiPort?: number;
+  mikrotikApiUser?: string;
+  mikrotikApiPassword?: string;
+}) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(nasDevices).set(data).where(eq(nasDevices.id, id));
+  const updateData: any = {};
+  if (data.name) updateData.shortname = data.name;
+  if (data.ipAddress) updateData.nasname = data.ipAddress;
+  if (data.secret) updateData.secret = data.secret;
+  if (data.type) updateData.type = data.type;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.location !== undefined) updateData.location = data.location;
+  if (data.ports !== undefined) updateData.ports = data.ports;
+  if (data.status) updateData.status = data.status;
+  if (data.mikrotikApiPort !== undefined) updateData.mikrotikApiPort = data.mikrotikApiPort;
+  if (data.mikrotikApiUser !== undefined) updateData.mikrotikApiUser = data.mikrotikApiUser;
+  if (data.mikrotikApiPassword !== undefined) updateData.mikrotikApiPassword = data.mikrotikApiPassword;
+  
+  await db.update(nasDevices).set(updateData).where(eq(nasDevices.id, id));
   return { success: true };
 }
 
@@ -59,4 +109,23 @@ export async function updateLastSeen(id: number) {
   await db.update(nasDevices)
     .set({ lastSeen: new Date() })
     .where(eq(nasDevices.id, id));
+}
+
+// Get NAS for FreeRADIUS (returns in FreeRADIUS format)
+export async function getNasForRadius() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const devices = await db.select().from(nasDevices).where(eq(nasDevices.status, "active"));
+  
+  return devices.map(d => ({
+    nasname: d.nasname,
+    shortname: d.shortname,
+    type: d.type,
+    ports: d.ports,
+    secret: d.secret,
+    server: d.server,
+    community: d.community,
+    description: d.description,
+  }));
 }

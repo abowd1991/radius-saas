@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS card_templates (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  name VARCHAR(100) NOT NULL,\n  description TEXT DEFAULT NULL,\n  backgroundImageUrl TEXT DEFAULT NULL,\n  width INT DEFAULT 400,\n  height INT DEFAULT 250,\n  usernamePosition JSON DEFAULT NULL,\n  passwordPosition JSON DEFAULT NULL,\n  serialPosition JSON DEFAULT NULL,\n  qrPosition JSON DEFAULT NULL,\n  logoPosition JSON DEFAULT NULL,\n  planNamePosition JSON DEFAULT NULL,\n  expiryPosition JSON DEFAULT NULL,\n  fontFamily VARCHAR(100) DEFAULT 'Arial',\n  fontSize INT DEFAULT 12,\n  fontColor VARCHAR(20) DEFAULT '#000000',\n  isDefault BOOLEAN DEFAULT FALSE,\n  createdBy INT DEFAULT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute CREATE TABLE IF NOT EXISTS card_templates (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  name VARCHAR(100) NOT NULL,\n  description TEXT DEFAULT NULL,\n  backgroundImageUrl TEXT DEFAULT NULL,\n  width INT DEFAULT 400,\n  height INT DEFAULT 250,\n  usernamePosition JSON DEFAULT NULL,\n  passwordPosition JSON DEFAULT NULL,\n  serialPosition JSON DEFAULT NULL,\n  qrPosition JSON DEFAULT NULL,\n  logoPosition JSON DEFAULT NULL,\n  planNamePosition JSON DEFAULT NULL,\n  expiryPosition JSON DEFAULT NULL,\n  fontFamily VARCHAR(100) DEFAULT 'Arial',\n  fontSize INT DEFAULT 12,\n  fontColor VARCHAR(20) DEFAULT '#000000',\n  isDefault BOOLEAN DEFAULT FALSE,\n  createdBy INT DEFAULT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1654
+}

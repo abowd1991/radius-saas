@@ -26,10 +26,10 @@
 - [x] Clients management (CRUD)
 - [x] Plans/Packages management
 - [x] NAS devices management
-- [ ] Active sessions monitoring
+- [x] Active sessions monitoring
 - [x] Vouchers/Cards creation and management
 - [ ] Card image upload
-- [ ] PDF export for card batches
+- [x] PDF export for card batches
 - [x] Support chat monitoring
 - [ ] API keys management
 - [ ] Comprehensive reports
@@ -63,7 +63,7 @@
 ## Voucher/Card System
 - [x] Automatic number generation
 - [ ] Card image upload and linking
-- [ ] PDF batch export
+- [x] PDF batch export
 - [x] Plan linking
 - [x] Balance linking
 - [x] Card status tracking (active/used/expired)
@@ -93,16 +93,16 @@
 - [x] Balance/Wallet API endpoints
 - [x] Invoices API endpoints
 - [x] Vouchers/Cards API endpoints
-- [ ] Sessions API endpoints
+- [x] Sessions API endpoints
 - [ ] RADIUS logs API endpoints
 - [x] JWT authentication for all endpoints
 
 ## MikroTik RADIUS Integration
-- [ ] FreeRADIUS configuration
-- [ ] MikroTik NAS configuration
-- [ ] PPPoE/PPTP/L2TP support
-- [ ] Session management
-- [ ] Rate limiting attributes
+- [x] FreeRADIUS configuration generator
+- [x] MikroTik NAS configuration generator
+- [x] PPPoE/PPTP/L2TP support
+- [x] Session management
+- [x] Rate limiting attributes
 
 ## UI/UX
 - [x] Arabic language support (RTL)
@@ -119,3 +119,51 @@
 - [x] SQL injection prevention
 - [x] XSS prevention
 - [x] CSRF protection
+
+## RADIUS Core System (NEW REQUIREMENTS)
+- [x] radcheck table for RADIUS authentication
+- [x] radreply table for RADIUS attributes
+- [x] radacct table for RADIUS accounting
+- [x] radgroupcheck table for group checks
+- [x] radgroupreply table for group replies
+- [x] radusergroup table for user-group mapping
+- [x] nas table for FreeRADIUS NAS clients
+
+## Real RADIUS Cards System
+- [x] Each card = real RADIUS account (username/password)
+- [x] Auto-insert into radcheck on card creation
+- [x] Auto-insert into radreply on card creation
+- [x] Link card to plan with speed limits
+- [x] Bulk card creation (300/1000 cards)
+- [x] Card represents actual RADIUS user
+
+## Validity & Time System
+- [x] Support minutes/hours/days validity
+- [x] Session-Timeout attribute
+- [x] Expiration attribute
+- [x] Max-All-Session attribute
+- [x] Time starts from first login OR card creation
+
+## MikroTik Integration
+- [x] PPPoE support
+- [x] Hotspot support
+- [x] VPN support
+- [x] Mikrotik-Rate-Limit attribute
+- [x] Simultaneous-Use attribute
+- [x] Auto session disconnect/suspend
+
+## PDF Card Printing with QR Code
+- [x] Custom card design (HTML template)
+- [x] Print Username/Password on card
+- [x] QR Code linking to MikroTik login page
+- [x] Control cards per page
+- [x] PDF download (HTML for print)
+- [x] CSV download
+- [x] Bulk printing support
+- [ ] Custom card image upload
+
+## Security & Audit
+- [ ] Complete operation logs
+- [ ] API Token protection
+- [x] HTTPS enforcement
+- [x] Role-based permissions audit

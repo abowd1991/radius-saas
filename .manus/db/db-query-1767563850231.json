@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS radreply (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  username VARCHAR(64) NOT NULL DEFAULT '',\n  attribute VARCHAR(64) NOT NULL DEFAULT '',\n  op CHAR(2) NOT NULL DEFAULT '=',\n  value VARCHAR(253) NOT NULL DEFAULT '',\n  INDEX idx_radreply_username (username)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute CREATE TABLE IF NOT EXISTS radreply (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  username VARCHAR(64) NOT NULL DEFAULT '',\n  attribute VARCHAR(64) NOT NULL DEFAULT '',\n  op CHAR(2) NOT NULL DEFAULT '=',\n  value VARCHAR(253) NOT NULL DEFAULT '',\n  INDEX idx_radreply_username (username)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1631
+}

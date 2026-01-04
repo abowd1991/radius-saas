@@ -2,6 +2,9 @@ import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../db";
 import { notifications, InsertNotification } from "../../drizzle/schema";
 
+// Valid notification types from schema
+type NotificationType = "invoice" | "payment" | "card" | "support" | "balance" | "subscription" | "system";
+
 export async function getNotificationsByUserId(userId: number, options?: { unreadOnly?: boolean; page?: number; limit?: number }) {
   const db = await getDb();
   if (!db) return [];
@@ -28,7 +31,7 @@ export async function getNotificationById(id: number) {
 
 export async function createNotification(data: {
   userId: number;
-  type: "invoice" | "payment" | "voucher" | "support" | "balance" | "subscription" | "system";
+  type: NotificationType;
   title: string;
   titleAr?: string;
   message: string;
@@ -131,15 +134,15 @@ export async function sendPaymentNotification(userId: number, success: boolean, 
   }
 }
 
-export async function sendVoucherExpiryNotification(userId: number, voucherCode: string, daysLeft: number) {
+export async function sendCardExpiryNotification(userId: number, serialNumber: string, daysLeft: number) {
   return createNotification({
     userId,
-    type: "voucher",
-    title: "Voucher Expiring Soon",
-    titleAr: "الكرت على وشك الانتهاء",
-    message: `Your voucher ${voucherCode} will expire in ${daysLeft} days.`,
-    messageAr: `كرتك ${voucherCode} سينتهي خلال ${daysLeft} أيام.`,
-    data: { voucherCode, daysLeft },
+    type: "card",
+    title: "Card Expiring Soon",
+    titleAr: "البطاقة على وشك الانتهاء",
+    message: `Your card ${serialNumber} will expire in ${daysLeft} days.`,
+    messageAr: `بطاقتك ${serialNumber} ستنتهي خلال ${daysLeft} أيام.`,
+    data: { serialNumber, daysLeft },
   });
 }
 

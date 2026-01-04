@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS radpostauth (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  username VARCHAR(64) NOT NULL DEFAULT '',\n  pass VARCHAR(64) NOT NULL DEFAULT '',\n  reply VARCHAR(32) NOT NULL DEFAULT '',\n  authdate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  INDEX idx_radpostauth_username (username),\n  INDEX idx_radpostauth_authdate (authdate)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute CREATE TABLE IF NOT EXISTS radpostauth (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  username VARCHAR(64) NOT NULL DEFAULT '',\n  pass VARCHAR(64) NOT NULL DEFAULT '',\n  reply VARCHAR(32) NOT NULL DEFAULT '',\n  authdate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  INDEX idx_radpostauth_username (username),\n  INDEX idx_radpostauth_authdate (authdate)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1665
+}

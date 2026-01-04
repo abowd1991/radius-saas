@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS radusergroup (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  username VARCHAR(64) NOT NULL DEFAULT '',\n  groupname VARCHAR(64) NOT NULL DEFAULT '',\n  priority INT NOT NULL DEFAULT 1,\n  INDEX idx_radusergroup_username (username)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute CREATE TABLE IF NOT EXISTS radusergroup (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  username VARCHAR(64) NOT NULL DEFAULT '',\n  groupname VARCHAR(64) NOT NULL DEFAULT '',\n  priority INT NOT NULL DEFAULT 1,\n  INDEX idx_radusergroup_username (username)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1652
+}

@@ -16,6 +16,7 @@ import Resellers from "./pages/Resellers";
 import Invoices from "./pages/Invoices";
 import NasDevices from "./pages/NasDevices";
 import Settings from "./pages/Settings";
+import Sessions from "./pages/Sessions";
 import DashboardLayout from "./components/DashboardLayout";
 
 function Router() {
@@ -70,6 +71,11 @@ function Router() {
       <Route path="/settings">
         <DashboardLayout>
           <Settings />
+        </DashboardLayout>
+      </Route>
+      <Route path="/sessions">
+        <DashboardLayout>
+          <Sessions />
         </DashboardLayout>
       </Route>
       <Route path="/404" component={NotFound} />

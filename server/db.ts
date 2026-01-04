@@ -35,7 +35,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     };
     const updateSet: Record<string, unknown> = {};
 
-    const textFields = ["name", "email", "loginMethod"] as const;
+    const textFields = ["name", "email", "loginMethod", "phone", "address"] as const;
     type TextField = (typeof textFields)[number];
 
     const assignNullable = (field: TextField) => {
@@ -113,8 +113,32 @@ export async function getUsersByRole(role: 'super_admin' | 'reseller' | 'client'
   return db.select().from(users).where(eq(users.role, role));
 }
 
-export async function getUsersByParentId(parentId: number) {
+export async function getUsersByResellerId(resellerId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(users).where(eq(users.parentId, parentId));
+  return db.select().from(users).where(eq(users.resellerId, resellerId));
+}
+
+export async function updateUserStatus(userId: number, status: 'active' | 'suspended' | 'inactive') {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(users).set({ status }).where(eq(users.id, userId));
+  return { success: true };
+}
+
+export async function updateUserRole(userId: number, role: 'super_admin' | 'reseller' | 'client') {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(users).set({ role }).where(eq(users.id, userId));
+  return { success: true };
+}
+
+export async function assignReseller(userId: number, resellerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(users).set({ resellerId }).where(eq(users.id, userId));
+  return { success: true };
 }

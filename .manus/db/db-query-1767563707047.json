@@ -1,0 +1,9 @@
+{
+  "query": "DROP TABLE IF EXISTS vouchers, voucher_batches, nas_devices, radius_sessions, subscriptions;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute DROP TABLE IF EXISTS vouchers, voucher_batches, nas_devices, radius_sessions, subscriptions;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3122
+}

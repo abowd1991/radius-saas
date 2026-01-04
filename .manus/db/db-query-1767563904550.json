@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS card_batches (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  batchId VARCHAR(50) NOT NULL UNIQUE,\n  name VARCHAR(100) NOT NULL,\n  planId INT NOT NULL,\n  createdBy INT NOT NULL,\n  resellerId INT DEFAULT NULL,\n  quantity INT NOT NULL,\n  templateImageUrl TEXT DEFAULT NULL,\n  cardsPerPage INT DEFAULT 8,\n  qrCodeUrl VARCHAR(255) DEFAULT NULL,\n  pdfUrl TEXT DEFAULT NULL,\n  csvUrl TEXT DEFAULT NULL,\n  status ENUM('generating', 'completed', 'failed') DEFAULT 'generating',\n  errorMessage TEXT DEFAULT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  INDEX idx_card_batches_batchId (batchId),\n  INDEX idx_card_batches_planId (planId),\n  INDEX idx_card_batches_createdBy (createdBy)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute CREATE TABLE IF NOT EXISTS card_batches (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  batchId VARCHAR(50) NOT NULL UNIQUE,\n  name VARCHAR(100) NOT NULL,\n  planId INT NOT NULL,\n  createdBy INT NOT NULL,\n  resellerId INT DEFAULT NULL,\n  quantity INT NOT NULL,\n  templateImageUrl TEXT DEFAULT NULL,\n  cardsPerPage INT DEFAULT 8,\n  qrCodeUrl VARCHAR(255) DEFAULT NULL,\n  pdfUrl TEXT DEFAULT NULL,\n  csvUrl TEXT DEFAULT NULL,\n  status ENUM('generating', 'completed', 'failed') DEFAULT 'generating',\n  errorMessage TEXT DEFAULT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  INDEX idx_card_batches_batchId (batchId),\n  INDEX idx_card_batches_planId (planId),\n  INDEX idx_card_batches_createdBy (createdBy)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1635
+}

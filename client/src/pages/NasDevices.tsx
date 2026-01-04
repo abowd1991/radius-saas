@@ -139,8 +139,8 @@ export default function NasDevices() {
   };
 
   const filteredDevices = devices?.filter(device =>
-    device.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    device.ipAddress.includes(searchQuery)
+    (device.shortname || device.nasname).toLowerCase().includes(searchQuery.toLowerCase()) ||
+    device.nasname.includes(searchQuery)
   );
 
   return (
@@ -325,13 +325,13 @@ export default function NasDevices() {
                           <Router className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <span className="font-medium">{device.name}</span>
-                          <p className="text-xs text-muted-foreground">{device.ipAddress}</p>
+                          <span className="font-medium">{device.shortname || device.nasname}</span>
+                          <p className="text-xs text-muted-foreground">{device.nasname}</p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <code className="text-sm bg-muted px-2 py-1 rounded">{device.ipAddress}</code>
+                      <code className="text-sm bg-muted px-2 py-1 rounded">{device.nasname}</code>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="capitalize">{device.type}</Badge>

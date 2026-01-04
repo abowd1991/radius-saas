@@ -269,7 +269,7 @@ export default function Plans() {
                     : formatCurrency(plan.price as string)
                   }
                   <span className="text-sm font-normal text-muted-foreground">
-                    /{plan.durationDays} {t("plans.days")}
+                    /{plan.validityValue} {plan.validityType === 'days' ? t("plans.days") : plan.validityType === 'hours' ? t("plans.hours") : t("plans.minutes")}
                   </span>
                 </div>
                 
@@ -288,7 +288,7 @@ export default function Plans() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-primary" />
-                    <span>{t("plans.duration")}: {plan.durationDays} {t("plans.days")}</span>
+                    <span>{t("plans.duration")}: {plan.validityValue} {plan.validityType === 'days' ? t("plans.days") : plan.validityType === 'hours' ? t("plans.hours") : t("plans.minutes")}</span>
                   </div>
                 </div>
               </CardContent>
@@ -342,7 +342,7 @@ export default function Plans() {
                       <TableCell>{formatSpeed(plan.downloadSpeed)}</TableCell>
                       <TableCell>{formatSpeed(plan.uploadSpeed)}</TableCell>
                       <TableCell>{formatData(plan.dataLimit)}</TableCell>
-                      <TableCell>{plan.durationDays} {t("plans.days")}</TableCell>
+                      <TableCell>{plan.validityValue} {plan.validityType === 'days' ? t("plans.days") : plan.validityType === 'hours' ? t("plans.hours") : t("plans.minutes")}</TableCell>
                       <TableCell>{formatCurrency(plan.price as string)}</TableCell>
                       <TableCell>{formatCurrency(plan.resellerPrice as string)}</TableCell>
                       <TableCell>

@@ -11,6 +11,48 @@ CREATE TABLE `activity_logs` (
 	CONSTRAINT `activity_logs_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
+CREATE TABLE `card_batches` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`batchId` varchar(50) NOT NULL,
+	`name` varchar(100) NOT NULL,
+	`planId` int NOT NULL,
+	`createdBy` int NOT NULL,
+	`resellerId` int,
+	`quantity` int NOT NULL,
+	`templateImageUrl` text,
+	`cardsPerPage` int DEFAULT 8,
+	`qrCodeUrl` varchar(255),
+	`pdfUrl` text,
+	`csvUrl` text,
+	`status` enum('generating','completed','failed') NOT NULL DEFAULT 'generating',
+	`errorMessage` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `card_batches_id` PRIMARY KEY(`id`),
+	CONSTRAINT `card_batches_batchId_unique` UNIQUE(`batchId`)
+);
+--> statement-breakpoint
+CREATE TABLE `card_templates` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`name` varchar(100) NOT NULL,
+	`resellerId` int,
+	`imageUrl` text NOT NULL,
+	`usernameX` int DEFAULT 50,
+	`usernameY` int DEFAULT 100,
+	`passwordX` int DEFAULT 50,
+	`passwordY` int DEFAULT 130,
+	`qrCodeX` int DEFAULT 200,
+	`qrCodeY` int DEFAULT 50,
+	`qrCodeSize` int DEFAULT 80,
+	`fontSize` int DEFAULT 12,
+	`fontColor` varchar(7) DEFAULT '#000000',
+	`cardWidth` int DEFAULT 350,
+	`cardHeight` int DEFAULT 200,
+	`isDefault` boolean DEFAULT false,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `card_templates_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
 CREATE TABLE `chat_messages` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`ticketId` int NOT NULL,
@@ -47,27 +89,32 @@ CREATE TABLE `invoices` (
 	CONSTRAINT `invoices_invoiceNumber_unique` UNIQUE(`invoiceNumber`)
 );
 --> statement-breakpoint
-CREATE TABLE `nas_devices` (
+CREATE TABLE `nas` (
 	`id` int AUTO_INCREMENT NOT NULL,
-	`name` varchar(100) NOT NULL,
-	`ipAddress` varchar(45) NOT NULL,
-	`secret` varchar(100) NOT NULL,
-	`type` enum('mikrotik','cisco','other') NOT NULL DEFAULT 'mikrotik',
-	`description` text,
-	`location` varchar(255),
+	`nasname` varchar(128) NOT NULL,
+	`shortname` varchar(32),
+	`type` varchar(30) DEFAULT 'other',
 	`ports` int,
+	`secret` varchar(60) NOT NULL,
+	`server` varchar(64),
+	`community` varchar(50),
+	`description` varchar(200),
+	`location` varchar(255),
+	`mikrotikApiPort` int DEFAULT 8728,
+	`mikrotikApiUser` varchar(64),
+	`mikrotikApiPassword` varchar(128),
 	`status` enum('active','inactive') NOT NULL DEFAULT 'active',
 	`lastSeen` timestamp,
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
 	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
-	CONSTRAINT `nas_devices_id` PRIMARY KEY(`id`),
-	CONSTRAINT `nas_devices_ipAddress_unique` UNIQUE(`ipAddress`)
+	CONSTRAINT `nas_id` PRIMARY KEY(`id`),
+	CONSTRAINT `nas_nasname_unique` UNIQUE(`nasname`)
 );
 --> statement-breakpoint
 CREATE TABLE `notifications` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`userId` int NOT NULL,
-	`type` enum('invoice','payment','voucher','support','balance','subscription','system') NOT NULL,
+	`type` enum('invoice','payment','card','support','balance','subscription','system') NOT NULL,
 	`title` varchar(255) NOT NULL,
 	`titleAr` varchar(255),
 	`message` text NOT NULL,
@@ -77,6 +124,22 @@ CREATE TABLE `notifications` (
 	`readAt` timestamp,
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
 	CONSTRAINT `notifications_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `online_sessions` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`username` varchar(64) NOT NULL,
+	`cardId` int,
+	`nasId` int,
+	`acctSessionId` varchar(64) NOT NULL,
+	`framedIpAddress` varchar(15),
+	`callingStationId` varchar(50),
+	`startTime` timestamp NOT NULL DEFAULT (now()),
+	`lastUpdate` timestamp NOT NULL DEFAULT (now()),
+	`sessionTime` int DEFAULT 0,
+	`inputOctets` bigint DEFAULT 0,
+	`outputOctets` bigint DEFAULT 0,
+	CONSTRAINT `online_sessions_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
 CREATE TABLE `payment_gateways` (
@@ -120,37 +183,137 @@ CREATE TABLE `plans` (
 	`descriptionAr` text,
 	`downloadSpeed` int NOT NULL,
 	`uploadSpeed` int NOT NULL,
-	`dataLimit` int,
-	`durationDays` int NOT NULL DEFAULT 30,
+	`dataLimit` bigint,
+	`validityType` enum('minutes','hours','days') NOT NULL DEFAULT 'days',
+	`validityValue` int NOT NULL DEFAULT 30,
+	`validityStartFrom` enum('first_login','card_creation') NOT NULL DEFAULT 'first_login',
 	`price` decimal(10,2) NOT NULL,
 	`resellerPrice` decimal(10,2) NOT NULL,
-	`simultaneousUsers` int DEFAULT 1,
+	`simultaneousUse` int DEFAULT 1,
+	`sessionTimeout` int,
+	`idleTimeout` int,
 	`poolName` varchar(50),
-	`radiusAttributes` json,
+	`mikrotikRateLimit` varchar(100),
+	`mikrotikAddressPool` varchar(50),
+	`serviceType` enum('pppoe','hotspot','vpn','all') NOT NULL DEFAULT 'all',
 	`status` enum('active','inactive') NOT NULL DEFAULT 'active',
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
 	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `plans_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `radius_sessions` (
-	`id` int AUTO_INCREMENT NOT NULL,
-	`sessionId` varchar(64) NOT NULL,
-	`subscriptionId` int,
+CREATE TABLE `radacct` (
+	`radacctid` bigint AUTO_INCREMENT NOT NULL,
+	`acctsessionid` varchar(64) NOT NULL,
+	`acctuniqueid` varchar(32) NOT NULL,
 	`username` varchar(64) NOT NULL,
-	`nasId` int,
-	`nasIpAddress` varchar(45),
-	`nasPort` int,
-	`framedIpAddress` varchar(45),
-	`callingStationId` varchar(50),
-	`startTime` timestamp NOT NULL,
-	`stopTime` timestamp,
-	`sessionTime` int DEFAULT 0,
-	`inputOctets` int DEFAULT 0,
-	`outputOctets` int DEFAULT 0,
-	`terminateCause` varchar(50),
+	`groupname` varchar(64),
+	`realm` varchar(64),
+	`nasipaddress` varchar(15) NOT NULL,
+	`nasportid` varchar(32),
+	`nasporttype` varchar(32),
+	`acctstarttime` timestamp,
+	`acctupdatetime` timestamp,
+	`acctstoptime` timestamp,
+	`acctinterval` int,
+	`acctsessiontime` int,
+	`acctauthentic` varchar(32),
+	`connectinfo_start` varchar(50),
+	`connectinfo_stop` varchar(50),
+	`acctinputoctets` bigint,
+	`acctoutputoctets` bigint,
+	`calledstationid` varchar(50),
+	`callingstationid` varchar(50),
+	`acctterminatecause` varchar(32),
+	`servicetype` varchar(32),
+	`framedprotocol` varchar(32),
+	`framedipaddress` varchar(15),
+	`framedipv6address` varchar(45),
+	`framedipv6prefix` varchar(45),
+	`framedinterfaceid` varchar(44),
+	`delegatedipv6prefix` varchar(45),
+	CONSTRAINT `radacct_radacctid` PRIMARY KEY(`radacctid`),
+	CONSTRAINT `radacct_acctuniqueid_unique` UNIQUE(`acctuniqueid`)
+);
+--> statement-breakpoint
+CREATE TABLE `radcheck` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`username` varchar(64) NOT NULL,
+	`attribute` varchar(64) NOT NULL,
+	`op` varchar(2) NOT NULL DEFAULT ':=',
+	`value` varchar(253) NOT NULL,
+	CONSTRAINT `radcheck_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `radgroupcheck` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`groupname` varchar(64) NOT NULL,
+	`attribute` varchar(64) NOT NULL,
+	`op` varchar(2) NOT NULL DEFAULT ':=',
+	`value` varchar(253) NOT NULL,
+	CONSTRAINT `radgroupcheck_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `radgroupreply` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`groupname` varchar(64) NOT NULL,
+	`attribute` varchar(64) NOT NULL,
+	`op` varchar(2) NOT NULL DEFAULT '=',
+	`value` varchar(253) NOT NULL,
+	CONSTRAINT `radgroupreply_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `radius_cards` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`username` varchar(64) NOT NULL,
+	`password` varchar(64) NOT NULL,
+	`serialNumber` varchar(20) NOT NULL,
+	`batchId` varchar(50),
+	`planId` int NOT NULL,
+	`createdBy` int NOT NULL,
+	`resellerId` int,
+	`usedBy` int,
+	`status` enum('unused','active','used','expired','suspended','cancelled') NOT NULL DEFAULT 'unused',
+	`activatedAt` timestamp,
+	`firstLoginAt` timestamp,
+	`expiresAt` timestamp,
+	`totalSessionTime` int DEFAULT 0,
+	`totalDataUsed` bigint DEFAULT 0,
+	`lastActivity` timestamp,
+	`purchasePrice` decimal(10,2),
+	`salePrice` decimal(10,2),
+	`notes` text,
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
-	CONSTRAINT `radius_sessions_id` PRIMARY KEY(`id`)
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `radius_cards_id` PRIMARY KEY(`id`),
+	CONSTRAINT `radius_cards_username_unique` UNIQUE(`username`),
+	CONSTRAINT `radius_cards_serialNumber_unique` UNIQUE(`serialNumber`)
+);
+--> statement-breakpoint
+CREATE TABLE `radpostauth` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`username` varchar(64) NOT NULL,
+	`pass` varchar(64),
+	`reply` varchar(32),
+	`authdate` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `radpostauth_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `radreply` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`username` varchar(64) NOT NULL,
+	`attribute` varchar(64) NOT NULL,
+	`op` varchar(2) NOT NULL DEFAULT '=',
+	`value` varchar(253) NOT NULL,
+	CONSTRAINT `radreply_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `radusergroup` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`username` varchar(64) NOT NULL,
+	`groupname` varchar(64) NOT NULL,
+	`priority` int NOT NULL DEFAULT 1,
+	CONSTRAINT `radusergroup_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
 CREATE TABLE `reseller_profiles` (
@@ -167,29 +330,6 @@ CREATE TABLE `reseller_profiles` (
 	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `reseller_profiles_id` PRIMARY KEY(`id`),
 	CONSTRAINT `reseller_profiles_userId_unique` UNIQUE(`userId`)
-);
---> statement-breakpoint
-CREATE TABLE `subscriptions` (
-	`id` int AUTO_INCREMENT NOT NULL,
-	`userId` int NOT NULL,
-	`planId` int NOT NULL,
-	`nasId` int,
-	`username` varchar(64) NOT NULL,
-	`password` varchar(64) NOT NULL,
-	`status` enum('active','suspended','expired','cancelled') NOT NULL DEFAULT 'active',
-	`ipAddress` varchar(45),
-	`macAddress` varchar(17),
-	`startDate` timestamp NOT NULL DEFAULT (now()),
-	`expiresAt` timestamp NOT NULL,
-	`dataUsed` int DEFAULT 0,
-	`lastActivity` timestamp,
-	`autoRenew` boolean DEFAULT false,
-	`voucherId` int,
-	`invoiceId` int,
-	`createdAt` timestamp NOT NULL DEFAULT (now()),
-	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
-	CONSTRAINT `subscriptions_id` PRIMARY KEY(`id`),
-	CONSTRAINT `subscriptions_username_unique` UNIQUE(`username`)
 );
 --> statement-breakpoint
 CREATE TABLE `support_tickets` (
@@ -236,38 +376,24 @@ CREATE TABLE `transactions` (
 	CONSTRAINT `transactions_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `voucher_batches` (
+CREATE TABLE `users` (
 	`id` int AUTO_INCREMENT NOT NULL,
-	`batchId` varchar(50) NOT NULL,
-	`name` varchar(100) NOT NULL,
-	`planId` int NOT NULL,
-	`createdBy` int NOT NULL,
-	`quantity` int NOT NULL,
-	`templateImageUrl` text,
-	`pdfUrl` text,
-	`status` enum('generating','completed','failed') NOT NULL DEFAULT 'generating',
-	`createdAt` timestamp NOT NULL DEFAULT (now()),
-	CONSTRAINT `voucher_batches_id` PRIMARY KEY(`id`),
-	CONSTRAINT `voucher_batches_batchId_unique` UNIQUE(`batchId`)
-);
---> statement-breakpoint
-CREATE TABLE `vouchers` (
-	`id` int AUTO_INCREMENT NOT NULL,
-	`code` varchar(20) NOT NULL,
-	`planId` int NOT NULL,
-	`createdBy` int NOT NULL,
+	`openId` varchar(64) NOT NULL,
+	`name` text,
+	`email` varchar(320),
+	`phone` varchar(20),
+	`address` text,
+	`loginMethod` varchar(64),
+	`role` enum('super_admin','reseller','client') NOT NULL DEFAULT 'client',
 	`resellerId` int,
-	`batchId` varchar(50),
-	`value` decimal(10,2),
-	`status` enum('unused','used','expired','cancelled') NOT NULL DEFAULT 'unused',
-	`usedBy` int,
-	`usedAt` timestamp,
-	`expiresAt` timestamp,
-	`imageUrl` text,
+	`status` enum('active','suspended','inactive') NOT NULL DEFAULT 'active',
+	`language` enum('ar','en') NOT NULL DEFAULT 'ar',
+	`avatarUrl` text,
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
 	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
-	CONSTRAINT `vouchers_id` PRIMARY KEY(`id`),
-	CONSTRAINT `vouchers_code_unique` UNIQUE(`code`)
+	`lastSignedIn` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `users_id` PRIMARY KEY(`id`),
+	CONSTRAINT `users_openId_unique` UNIQUE(`openId`)
 );
 --> statement-breakpoint
 CREATE TABLE `wallets` (
@@ -280,10 +406,3 @@ CREATE TABLE `wallets` (
 	CONSTRAINT `wallets_id` PRIMARY KEY(`id`),
 	CONSTRAINT `wallets_userId_unique` UNIQUE(`userId`)
 );
---> statement-breakpoint
-ALTER TABLE `users` MODIFY COLUMN `role` enum('super_admin','reseller','client') NOT NULL DEFAULT 'client';--> statement-breakpoint
-ALTER TABLE `users` ADD `phone` varchar(20);--> statement-breakpoint
-ALTER TABLE `users` ADD `parentId` int;--> statement-breakpoint
-ALTER TABLE `users` ADD `status` enum('active','suspended','inactive') DEFAULT 'active' NOT NULL;--> statement-breakpoint
-ALTER TABLE `users` ADD `language` enum('ar','en') DEFAULT 'ar' NOT NULL;--> statement-breakpoint
-ALTER TABLE `users` ADD `avatarUrl` text;

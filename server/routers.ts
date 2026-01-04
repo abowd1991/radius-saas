@@ -8,11 +8,13 @@ import * as db from "./db";
 import * as walletDb from "./db/wallet";
 import * as planDb from "./db/plans";
 import * as nasDb from "./db/nas";
-import * as voucherDb from "./db/vouchers";
+import * as cardDb from "./db/vouchers";
 import * as invoiceDb from "./db/invoices";
 import * as subscriptionDb from "./db/subscriptions";
 import * as ticketDb from "./db/tickets";
 import * as notificationDb from "./db/notifications";
+import { generateCardsPDFHTML, generateCardsCSV, saveBatchPDF } from "./services/pdfGenerator";
+import * as mikrotikApi from "./services/mikrotikApi";
 
 // ============================================================================
 // AUTH ROUTER
@@ -30,7 +32,6 @@ const authRouter = router({
 // USERS ROUTER
 // ============================================================================
 const usersRouter = router({
-  // Get all users (super admin only)
   list: superAdminProcedure
     .input(z.object({
       role: z.enum(['super_admin', 'reseller', 'client']).optional(),
@@ -43,40 +44,35 @@ const usersRouter = router({
       return db.getAllUsers();
     }),
 
-  // Get user by ID
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input, ctx }) => {
       const user = await db.getUserById(input.id);
       if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       
-      // Check permissions
       if (ctx.user.role === 'client' && ctx.user.id !== input.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
-      if (ctx.user.role === 'reseller' && user.parentId !== ctx.user.id && ctx.user.id !== input.id) {
+      if (ctx.user.role === 'reseller' && user.resellerId !== ctx.user.id && ctx.user.id !== input.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
       return user;
     }),
 
-  // Get reseller's clients
   getMyClients: resellerProcedure.query(async ({ ctx }) => {
     if (ctx.user.role === 'super_admin') {
       return db.getUsersByRole('client');
     }
-    return db.getUsersByParentId(ctx.user.id);
+    return db.getUsersByResellerId(ctx.user.id);
   }),
 
-  // Update user status
   updateStatus: superAdminProcedure
     .input(z.object({
       userId: z.number(),
       status: z.enum(['active', 'suspended', 'inactive']),
     }))
     .mutation(async ({ input }) => {
-      // Implementation will be added
       return { success: true };
     }),
 });
@@ -106,11 +102,18 @@ const plansRouter = router({
       downloadSpeed: z.number().min(1),
       uploadSpeed: z.number().min(1),
       dataLimit: z.number().optional(),
-      durationDays: z.number().default(30),
+      validityType: z.enum(['minutes', 'hours', 'days']).default('days'),
+      validityValue: z.number().default(30),
+      validityStartFrom: z.enum(['first_login', 'card_creation']).default('first_login'),
       price: z.string(),
       resellerPrice: z.string(),
-      simultaneousUsers: z.number().default(1),
+      simultaneousUse: z.number().default(1),
+      sessionTimeout: z.number().optional(),
+      idleTimeout: z.number().optional(),
       poolName: z.string().optional(),
+      mikrotikRateLimit: z.string().optional(),
+      mikrotikAddressPool: z.string().optional(),
+      serviceType: z.enum(['pppoe', 'hotspot', 'vpn', 'all']).default('all'),
     }))
     .mutation(async ({ input }) => {
       return planDb.createPlan(input);
@@ -126,7 +129,8 @@ const plansRouter = router({
       downloadSpeed: z.number().optional(),
       uploadSpeed: z.number().optional(),
       dataLimit: z.number().optional(),
-      durationDays: z.number().optional(),
+      validityType: z.enum(['minutes', 'hours', 'days']).optional(),
+      validityValue: z.number().optional(),
       price: z.string().optional(),
       resellerPrice: z.string().optional(),
       status: z.enum(['active', 'inactive']).optional(),
@@ -167,6 +171,9 @@ const nasRouter = router({
       description: z.string().optional(),
       location: z.string().optional(),
       ports: z.number().optional(),
+      mikrotikApiPort: z.number().optional(),
+      mikrotikApiUser: z.string().optional(),
+      mikrotikApiPassword: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       return nasDb.createNas(input);
@@ -228,58 +235,218 @@ const walletRouter = router({
 });
 
 // ============================================================================
-// VOUCHERS ROUTER
+// RADIUS CARDS ROUTER (Vouchers)
 // ============================================================================
 const vouchersRouter = router({
   list: resellerProcedure
     .input(z.object({
-      status: z.enum(['unused', 'used', 'expired', 'cancelled']).optional(),
+      status: z.enum(['unused', 'active', 'used', 'expired', 'suspended', 'cancelled']).optional(),
       batchId: z.string().optional(),
       page: z.number().default(1),
       limit: z.number().default(20),
     }).optional())
     .query(async ({ ctx, input }) => {
       if (ctx.user.role === 'super_admin') {
-        return voucherDb.getAllVouchers(input);
+        return cardDb.getAllCards(input);
       }
-      return voucherDb.getVouchersByReseller(ctx.user.id, input);
+      return cardDb.getCardsByReseller(ctx.user.id, input);
     }),
 
   getById: resellerProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const voucher = await voucherDb.getVoucherById(input.id);
-      if (!voucher) throw new TRPCError({ code: "NOT_FOUND", message: "Voucher not found" });
-      return voucher;
+      const card = await cardDb.getCardById(input.id);
+      if (!card) throw new TRPCError({ code: "NOT_FOUND", message: "Card not found" });
+      return card;
     }),
 
   generate: resellerProcedure
     .input(z.object({
       planId: z.number(),
       quantity: z.number().min(1).max(1000),
-      expiresInDays: z.number().optional(),
       batchName: z.string().optional(),
+      purchasePrice: z.number().optional(),
+      salePrice: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return voucherDb.generateVouchers({
+      return cardDb.generateCards({
         ...input,
         createdBy: ctx.user.id,
         resellerId: ctx.user.role === 'reseller' ? ctx.user.id : undefined,
       });
     }),
 
-  redeem: clientProcedure
-    .input(z.object({ code: z.string() }))
+  activate: clientProcedure
+    .input(z.object({ serialNumber: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return voucherDb.redeemVoucher(input.code, ctx.user.id);
+      return cardDb.activateCard(input.serialNumber, ctx.user.id);
+    }),
+
+  suspend: superAdminProcedure
+    .input(z.object({ cardId: z.number() }))
+    .mutation(async ({ input }) => {
+      return cardDb.suspendCard(input.cardId);
+    }),
+
+  unsuspend: superAdminProcedure
+    .input(z.object({ cardId: z.number() }))
+    .mutation(async ({ input }) => {
+      return cardDb.unsuspendCard(input.cardId);
     }),
 
   getBatches: resellerProcedure.query(async ({ ctx }) => {
     if (ctx.user.role === 'super_admin') {
-      return voucherDb.getAllBatches();
+      return cardDb.getAllBatches();
     }
-    return voucherDb.getBatchesByCreator(ctx.user.id);
+    return cardDb.getBatchesByReseller(ctx.user.id);
   }),
+
+  getCardsByBatch: resellerProcedure
+    .input(z.object({ batchId: z.string() }))
+    .query(async ({ input }) => {
+      return cardDb.getCardsByBatch(input.batchId);
+    }),
+
+  // Legacy alias for redeem
+  redeem: clientProcedure
+    .input(z.object({ code: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return cardDb.activateCard(input.code, ctx.user.id);
+    }),
+
+  // Generate PDF for batch
+  generateBatchPDF: resellerProcedure
+    .input(z.object({
+      batchId: z.string(),
+      companyName: z.string().optional(),
+      hotspotUrl: z.string().optional(),
+      cardsPerPage: z.number().default(8),
+    }))
+    .mutation(async ({ input }) => {
+      // Get batch and cards
+      const batches = await cardDb.getAllBatches();
+      const batch = batches.find(b => b.batchId === input.batchId);
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+
+      const cards = await cardDb.getCardsByBatch(input.batchId);
+      if (!cards || cards.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No cards found in batch" });
+      }
+
+      // Get plan details for each card
+      const plans = await planDb.getAllPlans();
+      const planMap = new Map(plans.map(p => [p.id, p]));
+
+      const cardData = cards.map(card => {
+        const plan = planMap.get(card.planId);
+        return {
+          serialNumber: card.serialNumber,
+          username: card.username,
+          password: card.password,
+          planName: plan?.name || 'Unknown',
+          planNameAr: plan?.nameAr || undefined,
+          validityDays: plan?.validityValue || 30,
+          downloadSpeed: Math.round((plan?.downloadSpeed || 0) / 1000),
+          uploadSpeed: Math.round((plan?.uploadSpeed || 0) / 1000),
+          price: plan?.price || '0',
+        };
+      });
+
+      // Generate and save PDF
+      const result = await saveBatchPDF({
+        batchId: input.batchId,
+        batchName: batch.name,
+        cards: cardData,
+        companyName: input.companyName,
+        hotspotUrl: input.hotspotUrl,
+        cardsPerPage: input.cardsPerPage,
+      });
+
+      return {
+        success: true,
+        htmlUrl: result.htmlUrl,
+        csvUrl: result.csvUrl,
+        cardsCount: cards.length,
+      };
+    }),
+
+  // Get batch PDF HTML (for preview)
+  getBatchPDFPreview: resellerProcedure
+    .input(z.object({
+      batchId: z.string(),
+      companyName: z.string().optional(),
+      hotspotUrl: z.string().optional(),
+      cardsPerPage: z.number().default(8),
+    }))
+    .query(async ({ input }) => {
+      const batches = await cardDb.getAllBatches();
+      const batch = batches.find(b => b.batchId === input.batchId);
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+
+      const cards = await cardDb.getCardsByBatch(input.batchId);
+      if (!cards || cards.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No cards found in batch" });
+      }
+
+      const plans = await planDb.getAllPlans();
+      const planMap = new Map(plans.map(p => [p.id, p]));
+
+      const cardData = cards.map(card => {
+        const plan = planMap.get(card.planId);
+        return {
+          serialNumber: card.serialNumber,
+          username: card.username,
+          password: card.password,
+          planName: plan?.name || 'Unknown',
+          planNameAr: plan?.nameAr || undefined,
+          validityDays: plan?.validityValue || 30,
+          downloadSpeed: Math.round((plan?.downloadSpeed || 0) / 1000),
+          uploadSpeed: Math.round((plan?.uploadSpeed || 0) / 1000),
+          price: plan?.price || '0',
+        };
+      });
+
+      const html = generateCardsPDFHTML({
+        batchId: input.batchId,
+        batchName: batch.name,
+        cards: cardData,
+        companyName: input.companyName,
+        hotspotUrl: input.hotspotUrl,
+        cardsPerPage: input.cardsPerPage,
+      });
+
+      return { html };
+    }),
+
+  // Export batch as CSV
+  exportBatchCSV: resellerProcedure
+    .input(z.object({ batchId: z.string() }))
+    .query(async ({ input }) => {
+      const cards = await cardDb.getCardsByBatch(input.batchId);
+      if (!cards || cards.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No cards found in batch" });
+      }
+
+      const plans = await planDb.getAllPlans();
+      const planMap = new Map(plans.map(p => [p.id, p]));
+
+      const cardData = cards.map(card => {
+        const plan = planMap.get(card.planId);
+        return {
+          serialNumber: card.serialNumber,
+          username: card.username,
+          password: card.password,
+          planName: plan?.name || 'Unknown',
+          validityDays: plan?.validityValue || 30,
+          downloadSpeed: Math.round((plan?.downloadSpeed || 0) / 1000),
+          uploadSpeed: Math.round((plan?.uploadSpeed || 0) / 1000),
+          price: plan?.price || '0',
+        };
+      });
+
+      const csv = generateCardsCSV(cardData);
+      return { csv };
+    }),
 });
 
 // ============================================================================
@@ -305,7 +472,6 @@ const invoicesRouter = router({
       const invoice = await invoiceDb.getInvoiceById(input.id);
       if (!invoice) throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found" });
       
-      // Check permissions
       if (ctx.user.role !== 'super_admin' && invoice.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
@@ -342,12 +508,12 @@ const invoicesRouter = router({
 });
 
 // ============================================================================
-// SUBSCRIPTIONS ROUTER
+// SUBSCRIPTIONS ROUTER (Active Cards)
 // ============================================================================
 const subscriptionsRouter = router({
   list: protectedProcedure
     .input(z.object({
-      status: z.enum(['active', 'suspended', 'expired', 'cancelled']).optional(),
+      status: z.enum(['unused', 'active', 'used', 'expired', 'suspended', 'cancelled']).optional(),
       page: z.number().default(1),
       limit: z.number().default(20),
     }).optional())
@@ -364,23 +530,11 @@ const subscriptionsRouter = router({
       const subscription = await subscriptionDb.getSubscriptionById(input.id);
       if (!subscription) throw new TRPCError({ code: "NOT_FOUND", message: "Subscription not found" });
       
-      if (ctx.user.role !== 'super_admin' && subscription.userId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && subscription.usedBy !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
       return subscription;
-    }),
-
-  create: resellerProcedure
-    .input(z.object({
-      userId: z.number(),
-      planId: z.number(),
-      nasId: z.number().optional(),
-      username: z.string(),
-      password: z.string(),
-    }))
-    .mutation(async ({ input }) => {
-      return subscriptionDb.createSubscription(input);
     }),
 
   updateStatus: superAdminProcedure
@@ -392,6 +546,15 @@ const subscriptionsRouter = router({
       return subscriptionDb.updateSubscriptionStatus(input.id, input.status);
     }),
 
+  renew: resellerProcedure
+    .input(z.object({
+      id: z.number(),
+      additionalDays: z.number().min(1),
+    }))
+    .mutation(async ({ input }) => {
+      return subscriptionDb.renewSubscription(input.id, input.additionalDays);
+    }),
+
   getActiveSessions: superAdminProcedure
     .input(z.object({
       page: z.number().default(1),
@@ -399,6 +562,32 @@ const subscriptionsRouter = router({
     }).optional())
     .query(async ({ input }) => {
       return subscriptionDb.getActiveSessions(input);
+    }),
+
+  getOnlineSessions: superAdminProcedure
+    .input(z.object({
+      page: z.number().default(1),
+      limit: z.number().default(50),
+    }).optional())
+    .query(async ({ input }) => {
+      return subscriptionDb.getOnlineSessions(input);
+    }),
+
+  getSessionHistory: superAdminProcedure
+    .input(z.object({
+      username: z.string().optional(),
+      nasIp: z.string().optional(),
+      page: z.number().default(1),
+      limit: z.number().default(50),
+    }).optional())
+    .query(async ({ input }) => {
+      return subscriptionDb.getSessionHistory(input);
+    }),
+
+  disconnectSession: superAdminProcedure
+    .input(z.object({ acctSessionId: z.string() }))
+    .mutation(async ({ input }) => {
+      return subscriptionDb.disconnectSession(input.acctSessionId);
     }),
 });
 
@@ -516,6 +705,7 @@ const notificationsRouter = router({
 const dashboardRouter = router({
   getStats: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role === 'super_admin') {
+      const activeSessionsCount = await subscriptionDb.getActiveSessionsCount();
       return {
         totalUsers: 0,
         totalResellers: 0,
@@ -523,7 +713,7 @@ const dashboardRouter = router({
         activeSubscriptions: 0,
         totalRevenue: "0.00",
         pendingInvoices: 0,
-        activeSessions: 0,
+        activeSessions: activeSessionsCount,
         openTickets: 0,
       };
     } else if (ctx.user.role === 'reseller') {
@@ -532,8 +722,8 @@ const dashboardRouter = router({
         activeSubscriptions: 0,
         walletBalance: "0.00",
         pendingInvoices: 0,
-        totalVouchers: 0,
-        usedVouchers: 0,
+        totalCards: 0,
+        usedCards: 0,
       };
     } else {
       return {
@@ -544,6 +734,74 @@ const dashboardRouter = router({
       };
     }
   }),
+});
+
+// ============================================================================
+// SESSIONS ROUTER (Active RADIUS Sessions)
+// ============================================================================
+const sessionsRouter = router({
+  list: superAdminProcedure.query(async () => {
+    return mikrotikApi.getActiveSessions();
+  }),
+
+  getByUsername: superAdminProcedure
+    .input(z.object({ username: z.string() }))
+    .query(async ({ input }) => {
+      return mikrotikApi.getSessionsByUsername(input.username);
+    }),
+
+  getByNas: superAdminProcedure
+    .input(z.object({ nasIp: z.string() }))
+    .query(async ({ input }) => {
+      return mikrotikApi.getSessionsByNas(input.nasIp);
+    }),
+
+  disconnect: superAdminProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      nasIp: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      return mikrotikApi.disconnectSession(input.sessionId, input.nasIp);
+    }),
+
+  disconnectUser: superAdminProcedure
+    .input(z.object({ username: z.string() }))
+    .mutation(async ({ input }) => {
+      return mikrotikApi.disconnectUserSessions(input.username);
+    }),
+
+  getStats: superAdminProcedure.query(async () => {
+    return mikrotikApi.getSessionStats();
+  }),
+
+  // Generate MikroTik configuration script
+  generateMikroTikScript: superAdminProcedure
+    .input(z.object({
+      radiusServerIp: z.string(),
+      radiusSecret: z.string(),
+      pppoePoolName: z.string().optional(),
+      pppoePoolRange: z.string().optional(),
+      hotspotEnabled: z.boolean().optional(),
+      hotspotInterface: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const script = mikrotikApi.generateMikroTikScript(input);
+      return { script };
+    }),
+
+  // Generate FreeRADIUS client config
+  generateFreeRadiusConfig: superAdminProcedure
+    .input(z.object({
+      nasIp: z.string(),
+      nasName: z.string(),
+      secret: z.string(),
+      nasType: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const config = mikrotikApi.generateFreeRadiusClientConfig(input);
+      return { config };
+    }),
 });
 
 // ============================================================================
@@ -562,6 +820,7 @@ export const appRouter = router({
   tickets: ticketsRouter,
   notifications: notificationsRouter,
   dashboard: dashboardRouter,
+  sessions: sessionsRouter,
 });
 
 export type AppRouter = typeof appRouter;
