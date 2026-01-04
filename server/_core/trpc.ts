@@ -27,11 +27,12 @@ const requireUser = t.middleware(async opts => {
 
 export const protectedProcedure = t.procedure.use(requireUser);
 
-export const adminProcedure = t.procedure.use(
+// Super Admin only procedure
+export const superAdminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.role !== 'admin') {
+    if (!ctx.user || ctx.user.role !== 'super_admin') {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
@@ -43,3 +44,27 @@ export const adminProcedure = t.procedure.use(
     });
   }),
 );
+
+// Reseller or Super Admin procedure
+export const resellerProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    if (!ctx.user || (ctx.user.role !== 'super_admin' && ctx.user.role !== 'reseller')) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Access denied. Reseller or Admin access required." });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  }),
+);
+
+// Client or higher procedure (any authenticated user)
+export const clientProcedure = t.procedure.use(requireUser);
+
+// Legacy admin procedure (maps to super_admin)
+export const adminProcedure = superAdminProcedure;

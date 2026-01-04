@@ -56,8 +56,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = user.role;
       updateSet.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
+      // Owner gets super_admin role
+      values.role = 'super_admin';
+      updateSet.role = 'super_admin';
     }
 
     if (!values.lastSignedIn) {
@@ -89,4 +90,31 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ============================================================================
+// USER QUERIES
+// ============================================================================
+
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(users);
+}
+
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getUsersByRole(role: 'super_admin' | 'reseller' | 'client') {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(users).where(eq(users.role, role));
+}
+
+export async function getUsersByParentId(parentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(users).where(eq(users.parentId, parentId));
+}

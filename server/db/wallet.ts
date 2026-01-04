@@ -1,0 +1,104 @@
+import { eq, desc } from "drizzle-orm";
+import { getDb } from "../db";
+import { wallets, transactions, InsertWallet, InsertTransaction } from "../../drizzle/schema";
+
+export async function getWalletByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+  
+  if (result.length === 0) {
+    // Create wallet if not exists
+    await db.insert(wallets).values({ userId, balance: "0.00" });
+    const newWallet = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+    return newWallet[0] || null;
+  }
+  
+  return result[0];
+}
+
+export async function getTransactionsByUserId(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select()
+    .from(transactions)
+    .where(eq(transactions.userId, userId))
+    .orderBy(desc(transactions.createdAt))
+    .limit(limit);
+}
+
+export async function deposit(userId: number, amount: string, description?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const wallet = await getWalletByUserId(userId);
+  if (!wallet) throw new Error("Wallet not found");
+  
+  const currentBalance = parseFloat(wallet.balance as string);
+  const depositAmount = parseFloat(amount);
+  const newBalance = (currentBalance + depositAmount).toFixed(2);
+  
+  // Update wallet balance
+  await db.update(wallets)
+    .set({ balance: newBalance })
+    .where(eq(wallets.userId, userId));
+  
+  // Create transaction record
+  await db.insert(transactions).values({
+    walletId: wallet.id,
+    userId,
+    type: "deposit",
+    amount,
+    balanceBefore: wallet.balance as string,
+    balanceAfter: newBalance,
+    description: description || "Deposit",
+    status: "completed",
+  });
+  
+  return { success: true, newBalance };
+}
+
+export async function withdraw(userId: number, amount: string, type: "withdrawal" | "card_purchase" | "subscription", description?: string, referenceType?: string, referenceId?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const wallet = await getWalletByUserId(userId);
+  if (!wallet) throw new Error("Wallet not found");
+  
+  const currentBalance = parseFloat(wallet.balance as string);
+  const withdrawAmount = parseFloat(amount);
+  
+  if (currentBalance < withdrawAmount) {
+    throw new Error("Insufficient balance");
+  }
+  
+  const newBalance = (currentBalance - withdrawAmount).toFixed(2);
+  
+  // Update wallet balance
+  await db.update(wallets)
+    .set({ balance: newBalance })
+    .where(eq(wallets.userId, userId));
+  
+  // Create transaction record
+  await db.insert(transactions).values({
+    walletId: wallet.id,
+    userId,
+    type,
+    amount,
+    balanceBefore: wallet.balance as string,
+    balanceAfter: newBalance,
+    description,
+    referenceType,
+    referenceId,
+    status: "completed",
+  });
+  
+  return { success: true, newBalance };
+}
+
+export async function getBalance(userId: number): Promise<string> {
+  const wallet = await getWalletByUserId(userId);
+  return wallet?.balance as string || "0.00";
+}
