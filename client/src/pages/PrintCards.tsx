@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -9,22 +9,25 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { 
   Download, 
   Printer, 
-  FileText, 
   Image as ImageIcon,
   Star,
-  Settings2,
   Eye,
   Loader2,
-  ExternalLink,
-  ChevronRight,
   Grid3X3,
-  Maximize2
+  Upload,
+  Plus,
+  Trash2,
+  QrCode,
+  Check,
+  X
 } from "lucide-react";
-import { Link, useSearch } from "wouter";
+import { useSearch } from "wouter";
 
 export default function PrintCards() {
   // Get batch from URL query parameter
@@ -45,8 +48,22 @@ export default function PrintCards() {
   const [spacingH, setSpacingH] = useState(2);
   const [spacingV, setSpacingV] = useState(2);
   
+  // QR Code settings
+  const [qrEnabled, setQrEnabled] = useState(false);
+  const [qrDomain, setQrDomain] = useState("");
+  
   const [generating, setGenerating] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+  
+  // Upload dialog state
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
+  const [templateNames, setTemplateNames] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Delete confirmation
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   // Calculate rows based on columns and cards per page
   const rows = Math.ceil(cardsPerPage / columns);
@@ -54,8 +71,35 @@ export default function PrintCards() {
 
   // Fetch data
   const { data: batches, isLoading: loadingBatches } = trpc.vouchers.getBatches.useQuery();
-  const { data: templates, isLoading: loadingTemplates } = trpc.templates.list.useQuery();
+  const { data: templates, isLoading: loadingTemplates, refetch: refetchTemplates } = trpc.templates.list.useQuery();
   const { data: defaultTemplate } = trpc.templates.getDefault.useQuery();
+  const utils = trpc.useUtils();
+
+  // Mutations
+  const createTemplate = trpc.templates.create.useMutation({
+    onSuccess: () => {
+      refetchTemplates();
+    },
+  });
+  
+  const deleteTemplate = trpc.templates.delete.useMutation({
+    onSuccess: () => {
+      refetchTemplates();
+      toast.success("تم حذف القالب بنجاح");
+      setDeleteConfirmId(null);
+    },
+    onError: (error) => {
+      toast.error(`فشل حذف القالب: ${error.message}`);
+    },
+  });
+  
+  const setDefaultTemplate = trpc.templates.setDefault.useMutation({
+    onSuccess: () => {
+      refetchTemplates();
+      utils.templates.getDefault.invalidate();
+      toast.success("تم تعيين القالب كافتراضي");
+    },
+  });
 
   // Generate PDF mutation
   const generatePDF = trpc.vouchers.generateBatchPDFWithTemplate.useMutation({
@@ -76,6 +120,65 @@ export default function PrintCards() {
       setSelectedTemplateId(defaultTemplate.id);
     }
   }, [defaultTemplate, selectedTemplateId]);
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setUploadingFiles(files);
+      setTemplateNames(files.map(f => f.name.replace(/\.[^/.]+$/, "")));
+      setUploadDialogOpen(true);
+    }
+  };
+
+  // Handle upload
+  const handleUpload = async () => {
+    if (uploadingFiles.length === 0) return;
+    
+    setUploading(true);
+    let successCount = 0;
+    
+    for (let i = 0; i < uploadingFiles.length; i++) {
+      const file = uploadingFiles[i];
+      const name = templateNames[i] || file.name;
+      
+      try {
+        // Convert to base64
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(',')[1]); // Remove data:image/...;base64, prefix
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        
+        await createTemplate.mutateAsync({
+          name,
+          imageBase64: base64,
+          imageType: file.type,
+        });
+        
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to upload ${name}:`, error);
+      }
+    }
+    
+    setUploading(false);
+    setUploadDialogOpen(false);
+    setUploadingFiles([]);
+    setTemplateNames([]);
+    
+    if (successCount > 0) {
+      toast.success(`تم رفع ${successCount} قالب بنجاح`);
+    }
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // Handle generate
   const handleGenerate = () => {
@@ -100,6 +203,8 @@ export default function PrintCards() {
         spacingH,
         spacingV,
       },
+      qrEnabled,
+      qrDomain: qrEnabled ? qrDomain : undefined,
     });
   };
 
@@ -119,12 +224,6 @@ export default function PrintCards() {
             <h1 className="text-2xl font-bold">طباعة البطاقات</h1>
             <p className="text-muted-foreground">إنشاء ملفات PDF للطباعة باستخدام القوالب</p>
           </div>
-          <Link href="/card-templates">
-            <Button variant="outline">
-              <Settings2 className="ml-2 h-4 w-4" />
-              إدارة القوالب
-            </Button>
-          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -196,20 +295,42 @@ export default function PrintCards() {
             {/* Step 2: Select Template */}
             <Card>
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2">
-                  <Badge variant="secondary" className="h-6 w-6 rounded-full p-0 flex items-center justify-center">2</Badge>
-                  اختيار قالب البطاقة
-                </CardTitle>
-                <CardDescription>
-                  اختر تصميم البطاقة للطباعة (اختياري - سيتم استخدام التصميم الافتراضي إذا لم تختر)
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Badge variant="secondary" className="h-6 w-6 rounded-full p-0 flex items-center justify-center">2</Badge>
+                      اختيار قالب البطاقة
+                    </CardTitle>
+                    <CardDescription>
+                      اختر تصميم البطاقة أو ارفع قالب جديد
+                    </CardDescription>
+                  </div>
+                  <div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileSelect}
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="ml-2 h-4 w-4" />
+                      رفع قالب جديد
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {loadingTemplates ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
-                ) : templates && templates.length > 0 ? (
+                ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {/* Default option */}
                     <div
@@ -226,12 +347,31 @@ export default function PrintCards() {
                       <div className="p-2 text-center">
                         <span className="text-xs font-medium">التصميم الافتراضي</span>
                       </div>
+                      {selectedTemplateId === null && (
+                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
                     </div>
                     
-                    {templates.map((template) => (
+                    {/* Add new template button */}
+                    <div
+                      className="cursor-pointer rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-all overflow-hidden"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <div className="aspect-video bg-muted/50 flex flex-col items-center justify-center">
+                        <Plus className="h-8 w-8 text-muted-foreground mb-1" />
+                        <span className="text-xs text-muted-foreground">رفع قالب</span>
+                      </div>
+                      <div className="p-2 text-center">
+                        <span className="text-xs font-medium text-muted-foreground">إضافة جديد</span>
+                      </div>
+                    </div>
+                    
+                    {templates && templates.map((template) => (
                       <div
                         key={template.id}
-                        className={`relative cursor-pointer rounded-lg border-2 transition-all overflow-hidden ${
+                        className={`relative cursor-pointer rounded-lg border-2 transition-all overflow-hidden group ${
                           selectedTemplateId === template.id
                             ? "border-primary ring-2 ring-primary/20"
                             : "border-border hover:border-primary/50"
@@ -250,26 +390,60 @@ export default function PrintCards() {
                             {template.name}
                           </span>
                         </div>
+                        
+                        {/* Selected indicator */}
+                        {selectedTemplateId === template.id && (
+                          <div className="absolute top-1 left-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                            <Check className="h-3 w-3" />
+                          </div>
+                        )}
+                        
+                        {/* Default badge */}
                         {template.isDefault && (
                           <Badge className="absolute top-1 right-1 text-[10px] px-1 py-0 bg-yellow-500">
                             <Star className="h-2 w-2 ml-0.5" />
                             افتراضي
                           </Badge>
                         )}
+                        
+                        {/* Action buttons on hover */}
+                        <div className="absolute bottom-10 left-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {!template.isDefault && (
+                            <Button
+                              variant="secondary"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDefaultTemplate.mutate({ id: template.id });
+                              }}
+                              title="تعيين كافتراضي"
+                            >
+                              <Star className="h-3 w-3" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmId(template.id);
+                            }}
+                            title="حذف"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-muted-foreground mb-3">لا توجد قوالب - سيتم استخدام التصميم الافتراضي</p>
-                    <Link href="/card-templates">
-                      <Button variant="outline" size="sm">
-                        رفع قوالب جديدة
-                        <ChevronRight className="mr-2 h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </div>
+                )}
+                
+                {(!templates || templates.length === 0) && !loadingTemplates && (
+                  <p className="text-center text-muted-foreground text-sm mt-4">
+                    لا توجد قوالب مخصصة - يمكنك رفع قوالب جديدة أو استخدام التصميم الافتراضي
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -427,6 +601,37 @@ export default function PrintCards() {
                     </div>
                   </div>
                 </div>
+
+                <Separator />
+
+                {/* QR Code Settings */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <QrCode className="h-5 w-5 text-muted-foreground" />
+                      <Label>رمز QR Code</Label>
+                    </div>
+                    <Switch
+                      checked={qrEnabled}
+                      onCheckedChange={setQrEnabled}
+                    />
+                  </div>
+                  
+                  {qrEnabled && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">رابط الدخول (IP أو Domain)</Label>
+                      <Input
+                        value={qrDomain}
+                        onChange={(e) => setQrDomain(e.target.value)}
+                        placeholder="مثال: http://192.168.1.1/login أو http://hotspot.example.com"
+                        dir="ltr"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        سيتم إضافة QR Code يحتوي على هذا الرابط لكل بطاقة
+                      </p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -488,8 +693,8 @@ export default function PrintCards() {
                 <CardTitle className="text-sm">نصائح سريعة</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground space-y-2">
-                <p>• اختر قالب البطاقة المناسب للخدمة</p>
-                <p>• يمكنك تعديل مواضع النصوص من صفحة القوالب</p>
+                <p>• ارفع قوالب مختلفة لكل نوع بطاقة (ساعة، ساعتين، يوم)</p>
+                <p>• يمكنك تعيين قالب افتراضي بالضغط على نجمة</p>
                 <p>• استخدم Ctrl+P في المتصفح للطباعة</p>
                 <p>• تأكد من إعدادات الطابعة (بدون هوامش)</p>
                 <p>• للحصول على أفضل نتيجة، استخدم 5 أعمدة و 50 كرت</p>
@@ -512,9 +717,12 @@ export default function PrintCards() {
                   </div>
                   <div className="text-sm">
                     <p className="font-medium">{selectedTemplate.name}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {selectedTemplate.cardWidth} × {selectedTemplate.cardHeight} بكسل
-                    </p>
+                    {selectedTemplate.isDefault && (
+                      <Badge variant="secondary" className="mt-1">
+                        <Star className="h-3 w-3 ml-1" />
+                        القالب الافتراضي
+                      </Badge>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -522,6 +730,101 @@ export default function PrintCards() {
           </div>
         </div>
       </div>
+
+      {/* Upload Dialog */}
+      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>رفع قوالب جديدة</DialogTitle>
+            <DialogDescription>
+              أدخل اسم لكل قالب قبل الرفع
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[300px] overflow-y-auto">
+            {uploadingFiles.map((file, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <div className="w-16 h-10 bg-muted rounded overflow-hidden flex-shrink-0">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={file.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <Input
+                  value={templateNames[index] || ''}
+                  onChange={(e) => {
+                    const newNames = [...templateNames];
+                    newNames[index] = e.target.value;
+                    setTemplateNames(newNames);
+                  }}
+                  placeholder="اسم القالب"
+                  className="flex-1"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setUploadingFiles(files => files.filter((_, i) => i !== index));
+                    setTemplateNames(names => names.filter((_, i) => i !== index));
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={handleUpload} disabled={uploading || uploadingFiles.length === 0}>
+              {uploading ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جاري الرفع...
+                </>
+              ) : (
+                <>
+                  <Upload className="ml-2 h-4 w-4" />
+                  رفع {uploadingFiles.length} قالب
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmId !== null} onOpenChange={() => setDeleteConfirmId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogDescription>
+              هل أنت متأكد من حذف هذا القالب؟ لا يمكن التراجع عن هذا الإجراء.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteConfirmId) {
+                  deleteTemplate.mutate({ id: deleteConfirmId });
+                }
+              }}
+              disabled={deleteTemplate.isPending}
+            >
+              {deleteTemplate.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "حذف"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

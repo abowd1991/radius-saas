@@ -255,3 +255,11 @@
 
 ## Bug Fix (Jan 5, 2026 - Evening)
 - [x] Fix templates.getDefault returning undefined error
+
+## Merge Templates into Print Page (Jan 5, 2026)
+- [x] Display all templates in print page with preview thumbnails
+- [x] Allow template selection directly in print page
+- [x] Add upload new template button in print page
+- [x] Add QR Code enable/disable toggle in print page
+- [x] Keep all print settings in same page (columns, cards per page, margins, spacing)
+- [x] Single-page workflow: select batch → select template → configure → download PDF

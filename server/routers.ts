@@ -455,6 +455,8 @@ const vouchersRouter = router({
         spacingH: z.number().default(2),
         spacingV: z.number().default(2),
       }).optional(),
+      qrEnabled: z.boolean().optional(),
+      qrDomain: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       // Get batch and cards
