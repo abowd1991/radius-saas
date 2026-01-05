@@ -76,6 +76,10 @@ export default function NasDevices() {
   const [connectionType, setConnectionType] = useState("public_ip");
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("create");
+  const [autoIpAddress, setAutoIpAddress] = useState("");
+  const [vpnUsername, setVpnUsername] = useState("");
+  const [vpnPassword, setVpnPassword] = useState("");
+  const [showVpnPassword, setShowVpnPassword] = useState(false);
 
   // Fetch NAS devices
   const { data: devices, isLoading, refetch } = trpc.nas.list.useQuery();
@@ -151,13 +155,21 @@ export default function NasDevices() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    // For VPN connections, IP will be assigned automatically by the system
+    // For Public IP, user provides the IP manually
+    const ipAddress = connectionType === "public_ip" 
+      ? formData.get("ipAddress") as string
+      : "pending"; // Will be updated when VPN connects
+    
     const data = {
       name: formData.get("name") as string,
-      ipAddress: formData.get("ipAddress") as string,
+      ipAddress: ipAddress,
       secret: formData.get("secret") as string,
       type: formData.get("type") as "mikrotik" | "cisco" | "other",
       connectionType: connectionType as "public_ip" | "vpn_pptp" | "vpn_sstp",
       description: formData.get("description") as string || undefined,
+      vpnUsername: connectionType !== "public_ip" ? vpnUsername : undefined,
+      vpnPassword: connectionType !== "public_ip" ? vpnPassword : undefined,
     };
 
     if (editingDevice) {
@@ -223,20 +235,106 @@ export default function NasDevices() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="ipAddress">IP</Label>
-          <Input 
-            id="ipAddress" 
-            name="ipAddress" 
-            placeholder="192.168.7.85" 
-            required 
-            className="bg-background"
-          />
+          <Label htmlFor="ipAddress">
+            {connectionType === "public_ip" 
+              ? (language === "ar" ? "عنوان IP العام" : "Public IP Address")
+              : (language === "ar" ? "عنوان IP النفق (تلقائي)" : "Tunnel IP (Auto)")
+            }
+          </Label>
+          {connectionType === "public_ip" ? (
+            <Input 
+              id="ipAddress" 
+              name="ipAddress" 
+              placeholder="192.168.7.85" 
+              required 
+              className="bg-background"
+            />
+          ) : (
+            <div className="relative">
+              <Input 
+                id="ipAddress" 
+                name="ipAddress" 
+                value={autoIpAddress || (language === "ar" ? "سيتم تعيينه تلقائياً" : "Will be assigned automatically")}
+                readOnly
+                className="bg-muted text-muted-foreground cursor-not-allowed"
+              />
+              <Badge variant="secondary" className="absolute left-2 top-1/2 -translate-y-1/2 text-xs">
+                {language === "ar" ? "تلقائي" : "Auto"}
+              </Badge>
+            </div>
+          )}
+          {connectionType !== "public_ip" && (
+            <p className="text-xs text-muted-foreground">
+              {language === "ar" 
+                ? "سيتم تعيين عنوان IP تلقائياً بعد إنشاء اتصال VPN"
+                : "IP address will be assigned automatically after VPN connection is established"
+              }
+            </p>
+          )}
         </div>
       </div>
 
+      {/* VPN Credentials - Only show for VPN connection types */}
+      {connectionType !== "public_ip" && (
+        <div className="p-4 rounded-lg border border-dashed border-primary/30 bg-primary/5 space-y-4">
+          <div className="flex items-center gap-2 text-primary">
+            <Shield className="h-4 w-4" />
+            <span className="font-medium text-sm">
+              {language === "ar" ? "بيانات اتصال VPN" : "VPN Connection Credentials"}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="vpnUsername">
+                {language === "ar" ? "اسم مستخدم VPN" : "VPN Username"}
+              </Label>
+              <Input 
+                id="vpnUsername" 
+                value={vpnUsername}
+                onChange={(e) => setVpnUsername(e.target.value)}
+                placeholder={language === "ar" ? "اسم المستخدم للاتصال" : "Connection username"}
+                className="bg-background"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vpnPassword">
+                {language === "ar" ? "كلمة مرور VPN" : "VPN Password"}
+              </Label>
+              <div className="relative">
+                <Input 
+                  id="vpnPassword" 
+                  type={showVpnPassword ? "text" : "password"}
+                  value={vpnPassword}
+                  onChange={(e) => setVpnPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="bg-background pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowVpnPassword(!showVpnPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showVpnPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {language === "ar" 
+              ? "هذه البيانات ستُستخدم لإنشاء نفق VPN بين النظام والراوتر"
+              : "These credentials will be used to establish VPN tunnel between the system and router"
+            }
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="secret">{language === "ar" ? "كلمة السر" : "Secret"}</Label>
+          <Label htmlFor="secret">
+            {language === "ar" ? "RADIUS Secret" : "RADIUS Secret"}
+          </Label>
           <div className="relative">
             <Input 
               id="secret" 

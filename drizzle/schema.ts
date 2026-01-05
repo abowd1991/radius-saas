@@ -99,6 +99,10 @@ export const nasDevices = mysqlTable("nas", {
   community: varchar("community", { length: 50 }),
   description: varchar("description", { length: 200 }),
   connectionType: mysqlEnum("connectionType", ["public_ip", "vpn_pptp", "vpn_sstp"]).default("public_ip"),
+  // VPN credentials for PPTP/SSTP connections
+  vpnUsername: varchar("vpnUsername", { length: 64 }),
+  vpnPassword: varchar("vpnPassword", { length: 128 }),
+  vpnTunnelIp: varchar("vpnTunnelIp", { length: 45 }), // Assigned IP after VPN connects
   // Extended fields for our system
   location: varchar("location", { length: 255 }),
   mikrotikApiPort: int("mikrotikApiPort").default(8728),

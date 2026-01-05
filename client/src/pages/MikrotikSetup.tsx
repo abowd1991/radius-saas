@@ -21,17 +21,13 @@ export default function MikrotikSetup() {
 
   const selectedNas = nasDevices?.find(nas => nas.id.toString() === selectedNasId);
 
-  // Generate dynamic values based on selected NAS
-  const serverAddress = "your-radius-server.com"; // This should come from system settings
-  const radiusPort = "1812";
-  const radiusSecret = selectedNas?.secret || "your_secret";
-  const nasIp = selectedNas?.nasname || "192.168.1.1";
-  const nasName = selectedNas?.shortname || "mikrotik-nas";
+  // Fetch setup scripts from API
+  const { data: setupData, isLoading: scriptsLoading } = trpc.nas.getSetupScripts.useQuery(
+    { id: parseInt(selectedNasId) },
+    { enabled: !!selectedNasId }
+  );
+
   const connectionType = selectedNas?.connectionType || "public_ip";
-  
-  // Generate unique credentials for PPTP connection
-  const pptpUser = selectedNas ? `nas-${selectedNas.id}-${Date.now()}` : "nas-user";
-  const pptpPassword = selectedNas?.secret || "generated_password";
 
   const copyToClipboard = async (text: string, commandId: string) => {
     try {
@@ -44,98 +40,16 @@ export default function MikrotikSetup() {
     }
   };
 
-  const commands = [
-    {
-      id: 'ppp-profile',
-      title: language === 'ar' ? 'إنشاء PPP Profile' : 'Create PPP Profile',
-      description: language === 'ar' 
-        ? 'إنشاء بروفايل PPP جديد لاستخدامه مع اتصال RADIUS'
-        : 'Create a new PPP profile to use with RADIUS connection',
-      icon: <Settings className="h-5 w-5" />,
-      command: `/ppp profile add name=radius-profile use-encryption=yes use-compression=yes`,
-      label: 'ppp profile'
-    },
-    {
-      id: 'pptp-client',
-      title: language === 'ar' ? 'إنشاء PPTP Client' : 'Create PPTP Client',
-      description: language === 'ar'
-        ? 'إنشاء اتصال PPTP للربط مع خادم RADIUS (فقط إذا كان نوع الاتصال VPN PPTP)'
-        : 'Create PPTP connection to link with RADIUS server (only if connection type is VPN PPTP)',
-      icon: <Link2 className="h-5 w-5" />,
-      command: `/interface pptp-client add name=pptp-radius connect-to=${serverAddress} user=${pptpUser} password=${pptpPassword} profile=radius-profile disabled=no`,
-      label: 'pptp-client',
-      showIf: connectionType === 'vpn_pptp'
-    },
-    {
-      id: 'sstp-client',
-      title: language === 'ar' ? 'إنشاء SSTP Client' : 'Create SSTP Client',
-      description: language === 'ar'
-        ? 'إنشاء اتصال SSTP للربط مع خادم RADIUS (فقط إذا كان نوع الاتصال VPN SSTP)'
-        : 'Create SSTP connection to link with RADIUS server (only if connection type is VPN SSTP)',
-      icon: <Shield className="h-5 w-5" />,
-      command: `/interface sstp-client add name=sstp-radius connect-to=${serverAddress}:443 user=${pptpUser} password=${pptpPassword} profile=radius-profile disabled=no`,
-      label: 'sstp-client',
-      showIf: connectionType === 'vpn_sstp'
-    },
-    {
-      id: 'radius-server',
-      title: language === 'ar' ? 'إضافة خادم RADIUS' : 'Add RADIUS Server',
-      description: language === 'ar'
-        ? 'إضافة خادم RADIUS الرئيسي للمصادقة والمحاسبة'
-        : 'Add main RADIUS server for authentication and accounting',
-      icon: <Server className="h-5 w-5" />,
-      command: `/radius add address=${connectionType === 'public_ip' ? serverAddress : '10.0.0.1'} secret=${radiusSecret} timeout=3s service=ppp,hotspot,login certificate=none`,
-      label: 'Radius'
-    },
-    {
-      id: 'hotspot-profile',
-      title: language === 'ar' ? 'ربط RADIUS مع Hotspot' : 'Link RADIUS with Hotspot',
-      description: language === 'ar'
-        ? 'تفعيل RADIUS لجميع بروفايلات Hotspot الموجودة'
-        : 'Enable RADIUS for all existing Hotspot profiles',
-      icon: <Wifi className="h-5 w-5" />,
-      command: `:foreach profile in=[/ip hotspot profile find] do={
-  /ip hotspot profile set $profile login-by=cookie,http-pap,mac-cookie use-radius=yes radius-accounting=yes radius-interim-update=30s
-}`,
-      label: 'Hotspot'
-    },
-    {
-      id: 'pppoe-server',
-      title: language === 'ar' ? 'إعداد PPPoE Server' : 'Setup PPPoE Server',
-      description: language === 'ar'
-        ? 'تفعيل RADIUS لخادم PPPoE'
-        : 'Enable RADIUS for PPPoE server',
-      icon: <Router className="h-5 w-5" />,
-      command: `/ppp aaa set use-radius=yes accounting=yes interim-update=1m`,
-      label: 'PPPoE'
-    },
-    {
-      id: 'radius-incoming',
-      title: language === 'ar' ? 'تفعيل RADIUS Incoming' : 'Enable RADIUS Incoming',
-      description: language === 'ar'
-        ? 'تفعيل استقبال أوامر CoA و Disconnect من خادم RADIUS'
-        : 'Enable receiving CoA and Disconnect commands from RADIUS server',
-      icon: <Globe className="h-5 w-5" />,
-      command: `/radius incoming set port=1700 accept=yes`,
-      label: 'Incoming'
-    },
-    {
-      id: 'require-message-auth',
-      title: language === 'ar' ? 'ضبط Message Auth' : 'Set Message Auth',
-      description: language === 'ar'
-        ? 'تعطيل require-message-auth للتوافق مع FreeRADIUS'
-        : 'Disable require-message-auth for FreeRADIUS compatibility',
-      icon: <Shield className="h-5 w-5" />,
-      command: `/radius set [find] require-message-auth=no`,
-      label: 'require-message'
+  // Get icon for script category
+  const getScriptIcon = (category: string) => {
+    switch (category) {
+      case 'vpn': return <Link2 className="h-5 w-5" />;
+      case 'radius': return <Server className="h-5 w-5" />;
+      case 'hotspot': return <Wifi className="h-5 w-5" />;
+      case 'pppoe': return <Router className="h-5 w-5" />;
+      default: return <Settings className="h-5 w-5" />;
     }
-  ];
-
-  // Filter commands based on connection type
-  const filteredCommands = commands.filter(cmd => {
-    if (cmd.showIf === undefined) return true;
-    return cmd.showIf;
-  });
+  };
 
   if (!user) {
     return null;
@@ -195,8 +109,28 @@ export default function MikrotikSetup() {
         {selectedNasId && (
           <Card className="bg-slate-900 text-white border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">
-                {language === 'ar' ? 'أوامر الإعداد' : 'Setup Commands'}
+              <CardTitle className="text-white flex items-center justify-between">
+                <span>{language === 'ar' ? 'أوامر الإعداد' : 'Setup Commands'}</span>
+                {setupData?.combinedScript && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => copyToClipboard(setupData.combinedScript, 'all')}
+                  >
+                    {copiedCommand === 'all' ? (
+                      <>
+                        <Check className="h-4 w-4 ml-2" />
+                        {language === 'ar' ? 'تم النسخ' : 'Copied'}
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 ml-2" />
+                        {language === 'ar' ? 'نسخ الكل' : 'Copy All'}
+                      </>
+                    )}
+                  </Button>
+                )}
               </CardTitle>
               <CardDescription className="text-slate-400">
                 {language === 'ar'
@@ -206,45 +140,68 @@ export default function MikrotikSetup() {
                     }`
                   : `Setup commands for ${selectedNas?.shortname} - Connection type: ${connectionType}`}
               </CardDescription>
+              {setupData?.vpnTunnelIp && (
+                <div className="mt-2 p-2 bg-blue-900/50 rounded-lg border border-blue-700">
+                  <p className="text-sm text-blue-300">
+                    {language === 'ar' 
+                      ? `عنوان IP النفق: ${setupData.vpnTunnelIp}`
+                      : `VPN Tunnel IP: ${setupData.vpnTunnelIp}`}
+                  </p>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
-              {filteredCommands.map((cmd) => (
-                <div key={cmd.id} className="rounded-lg bg-slate-800 border border-slate-700 overflow-hidden">
+              {scriptsLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-32 w-full bg-slate-800" />
+                  ))}
+                </div>
+              ) : setupData?.scripts?.map((script) => (
+                <div key={script.id} className="rounded-lg bg-slate-800 border border-slate-700 overflow-hidden">
                   {/* Command Header */}
                   <div className="flex items-center justify-between px-4 py-2 bg-slate-700/50">
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="h-7 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                        onClick={() => copyToClipboard(cmd.command, cmd.id)}
-                      >
-                        {copiedCommand === cmd.id ? (
-                          <>
-                            <Check className="h-3 w-3 ml-1" />
-                            {language === 'ar' ? 'تم' : 'Done'}
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3 w-3 ml-1" />
-                            {language === 'ar' ? 'نسخ' : 'Copy'}
-                          </>
-                        )}
-                      </Button>
+                      {getScriptIcon(script.category)}
+                      <span className="font-medium text-white">
+                        {language === 'ar' ? script.titleAr : script.title}
+                      </span>
+                      {script.required && (
+                        <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded">
+                          {language === 'ar' ? 'مطلوب' : 'Required'}
+                        </span>
+                      )}
                     </div>
-                    <span className="text-xs font-medium text-slate-300 bg-slate-600 px-2 py-1 rounded">
-                      {cmd.label}
-                    </span>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="h-7 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                      onClick={() => copyToClipboard(script.command, script.id)}
+                    >
+                      {copiedCommand === script.id ? (
+                        <>
+                          <Check className="h-3 w-3 ml-1" />
+                          {language === 'ar' ? 'تم' : 'Done'}
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3 ml-1" />
+                          {language === 'ar' ? 'نسخ' : 'Copy'}
+                        </>
+                      )}
+                    </Button>
                   </div>
                   {/* Command Content */}
                   <div className="p-4">
                     <pre className="text-sm text-green-400 font-mono whitespace-pre-wrap break-all" dir="ltr">
-                      {cmd.command}
+                      {script.command}
                     </pre>
                   </div>
                   {/* Description */}
                   <div className="px-4 pb-3 border-t border-slate-700 pt-2">
-                    <p className="text-xs text-slate-400">{cmd.description}</p>
+                    <p className="text-xs text-slate-400">
+                      {language === 'ar' ? script.descriptionAr : script.description}
+                    </p>
                   </div>
                 </div>
               ))}

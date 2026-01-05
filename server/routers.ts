@@ -177,9 +177,152 @@ const nasRouter = router({
       mikrotikApiPort: z.number().optional(),
       mikrotikApiUser: z.string().optional(),
       mikrotikApiPassword: z.string().optional(),
+      vpnUsername: z.string().optional(),
+      vpnPassword: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
+      // For VPN connections, generate unique credentials if not provided
+      if (input.connectionType !== 'public_ip') {
+        if (!input.vpnUsername) {
+          input.vpnUsername = `nas-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        }
+        if (!input.vpnPassword) {
+          input.vpnPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+        // For VPN, IP will be assigned when connection is established
+        if (input.ipAddress === 'pending') {
+          input.ipAddress = 'pending-vpn';
+        }
+      }
       return nasDb.createNas(input);
+    }),
+
+  // Get setup scripts for a NAS device
+  getSetupScripts: superAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const nas = await nasDb.getNasById(input.id);
+      if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
+      
+      // Get system settings for RADIUS server address
+      const radiusServerAddress = process.env.RADIUS_SERVER_ADDRESS || 'radius.example.com';
+      const radiusPort = '1812';
+      const coaPort = '1700';
+      
+      // Generate VPN tunnel IP range (10.255.x.x for VPN clients)
+      const vpnTunnelIp = `10.255.${nas.id}.1`;
+      
+      const scripts: Array<{
+        id: string;
+        title: string;
+        titleAr: string;
+        description: string;
+        descriptionAr: string;
+        command: string;
+        category: 'vpn' | 'radius' | 'hotspot' | 'pppoe';
+        required: boolean;
+      }> = [];
+      
+      // VPN Setup Scripts (only for VPN connection types)
+      if (nas.connectionType === 'vpn_pptp') {
+        scripts.push({
+          id: 'pptp-client',
+          title: 'Create PPTP Client',
+          titleAr: 'إنشاء اتصال PPTP',
+          description: 'Create PPTP VPN tunnel to RADIUS server',
+          descriptionAr: 'إنشاء نفق VPN PPTP للاتصال بخادم RADIUS',
+          command: `/interface pptp-client add name=radius-vpn connect-to=${radiusServerAddress} user=${nas.vpnUsername || 'nas-user'} password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no add-default-route=no`,
+          category: 'vpn',
+          required: true,
+        });
+      } else if (nas.connectionType === 'vpn_sstp') {
+        scripts.push({
+          id: 'sstp-client',
+          title: 'Create SSTP Client',
+          titleAr: 'إنشاء اتصال SSTP',
+          description: 'Create SSTP VPN tunnel to RADIUS server',
+          descriptionAr: 'إنشاء نفق VPN SSTP للاتصال بخادم RADIUS',
+          command: `/interface sstp-client add name=radius-vpn connect-to=${radiusServerAddress}:443 user=${nas.vpnUsername || 'nas-user'} password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no`,
+          category: 'vpn',
+          required: true,
+        });
+      }
+      
+      // RADIUS Server Setup (always required)
+      const radiusAddress = nas.connectionType === 'public_ip' ? radiusServerAddress : vpnTunnelIp;
+      scripts.push({
+        id: 'radius-server',
+        title: 'Add RADIUS Server',
+        titleAr: 'إضافة خادم RADIUS',
+        description: 'Add RADIUS server for authentication and accounting',
+        descriptionAr: 'إضافة خادم RADIUS للمصادقة والمحاسبة',
+        command: `/radius add address=${radiusAddress} secret=${nas.secret} timeout=3s service=ppp,hotspot,login`,
+        category: 'radius',
+        required: true,
+      });
+      
+      // RADIUS Incoming (CoA/Disconnect)
+      scripts.push({
+        id: 'radius-incoming',
+        title: 'Enable RADIUS Incoming',
+        titleAr: 'تفعيل RADIUS Incoming',
+        description: 'Enable receiving CoA and Disconnect commands',
+        descriptionAr: 'تفعيل استقبال أوامر CoA و Disconnect',
+        command: `/radius incoming set port=${coaPort} accept=yes`,
+        category: 'radius',
+        required: true,
+      });
+      
+      // Disable require-message-auth for compatibility
+      scripts.push({
+        id: 'message-auth',
+        title: 'Disable Message Auth',
+        titleAr: 'تعطيل Message Auth',
+        description: 'Disable require-message-auth for FreeRADIUS compatibility',
+        descriptionAr: 'تعطيل require-message-auth للتوافق مع FreeRADIUS',
+        command: `/radius set [find] require-message-auth=no`,
+        category: 'radius',
+        required: true,
+      });
+      
+      // PPP/PPPoE Setup
+      scripts.push({
+        id: 'ppp-aaa',
+        title: 'Enable PPP RADIUS',
+        titleAr: 'تفعيل RADIUS لـ PPP',
+        description: 'Enable RADIUS authentication for PPP/PPPoE',
+        descriptionAr: 'تفعيل مصادقة RADIUS لـ PPP/PPPoE',
+        command: `/ppp aaa set use-radius=yes accounting=yes interim-update=1m`,
+        category: 'pppoe',
+        required: true,
+      });
+      
+      // Hotspot Setup
+      scripts.push({
+        id: 'hotspot-radius',
+        title: 'Enable Hotspot RADIUS',
+        titleAr: 'تفعيل RADIUS لـ Hotspot',
+        description: 'Enable RADIUS for all Hotspot profiles',
+        descriptionAr: 'تفعيل RADIUS لجميع بروفايلات Hotspot',
+        command: `:foreach profile in=[/ip hotspot profile find] do={
+  /ip hotspot profile set \$profile login-by=cookie,http-pap,mac-cookie use-radius=yes radius-accounting=yes radius-interim-update=30s
+}`,
+        category: 'hotspot',
+        required: false,
+      });
+      
+      // Combined script for one-click setup
+      const allRequiredCommands = scripts
+        .filter(s => s.required)
+        .map(s => s.command)
+        .join('\n');
+      
+      return {
+        nas,
+        scripts,
+        combinedScript: allRequiredCommands,
+        vpnTunnelIp: nas.connectionType !== 'public_ip' ? vpnTunnelIp : null,
+      };
     }),
 
   update: superAdminProcedure

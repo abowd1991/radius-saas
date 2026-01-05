@@ -41,6 +41,8 @@ export async function createNas(data: {
   mikrotikApiPort?: number;
   mikrotikApiUser?: string;
   mikrotikApiPassword?: string;
+  vpnUsername?: string;
+  vpnPassword?: string;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -57,6 +59,8 @@ export async function createNas(data: {
     mikrotikApiPort: data.mikrotikApiPort,
     mikrotikApiUser: data.mikrotikApiUser,
     mikrotikApiPassword: data.mikrotikApiPassword,
+    vpnUsername: data.vpnUsername,
+    vpnPassword: data.vpnPassword,
     status: "active",
   });
   

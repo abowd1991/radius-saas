@@ -339,3 +339,16 @@
 - [x] Fix edit time dialog showing zeros
   - [x] Load original batch values when opening edit dialog
   - [x] Display current settings in form fields
+
+## Network Creation Page Improvements (Jan 6, 2026)
+
+- [x] IP Field Logic by Connection Type
+  - [x] VPN PPTP: Auto-fill IP field (Read-only), system assigns tunnel IP
+  - [x] VPN SSTP: Auto-fill IP field (Read-only), system assigns tunnel IP
+  - [x] Public IP: Manual IP field for user to enter public IP
+- [x] Auto Provisioning System
+  - [x] Generate ready-to-use MikroTik scripts (Copy/Paste)
+  - [x] Auto-register NAS after script execution
+  - [x] Auto-enable RADIUS on MikroTik
+  - [x] Auto-link PPP/Hotspot profiles
+  - [x] System ready to work immediately after setup
