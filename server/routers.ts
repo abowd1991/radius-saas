@@ -947,15 +947,20 @@ const templatesRouter = router({
   getById: resellerProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      return templateDb.getTemplateById(input.id);
+      const template = await templateDb.getTemplateById(input.id);
+      return template ?? null;
     }),
 
   // Get default template
   getDefault: resellerProcedure.query(async ({ ctx }) => {
+    let template;
     if (ctx.user.role === 'super_admin') {
-      return templateDb.getDefaultTemplate();
+      template = await templateDb.getDefaultTemplate();
+    } else {
+      template = await templateDb.getDefaultTemplate(ctx.user.id);
     }
-    return templateDb.getDefaultTemplate(ctx.user.id);
+    // Return null instead of undefined to avoid tRPC error
+    return template ?? null;
   }),
 
   // Create template with image upload

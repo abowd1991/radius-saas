@@ -252,3 +252,6 @@
   - [x] All PDF buttons in batch list open new print page
   - [x] Support batch parameter in URL
   - [x] Removed legacy print dialog
+
+## Bug Fix (Jan 5, 2026 - Evening)
+- [x] Fix templates.getDefault returning undefined error
