@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,36 @@ import {
   Trash2,
   QrCode,
   Check,
-  X
+  X,
+  Move,
+  Type,
+  Palette,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  GripVertical
 } from "lucide-react";
 import { useSearch } from "wouter";
+
+// Font options
+const FONT_OPTIONS = [
+  { value: "Arial", label: "Arial (عادي)" },
+  { value: "Tahoma", label: "Tahoma (واضح)" },
+  { value: "Courier New", label: "Courier (رقمي)" },
+  { value: "Verdana", label: "Verdana" },
+  { value: "Georgia", label: "Georgia" },
+  { value: "Impact", label: "Impact (عريض)" },
+];
+
+// Text settings interface
+interface TextSettings {
+  x: number;
+  y: number;
+  fontSize: number;
+  fontFamily: string;
+  color: string;
+  align: "left" | "center" | "right";
+}
 
 export default function PrintCards() {
   // Get batch from URL query parameter
@@ -52,6 +79,25 @@ export default function PrintCards() {
   const [qrEnabled, setQrEnabled] = useState(false);
   const [qrDomain, setQrDomain] = useState("");
   
+  // Text positioning settings
+  const [usernameSettings, setUsernameSettings] = useState<TextSettings>({
+    x: 50,
+    y: 40,
+    fontSize: 14,
+    fontFamily: "Arial",
+    color: "#000000",
+    align: "center",
+  });
+  
+  const [passwordSettings, setPasswordSettings] = useState<TextSettings>({
+    x: 50,
+    y: 60,
+    fontSize: 14,
+    fontFamily: "Arial",
+    color: "#FF0000",
+    align: "center",
+  });
+  
   const [generating, setGenerating] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   
@@ -64,6 +110,10 @@ export default function PrintCards() {
   
   // Delete confirmation
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  
+  // Drag state
+  const [dragging, setDragging] = useState<"username" | "password" | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   // Calculate rows based on columns and cards per page
   const rows = Math.ceil(cardsPerPage / columns);
@@ -180,6 +230,41 @@ export default function PrintCards() {
     }
   };
 
+  // Handle drag for text positioning
+  const handleMouseDown = (type: "username" | "password") => (e: React.MouseEvent) => {
+    e.preventDefault();
+    setDragging(type);
+  };
+  
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!dragging || !previewRef.current) return;
+    
+    const rect = previewRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    
+    if (dragging === "username") {
+      setUsernameSettings(prev => ({ ...prev, x, y }));
+    } else {
+      setPasswordSettings(prev => ({ ...prev, x, y }));
+    }
+  }, [dragging]);
+  
+  const handleMouseUp = useCallback(() => {
+    setDragging(null);
+  }, []);
+  
+  useEffect(() => {
+    if (dragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      return () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [dragging, handleMouseMove, handleMouseUp]);
+
   // Handle generate
   const handleGenerate = () => {
     if (!selectedBatchId) {
@@ -205,6 +290,10 @@ export default function PrintCards() {
       },
       qrEnabled,
       qrDomain: qrEnabled ? qrDomain : undefined,
+      textSettings: {
+        username: usernameSettings,
+        password: passwordSettings,
+      },
     });
   };
 
@@ -448,11 +537,371 @@ export default function PrintCards() {
               </CardContent>
             </Card>
 
-            {/* Step 3: Print Settings */}
+            {/* Step 3: Text Positioning - Only show when template is selected */}
+            {selectedTemplateId && selectedTemplate && (
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <Badge variant="secondary" className="h-6 w-6 rounded-full p-0 flex items-center justify-center">3</Badge>
+                    تحريك النصوص على القالب
+                  </CardTitle>
+                  <CardDescription>
+                    اسحب اسم المستخدم وكلمة المرور لتحديد موضعهما على البطاقة
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Live Preview */}
+                  <div className="border rounded-lg p-4 bg-muted/30">
+                    <Label className="mb-3 block text-sm font-medium">معاينة مباشرة (اسحب النصوص لتحريكها)</Label>
+                    <div 
+                      ref={previewRef}
+                      className="relative mx-auto bg-white rounded-lg overflow-hidden shadow-lg select-none"
+                      style={{ 
+                        width: "100%", 
+                        maxWidth: "400px",
+                        aspectRatio: "16/9"
+                      }}
+                    >
+                      {/* Template Image */}
+                      <img
+                        src={selectedTemplate.imageUrl}
+                        alt={selectedTemplate.name}
+                        className="w-full h-full object-contain"
+                        draggable={false}
+                      />
+                      
+                      {/* Username Overlay */}
+                      <div
+                        className={`absolute cursor-move transition-shadow ${dragging === "username" ? "ring-2 ring-blue-500" : ""}`}
+                        style={{
+                          left: `${usernameSettings.x}%`,
+                          top: `${usernameSettings.y}%`,
+                          transform: "translate(-50%, -50%)",
+                          fontSize: `${usernameSettings.fontSize}px`,
+                          fontFamily: usernameSettings.fontFamily,
+                          color: usernameSettings.color,
+                          textAlign: usernameSettings.align,
+                          whiteSpace: "nowrap",
+                          padding: "4px 8px",
+                          backgroundColor: "rgba(255,255,255,0.8)",
+                          borderRadius: "4px",
+                          border: "1px dashed #3b82f6",
+                        }}
+                        onMouseDown={handleMouseDown("username")}
+                      >
+                        <div className="flex items-center gap-1">
+                          <GripVertical className="h-3 w-3 text-blue-500" />
+                          <span>12345678</span>
+                        </div>
+                      </div>
+                      
+                      {/* Password Overlay */}
+                      <div
+                        className={`absolute cursor-move transition-shadow ${dragging === "password" ? "ring-2 ring-red-500" : ""}`}
+                        style={{
+                          left: `${passwordSettings.x}%`,
+                          top: `${passwordSettings.y}%`,
+                          transform: "translate(-50%, -50%)",
+                          fontSize: `${passwordSettings.fontSize}px`,
+                          fontFamily: passwordSettings.fontFamily,
+                          color: passwordSettings.color,
+                          textAlign: passwordSettings.align,
+                          whiteSpace: "nowrap",
+                          padding: "4px 8px",
+                          backgroundColor: "rgba(255,255,255,0.8)",
+                          borderRadius: "4px",
+                          border: "1px dashed #ef4444",
+                        }}
+                        onMouseDown={handleMouseDown("password")}
+                      >
+                        <div className="flex items-center gap-1">
+                          <GripVertical className="h-3 w-3 text-red-500" />
+                          <span>1234</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Username Settings */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Type className="h-4 w-4 text-blue-500" />
+                      <Label className="font-medium">اسم المستخدم</Label>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {/* Position X */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">الموضع الأفقي (X)</Label>
+                        <div className="flex items-center gap-2">
+                          <Slider
+                            value={[usernameSettings.x]}
+                            onValueChange={([v]) => setUsernameSettings(prev => ({ ...prev, x: v }))}
+                            min={0}
+                            max={100}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <span className="text-sm w-10 text-center">{Math.round(usernameSettings.x)}%</span>
+                        </div>
+                      </div>
+                      
+                      {/* Position Y */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">الموضع العمودي (Y)</Label>
+                        <div className="flex items-center gap-2">
+                          <Slider
+                            value={[usernameSettings.y]}
+                            onValueChange={([v]) => setUsernameSettings(prev => ({ ...prev, y: v }))}
+                            min={0}
+                            max={100}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <span className="text-sm w-10 text-center">{Math.round(usernameSettings.y)}%</span>
+                        </div>
+                      </div>
+                      
+                      {/* Font Size */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">حجم الخط</Label>
+                        <div className="flex items-center gap-2">
+                          <Slider
+                            value={[usernameSettings.fontSize]}
+                            onValueChange={([v]) => setUsernameSettings(prev => ({ ...prev, fontSize: v }))}
+                            min={8}
+                            max={32}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <span className="text-sm w-10 text-center">{usernameSettings.fontSize}px</span>
+                        </div>
+                      </div>
+                      
+                      {/* Font Family */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">نوع الخط</Label>
+                        <Select 
+                          value={usernameSettings.fontFamily} 
+                          onValueChange={(v) => setUsernameSettings(prev => ({ ...prev, fontFamily: v }))}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FONT_OPTIONS.map(font => (
+                              <SelectItem key={font.value} value={font.value}>
+                                <span style={{ fontFamily: font.value }}>{font.label}</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Color */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Palette className="h-3 w-3" />
+                          لون الخط
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={usernameSettings.color}
+                            onChange={(e) => setUsernameSettings(prev => ({ ...prev, color: e.target.value }))}
+                            className="w-10 h-9 rounded border cursor-pointer"
+                          />
+                          <Input
+                            value={usernameSettings.color}
+                            onChange={(e) => setUsernameSettings(prev => ({ ...prev, color: e.target.value }))}
+                            className="flex-1 h-9 font-mono text-sm"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Alignment */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">المحاذاة</Label>
+                        <div className="flex gap-1">
+                          <Button
+                            variant={usernameSettings.align === "right" ? "default" : "outline"}
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => setUsernameSettings(prev => ({ ...prev, align: "right" }))}
+                          >
+                            <AlignRight className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant={usernameSettings.align === "center" ? "default" : "outline"}
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => setUsernameSettings(prev => ({ ...prev, align: "center" }))}
+                          >
+                            <AlignCenter className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant={usernameSettings.align === "left" ? "default" : "outline"}
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => setUsernameSettings(prev => ({ ...prev, align: "left" }))}
+                          >
+                            <AlignLeft className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Password Settings */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Type className="h-4 w-4 text-red-500" />
+                      <Label className="font-medium">كلمة المرور</Label>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {/* Position X */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">الموضع الأفقي (X)</Label>
+                        <div className="flex items-center gap-2">
+                          <Slider
+                            value={[passwordSettings.x]}
+                            onValueChange={([v]) => setPasswordSettings(prev => ({ ...prev, x: v }))}
+                            min={0}
+                            max={100}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <span className="text-sm w-10 text-center">{Math.round(passwordSettings.x)}%</span>
+                        </div>
+                      </div>
+                      
+                      {/* Position Y */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">الموضع العمودي (Y)</Label>
+                        <div className="flex items-center gap-2">
+                          <Slider
+                            value={[passwordSettings.y]}
+                            onValueChange={([v]) => setPasswordSettings(prev => ({ ...prev, y: v }))}
+                            min={0}
+                            max={100}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <span className="text-sm w-10 text-center">{Math.round(passwordSettings.y)}%</span>
+                        </div>
+                      </div>
+                      
+                      {/* Font Size */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">حجم الخط</Label>
+                        <div className="flex items-center gap-2">
+                          <Slider
+                            value={[passwordSettings.fontSize]}
+                            onValueChange={([v]) => setPasswordSettings(prev => ({ ...prev, fontSize: v }))}
+                            min={8}
+                            max={32}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <span className="text-sm w-10 text-center">{passwordSettings.fontSize}px</span>
+                        </div>
+                      </div>
+                      
+                      {/* Font Family */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">نوع الخط</Label>
+                        <Select 
+                          value={passwordSettings.fontFamily} 
+                          onValueChange={(v) => setPasswordSettings(prev => ({ ...prev, fontFamily: v }))}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FONT_OPTIONS.map(font => (
+                              <SelectItem key={font.value} value={font.value}>
+                                <span style={{ fontFamily: font.value }}>{font.label}</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Color */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Palette className="h-3 w-3" />
+                          لون الخط
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={passwordSettings.color}
+                            onChange={(e) => setPasswordSettings(prev => ({ ...prev, color: e.target.value }))}
+                            className="w-10 h-9 rounded border cursor-pointer"
+                          />
+                          <Input
+                            value={passwordSettings.color}
+                            onChange={(e) => setPasswordSettings(prev => ({ ...prev, color: e.target.value }))}
+                            className="flex-1 h-9 font-mono text-sm"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Alignment */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">المحاذاة</Label>
+                        <div className="flex gap-1">
+                          <Button
+                            variant={passwordSettings.align === "right" ? "default" : "outline"}
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => setPasswordSettings(prev => ({ ...prev, align: "right" }))}
+                          >
+                            <AlignRight className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant={passwordSettings.align === "center" ? "default" : "outline"}
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => setPasswordSettings(prev => ({ ...prev, align: "center" }))}
+                          >
+                            <AlignCenter className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant={passwordSettings.align === "left" ? "default" : "outline"}
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => setPasswordSettings(prev => ({ ...prev, align: "left" }))}
+                          >
+                            <AlignLeft className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 4: Print Settings */}
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2">
-                  <Badge variant="secondary" className="h-6 w-6 rounded-full p-0 flex items-center justify-center">3</Badge>
+                  <Badge variant="secondary" className="h-6 w-6 rounded-full p-0 flex items-center justify-center">
+                    {selectedTemplateId ? "4" : "3"}
+                  </Badge>
                   إعدادات الطباعة
                 </CardTitle>
                 <CardDescription>
@@ -693,8 +1142,8 @@ export default function PrintCards() {
                 <CardTitle className="text-sm">نصائح سريعة</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground space-y-2">
-                <p>• ارفع قوالب مختلفة لكل نوع بطاقة (ساعة، ساعتين، يوم)</p>
-                <p>• يمكنك تعيين قالب افتراضي بالضغط على نجمة</p>
+                <p>• اختر قالب ثم اسحب النصوص لتحديد موضعها</p>
+                <p>• المعاينة تطابق الملف النهائي تماماً</p>
                 <p>• استخدم Ctrl+P في المتصفح للطباعة</p>
                 <p>• تأكد من إعدادات الطابعة (بدون هوامش)</p>
                 <p>• للحصول على أفضل نتيجة، استخدم 5 أعمدة و 50 كرت</p>

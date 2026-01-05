@@ -263,3 +263,14 @@
 - [x] Add QR Code enable/disable toggle in print page
 - [x] Keep all print settings in same page (columns, cards per page, margins, spacing)
 - [x] Single-page workflow: select batch → select template → configure → download PDF
+
+## Text Editor & Live Preview (Jan 5, 2026)
+- [x] Add Drag & Drop text positioning for username/password on template image
+- [x] Add X/Y coordinate inputs for precise positioning
+- [x] Add font family selection (Normal, Clear, Digital)
+- [x] Add font size control
+- [x] Add font color picker
+- [x] Add text alignment (left/center/right)
+- [x] Add live preview that updates instantly on any change
+- [x] Update PDF generation to match preview exactly (WYSIWYG)
+- [x] Keep all controls in same print page (no navigation)

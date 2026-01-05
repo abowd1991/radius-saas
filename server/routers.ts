@@ -457,6 +457,24 @@ const vouchersRouter = router({
       }).optional(),
       qrEnabled: z.boolean().optional(),
       qrDomain: z.string().optional(),
+      textSettings: z.object({
+        username: z.object({
+          x: z.number(),
+          y: z.number(),
+          fontSize: z.number(),
+          fontFamily: z.string(),
+          color: z.string(),
+          align: z.enum(["left", "center", "right"]),
+        }),
+        password: z.object({
+          x: z.number(),
+          y: z.number(),
+          fontSize: z.number(),
+          fontFamily: z.string(),
+          color: z.string(),
+          align: z.enum(["left", "center", "right"]),
+        }),
+      }).optional(),
     }))
     .mutation(async ({ input }) => {
       // Get batch and cards
