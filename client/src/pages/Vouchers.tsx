@@ -40,6 +40,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
+import { useLocation } from "wouter";
 import {
   Plus,
   MoreHorizontal,
@@ -94,6 +96,13 @@ export default function Vouchers() {
     macBinding: false,
   });
 
+  // Progress state for bulk generation
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Navigation
+  const [, setLocation] = useLocation();
+
   // Print settings
   const [printSettings, setPrintSettings] = useState({
     companyName: "RADIUS SaaS",
@@ -117,17 +126,41 @@ export default function Vouchers() {
 
   // Mutations
   const generateMutation = trpc.vouchers.generate.useMutation({
-    onSuccess: (data) => {
-      toast.success(language === 'ar' 
-        ? `تم إنشاء ${data.quantity} كرت بنجاح` 
-        : `Successfully generated ${data.quantity} cards`
-      );
-      setIsGenerateDialogOpen(false);
-      refetch();
-      refetchBatches();
-      resetGenerateForm();
+    onMutate: () => {
+      setIsGenerating(true);
+      setGenerationProgress(0);
+      // Simulate progress for better UX
+      const interval = setInterval(() => {
+        setGenerationProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return prev;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 200);
+      return { interval };
     },
-    onError: (error) => {
+    onSuccess: (data, _, context) => {
+      if (context?.interval) clearInterval(context.interval);
+      setGenerationProgress(100);
+      setTimeout(() => {
+        setIsGenerating(false);
+        setGenerationProgress(0);
+        toast.success(language === 'ar' 
+          ? `تم إنشاء ${data.quantity} كرت بنجاح` 
+          : `Successfully generated ${data.quantity} cards`
+        );
+        setIsGenerateDialogOpen(false);
+        refetch();
+        refetchBatches();
+        resetGenerateForm();
+      }, 500);
+    },
+    onError: (error, _, context) => {
+      if (context?.interval) clearInterval(context.interval);
+      setIsGenerating(false);
+      setGenerationProgress(0);
       toast.error(error.message);
     },
   });
@@ -342,86 +375,10 @@ export default function Vouchers() {
           
           {isReseller && (
             <>
-              <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <Printer className="h-4 w-4 me-2" />
-                    {language === 'ar' ? 'طباعة PDF' : 'Print PDF'}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{language === 'ar' ? 'طباعة الكروت' : 'Print Cards'}</DialogTitle>
-                    <DialogDescription>
-                      {language === 'ar' 
-                        ? 'اختر الدفعة وإعدادات الطباعة'
-                        : 'Select batch and print settings'
-                      }
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label>{language === 'ar' ? 'اختر الدفعة' : 'Select Batch'}</Label>
-                      <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={language === 'ar' ? 'اختر دفعة...' : 'Select batch...'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {batches?.map((batch: any) => (
-                            <SelectItem key={batch.batchId} value={batch.batchId}>
-                              {batch.name} ({batch.quantity} {language === 'ar' ? 'كرت' : 'cards'})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{language === 'ar' ? 'اسم الشركة' : 'Company Name'}</Label>
-                      <Input
-                        value={printSettings.companyName}
-                        onChange={(e) => setPrintSettings(prev => ({ ...prev, companyName: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{language === 'ar' ? 'رابط Hotspot' : 'Hotspot URL'}</Label>
-                      <Input
-                        placeholder="http://hotspot.local"
-                        value={printSettings.hotspotUrl}
-                        onChange={(e) => setPrintSettings(prev => ({ ...prev, hotspotUrl: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{language === 'ar' ? 'عدد الكروت في الصفحة' : 'Cards per Page'}</Label>
-                      <Select 
-                        value={printSettings.cardsPerPage} 
-                        onValueChange={(v) => setPrintSettings(prev => ({ ...prev, cardsPerPage: v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="4">4</SelectItem>
-                          <SelectItem value="6">6</SelectItem>
-                          <SelectItem value="8">8</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="12">12</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsPrintDialogOpen(false)}>
-                      {language === 'ar' ? 'إلغاء' : 'Cancel'}
-                    </Button>
-                    <Button onClick={handlePrintBatch} disabled={generatePDFMutation.isPending}>
-                      {generatePDFMutation.isPending 
-                        ? (language === 'ar' ? 'جاري الإنشاء...' : 'Generating...')
-                        : (language === 'ar' ? 'إنشاء PDF' : 'Generate PDF')
-                      }
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button variant="outline" onClick={() => setLocation('/print-cards')}>
+                <Printer className="h-4 w-4 me-2" />
+                {language === 'ar' ? 'طباعة PDF' : 'Print PDF'}
+              </Button>
 
               <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
                 <DialogTrigger asChild>
@@ -660,15 +617,32 @@ export default function Vouchers() {
                     </div>
                   </div>
 
+                  {/* Progress Bar for Generation */}
+                  {isGenerating && (
+                    <div className="space-y-2 py-4">
+                      <div className="flex justify-between text-sm">
+                        <span>{language === 'ar' ? 'جاري إنشاء البطاقات...' : 'Generating cards...'}</span>
+                        <span>{Math.round(generationProgress)}%</span>
+                      </div>
+                      <Progress value={generationProgress} className="h-2" />
+                      <p className="text-xs text-muted-foreground text-center">
+                        {language === 'ar' 
+                          ? `إنشاء ${generateForm.quantity} بطاقة - الرجاء الانتظار`
+                          : `Creating ${generateForm.quantity} cards - Please wait`
+                        }
+                      </p>
+                    </div>
+                  )}
+
                   <DialogFooter className="gap-2">
                     <Button variant="outline" onClick={() => {
                       setIsGenerateDialogOpen(false);
                       resetGenerateForm();
-                    }}>
+                    }} disabled={isGenerating}>
                       {language === 'ar' ? 'إلغاء' : 'Discard'}
                     </Button>
-                    <Button onClick={handleGenerateCards} disabled={generateMutation.isPending}>
-                      {generateMutation.isPending 
+                    <Button onClick={handleGenerateCards} disabled={generateMutation.isPending || isGenerating}>
+                      {isGenerating 
                         ? (language === 'ar' ? 'جاري الإنشاء...' : 'Generating...')
                         : (language === 'ar' ? 'إنشاء' : 'Submit')
                       }
@@ -916,8 +890,7 @@ export default function Vouchers() {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                setSelectedBatchId(batch.batchId);
-                                setIsPrintDialogOpen(true);
+                                setLocation(`/print-cards?batch=${batch.batchId}`);
                               }}
                             >
                               <Printer className="h-4 w-4 me-1" />

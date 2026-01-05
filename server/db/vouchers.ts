@@ -299,65 +299,79 @@ export async function generateCards(data: {
     cardPrice: data.cardPrice ? String(data.cardPrice) : '0',
   } as any);
   
-  // Generate cards with RADIUS accounts
-  const generatedCards: { serialNumber: string; username: string; password: string }[] = [];
+  // Calculate session timeout based on card time settings
+  let sessionTimeout: number | null = null;
+  if (data.cardTimeValue && data.cardTimeValue > 0) {
+    if (data.cardTimeUnit === 'days') {
+      sessionTimeout = data.cardTimeValue * 24 * 60 * 60;
+    } else {
+      sessionTimeout = data.cardTimeValue * 60 * 60;
+    }
+  }
   
+  // Calculate expiration based on timeFromActivation setting
+  let expiresAt: Date | null = null;
+  if (!timeFromActivation) {
+    const now = new Date();
+    if (data.cardTimeValue && data.cardTimeValue > 0) {
+      if (data.cardTimeUnit === 'days') {
+        expiresAt = new Date(now.getTime() + data.cardTimeValue * 24 * 60 * 60 * 1000);
+      } else {
+        expiresAt = new Date(now.getTime() + data.cardTimeValue * 60 * 60 * 1000);
+      }
+    } else if (plan.validityValue) {
+      if (plan.validityType === 'days') {
+        expiresAt = new Date(now.getTime() + plan.validityValue * 24 * 60 * 60 * 1000);
+      } else if (plan.validityType === 'hours') {
+        expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 60 * 1000);
+      } else {
+        expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 1000);
+      }
+    } else {
+      expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    }
+  }
+  
+  // Generate all cards data first (BULK PREPARATION)
+  const generatedCards: { serialNumber: string; username: string; password: string }[] = [];
+  const allRadcheckValues: { username: string; attribute: string; op: string; value: string }[] = [];
+  const allRadreplyValues: { username: string; attribute: string; op: string; value: string }[] = [];
+  const allRadusergroupValues: { username: string; groupname: string; priority: number }[] = [];
+  const allCardValues: any[] = [];
+  
+  // Prepare rate limit string
+  let rateLimitValue: string | null = null;
+  if (plan.mikrotikRateLimit) {
+    rateLimitValue = plan.mikrotikRateLimit;
+  } else if (plan.downloadSpeed && plan.uploadSpeed) {
+    rateLimitValue = `${plan.downloadSpeed}k/${plan.uploadSpeed}k`;
+  }
+  
+  const finalSessionTimeout = sessionTimeout || plan.sessionTimeout;
+  
+  // Generate all data in memory first
   for (let i = 0; i < data.quantity; i++) {
     const username = generateUsernameWithOptions(usernameLength, prefix);
     const password = generatePasswordWithLength(passwordLength);
     const serialNumber = generateSerialNumber();
     
-    // Calculate session timeout based on card time settings
-    let sessionTimeout: number | null = null;
-    if (data.cardTimeValue && data.cardTimeValue > 0) {
-      if (data.cardTimeUnit === 'days') {
-        sessionTimeout = data.cardTimeValue * 24 * 60 * 60;
-      } else {
-        sessionTimeout = data.cardTimeValue * 60 * 60;
-      }
-    }
-    
-    // Calculate expiration based on timeFromActivation setting
-    let expiresAt: Date | null = null;
-    if (!timeFromActivation) {
-      const now = new Date();
-      if (data.cardTimeValue && data.cardTimeValue > 0) {
-        if (data.cardTimeUnit === 'days') {
-          expiresAt = new Date(now.getTime() + data.cardTimeValue * 24 * 60 * 60 * 1000);
-        } else {
-          expiresAt = new Date(now.getTime() + data.cardTimeValue * 60 * 60 * 1000);
-        }
-      } else if (plan.validityValue) {
-        if (plan.validityType === 'days') {
-          expiresAt = new Date(now.getTime() + plan.validityValue * 24 * 60 * 60 * 1000);
-        } else if (plan.validityType === 'hours') {
-          expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 60 * 1000);
-        } else {
-          expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 1000);
-        }
-      } else {
-        expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      }
-    }
-    
-    // Insert into radcheck (authentication)
-    const radcheckValues = [
+    // Radcheck values
+    allRadcheckValues.push(
       { username, attribute: "Cleartext-Password", op: ":=", value: password },
       { username, attribute: "Simultaneous-Use", op: ":=", value: String(simultaneousUse) },
       { username, attribute: "Auth-Type", op: ":=", value: "Accept" },
-    ];
+    );
     
     // Add expiration attribute
     if (!timeFromActivation && expiresAt) {
-      radcheckValues.push({
+      allRadcheckValues.push({
         username,
         attribute: "Expiration",
         op: ":=",
         value: formatExpirationDate(expiresAt),
       });
     } else {
-      // Set far future expiration (will be updated on first login)
-      radcheckValues.push({
+      allRadcheckValues.push({
         username,
         attribute: "Expiration",
         op: ":=",
@@ -365,33 +379,18 @@ export async function generateCards(data: {
       });
     }
     
-    await db.insert(radcheck).values(radcheckValues);
-    
-    // Build radreply attributes
-    const replyAttributes: { username: string; attribute: string; op: string; value: string }[] = [];
-    
-    // Speed limit (MikroTik Rate-Limit)
-    if (plan.mikrotikRateLimit) {
-      replyAttributes.push({
+    // Radreply values
+    if (rateLimitValue) {
+      allRadreplyValues.push({
         username,
         attribute: "Mikrotik-Rate-Limit",
         op: "=",
-        value: plan.mikrotikRateLimit,
-      });
-    } else if (plan.downloadSpeed && plan.uploadSpeed) {
-      const rateLimit = `${plan.downloadSpeed}k/${plan.uploadSpeed}k`;
-      replyAttributes.push({
-        username,
-        attribute: "Mikrotik-Rate-Limit",
-        op: "=",
-        value: rateLimit,
+        value: rateLimitValue,
       });
     }
     
-    // Session timeout (from card settings or plan)
-    const finalSessionTimeout = sessionTimeout || plan.sessionTimeout;
     if (finalSessionTimeout && finalSessionTimeout > 0) {
-      replyAttributes.push({
+      allRadreplyValues.push({
         username,
         attribute: "Session-Timeout",
         op: "=",
@@ -399,9 +398,8 @@ export async function generateCards(data: {
       });
     }
     
-    // Idle timeout
     if (plan.idleTimeout) {
-      replyAttributes.push({
+      allRadreplyValues.push({
         username,
         attribute: "Idle-Timeout",
         op: "=",
@@ -409,9 +407,8 @@ export async function generateCards(data: {
       });
     }
     
-    // Address pool
     if (plan.mikrotikAddressPool) {
-      replyAttributes.push({
+      allRadreplyValues.push({
         username,
         attribute: "Framed-Pool",
         op: "=",
@@ -419,9 +416,8 @@ export async function generateCards(data: {
       });
     }
     
-    // Hotspot port restriction (Called-Station-Id)
     if (data.hotspotPort) {
-      replyAttributes.push({
+      allRadreplyValues.push({
         username,
         attribute: "Called-Station-Id",
         op: "==",
@@ -429,7 +425,6 @@ export async function generateCards(data: {
       });
     }
     
-    // Max-All-Session (total time allowed on internet)
     if (data.internetTimeValue && data.internetTimeValue > 0) {
       let maxAllSession: number;
       if (data.internetTimeUnit === 'days') {
@@ -437,7 +432,7 @@ export async function generateCards(data: {
       } else {
         maxAllSession = data.internetTimeValue * 60 * 60;
       }
-      replyAttributes.push({
+      allRadreplyValues.push({
         username,
         attribute: "Max-All-Session",
         op: ":=",
@@ -445,20 +440,15 @@ export async function generateCards(data: {
       });
     }
     
-    // Insert reply attributes
-    if (replyAttributes.length > 0) {
-      await db.insert(radreply).values(replyAttributes);
-    }
-    
-    // Add to subscriber group
-    await db.insert(radusergroup).values({
+    // Radusergroup values
+    allRadusergroupValues.push({
       username,
       groupname: subscriberGroup,
       priority: 1,
     });
     
-    // Create card record with all new fields
-    await db.insert(radiusCards).values({
+    // Card record
+    allCardValues.push({
       username,
       password,
       serialNumber,
@@ -482,9 +472,38 @@ export async function generateCards(data: {
       usernameLength,
       passwordLength,
       subscriberGroup,
-    } as any);
+    });
     
     generatedCards.push({ serialNumber, username, password });
+  }
+  
+  // BULK INSERT in batches of 100 for better performance
+  const BATCH_SIZE = 100;
+  
+  // Insert radcheck in batches
+  for (let i = 0; i < allRadcheckValues.length; i += BATCH_SIZE) {
+    const batch = allRadcheckValues.slice(i, i + BATCH_SIZE);
+    await db.insert(radcheck).values(batch);
+  }
+  
+  // Insert radreply in batches
+  if (allRadreplyValues.length > 0) {
+    for (let i = 0; i < allRadreplyValues.length; i += BATCH_SIZE) {
+      const batch = allRadreplyValues.slice(i, i + BATCH_SIZE);
+      await db.insert(radreply).values(batch);
+    }
+  }
+  
+  // Insert radusergroup in batches
+  for (let i = 0; i < allRadusergroupValues.length; i += BATCH_SIZE) {
+    const batch = allRadusergroupValues.slice(i, i + BATCH_SIZE);
+    await db.insert(radusergroup).values(batch);
+  }
+  
+  // Insert cards in batches
+  for (let i = 0; i < allCardValues.length; i += BATCH_SIZE) {
+    const batch = allCardValues.slice(i, i + BATCH_SIZE);
+    await db.insert(radiusCards).values(batch as any);
   }
   
   // Update batch status

@@ -387,8 +387,7 @@ const vouchersRouter = router({
 
       return {
         success: true,
-        htmlUrl: result.htmlUrl,
-        csvUrl: result.csvUrl,
+        htmlUrl: result.pdfUrl,
         cardsCount: cards.length,
       };
     }),
@@ -445,7 +444,17 @@ const vouchersRouter = router({
   generateBatchPDFWithTemplate: resellerProcedure
     .input(z.object({
       batchId: z.string(),
-      templateId: z.number(),
+      templateId: z.number().optional(),
+      printSettings: z.object({
+        columns: z.number().default(5),
+        cardsPerPage: z.number().default(50),
+        marginTop: z.number().default(5),
+        marginBottom: z.number().default(5),
+        marginLeft: z.number().default(5),
+        marginRight: z.number().default(5),
+        spacingH: z.number().default(2),
+        spacingV: z.number().default(2),
+      }).optional(),
     }))
     .mutation(async ({ input }) => {
       // Get batch and cards
@@ -458,9 +467,11 @@ const vouchersRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "No cards found in batch" });
       }
 
-      // Get template
-      const template = await templateDb.getTemplateById(input.templateId);
-      if (!template) throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
+      // Get template if provided
+      let template = null;
+      if (input.templateId) {
+        template = await templateDb.getTemplateById(input.templateId);
+      }
 
       // Get plan details for each card
       const plans = await planDb.getAllPlans();
@@ -481,12 +492,25 @@ const vouchersRouter = router({
         };
       });
 
+      // Default print settings
+      const printSettings = input.printSettings || {
+        columns: 5,
+        cardsPerPage: 50,
+        marginTop: 5,
+        marginBottom: 5,
+        marginLeft: 5,
+        marginRight: 5,
+        spacingH: 2,
+        spacingV: 2,
+      };
+
       // Generate and save PDF with template
       const result = await saveBatchPDFWithTemplate({
         batchId: input.batchId,
         batchName: batch.name,
         cards: cardData,
-        template: {
+        printSettings,
+        template: template ? {
           imageUrl: template.imageUrl,
           cardWidth: template.cardWidth || 400,
           cardHeight: template.cardHeight || 250,
@@ -511,13 +535,12 @@ const vouchersRouter = router({
           marginTop: template.marginTop || "1.8",
           marginHorizontal: template.marginHorizontal || "1.8",
           columnsPerPage: template.columnsPerPage || 5,
-        },
+        } : undefined,
       });
 
       return {
         success: true,
-        htmlUrl: result.htmlUrl,
-        csvUrl: result.csvUrl,
+        htmlUrl: result.pdfUrl,
         cardsCount: cards.length,
       };
     }),

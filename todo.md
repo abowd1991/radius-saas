@@ -234,3 +234,21 @@
   - [x] Cards per page setting
   - [x] Margins setting
   - [x] One-click PDF download
+
+## Bug Fixes & Improvements (Jan 5, 2026)
+- [x] Fix PDF layout to be consistent Grid on A4 page
+  - [x] Auto-scale card images to fit page
+  - [x] Support configurable columns (3-10)
+  - [x] Support configurable cards per page (10-100)
+  - [x] Support configurable margins (top/bottom/left/right)
+  - [x] Support configurable spacing between cards (horizontal/vertical)
+  - [x] Ensure 100% content fits within page boundaries
+- [x] Improve card creation performance for bulk operations
+  - [x] Implement Bulk Insert for database operations (batch size 100)
+  - [x] Add Progress Bar for large batch creation
+  - [x] Prevent UI freeze during batch creation
+  - [x] Show completion notification
+- [x] Unify print links to open new print page
+  - [x] All PDF buttons in batch list open new print page
+  - [x] Support batch parameter in URL
+  - [x] Removed legacy print dialog

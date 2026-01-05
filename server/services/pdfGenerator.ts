@@ -47,6 +47,18 @@ interface TemplateSettings {
   columnsPerPage: number;
 }
 
+// Enhanced print settings interface
+interface PrintSettings {
+  columns: number;           // Number of columns (3-10)
+  cardsPerPage: number;      // Total cards per page
+  marginTop: number;         // Top margin in mm
+  marginBottom: number;      // Bottom margin in mm
+  marginLeft: number;        // Left margin in mm
+  marginRight: number;       // Right margin in mm
+  spacingH: number;          // Horizontal spacing between cards in mm
+  spacingV: number;          // Vertical spacing between cards in mm
+}
+
 // Batch data interface
 interface BatchData {
   batchId: string;
@@ -61,6 +73,7 @@ interface BatchData {
 // Batch data with template
 interface BatchDataWithTemplate extends BatchData {
   template?: TemplateSettings;
+  printSettings?: PrintSettings;
 }
 
 // Font family CSS mapping
@@ -68,6 +81,22 @@ const FONT_FAMILY_MAP: Record<string, string> = {
   normal: "Arial, 'Segoe UI', sans-serif",
   clear: "'Courier New', 'Consolas', monospace",
   digital: "'DSEG7 Classic', 'Courier New', monospace",
+};
+
+// A4 page dimensions in mm
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
+
+// Default print settings
+const DEFAULT_PRINT_SETTINGS: PrintSettings = {
+  columns: 5,
+  cardsPerPage: 50,
+  marginTop: 5,
+  marginBottom: 5,
+  marginLeft: 5,
+  marginRight: 5,
+  spacingH: 2,
+  spacingV: 2,
 };
 
 // Generate QR Code as data URL
@@ -83,7 +112,6 @@ async function generateQRCodeDataURL(data: string, size: number = 100): Promise<
     });
   } catch (error) {
     console.error("QR Code generation error:", error);
-    // Return a placeholder SVG if QR generation fails
     return `data:image/svg+xml,${encodeURIComponent(`
       <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         <rect width="100" height="100" fill="white" stroke="#000" stroke-width="2"/>
@@ -93,155 +121,165 @@ async function generateQRCodeDataURL(data: string, size: number = 100): Promise<
   }
 }
 
-// Generate QR Code SVG (sync fallback)
-function generateQRCodeSVG(data: string, size: number = 100): string {
-  const encoded = encodeURIComponent(data);
-  return `
-    <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100" height="100" fill="white" stroke="#000" stroke-width="2"/>
-      <rect x="10" y="10" width="25" height="25" fill="#000"/>
-      <rect x="65" y="10" width="25" height="25" fill="#000"/>
-      <rect x="10" y="65" width="25" height="25" fill="#000"/>
-      <rect x="15" y="15" width="15" height="15" fill="white"/>
-      <rect x="70" y="15" width="15" height="15" fill="white"/>
-      <rect x="15" y="70" width="15" height="15" fill="white"/>
-      <rect x="20" y="20" width="5" height="5" fill="#000"/>
-      <rect x="75" y="20" width="5" height="5" fill="#000"/>
-      <rect x="20" y="75" width="5" height="5" fill="#000"/>
-      <rect x="40" y="40" width="20" height="20" fill="#000"/>
-      <rect x="45" y="45" width="10" height="10" fill="white"/>
-      <text x="50" y="98" font-size="6" text-anchor="middle" fill="#666">QR</text>
-    </svg>
-  `;
+// Calculate card dimensions to fit A4 page
+function calculateCardDimensions(settings: PrintSettings): { cardWidth: number; cardHeight: number; rows: number } {
+  const availableWidth = A4_WIDTH_MM - settings.marginLeft - settings.marginRight;
+  const availableHeight = A4_HEIGHT_MM - settings.marginTop - settings.marginBottom;
+  
+  // Calculate card width based on columns and horizontal spacing
+  const totalHSpacing = (settings.columns - 1) * settings.spacingH;
+  const cardWidth = (availableWidth - totalHSpacing) / settings.columns;
+  
+  // Calculate rows based on cards per page
+  const rows = Math.ceil(settings.cardsPerPage / settings.columns);
+  
+  // Calculate card height based on rows and vertical spacing
+  const totalVSpacing = (rows - 1) * settings.spacingV;
+  const cardHeight = (availableHeight - totalVSpacing) / rows;
+  
+  return { cardWidth, cardHeight, rows };
 }
 
-// Generate single card HTML with template
+// Generate single card HTML with template (scaled to fit)
 async function generateTemplateCardHTML(
   card: CardData,
   template: TemplateSettings,
+  cardWidth: number,
+  cardHeight: number,
   qrDataUrl?: string
 ): Promise<string> {
   const usernameFontFamily = FONT_FAMILY_MAP[template.usernameFontFamily] || FONT_FAMILY_MAP.normal;
   const passwordFontFamily = FONT_FAMILY_MAP[template.passwordFontFamily] || FONT_FAMILY_MAP.normal;
 
-  // Calculate text anchor based on alignment
-  const getTextAnchor = (align: string) => {
-    switch (align) {
-      case "left": return "start";
-      case "right": return "end";
-      default: return "middle";
-    }
-  };
+  // Calculate scale factor to fit template into card dimensions
+  const scaleX = cardWidth / template.cardWidth;
+  const scaleY = cardHeight / template.cardHeight;
+  const scale = Math.min(scaleX, scaleY);
+
+  // Scale positions and font sizes
+  const scaledUsernameX = template.usernameX * scale;
+  const scaledUsernameY = template.usernameY * scale;
+  const scaledUsernameFontSize = template.usernameFontSize * scale;
+  const scaledPasswordX = template.passwordX * scale;
+  const scaledPasswordY = template.passwordY * scale;
+  const scaledPasswordFontSize = template.passwordFontSize * scale;
+  const scaledQrCodeX = template.qrCodeX * scale;
+  const scaledQrCodeY = template.qrCodeY * scale;
+  const scaledQrCodeSize = template.qrCodeSize * scale;
 
   return `
     <div class="card" style="
-      width: ${template.cardWidth}px;
-      height: ${template.cardHeight}px;
+      width: ${cardWidth}mm;
+      height: ${cardHeight}mm;
       position: relative;
       background-image: url('${template.imageUrl}');
-      background-size: cover;
+      background-size: 100% 100%;
       background-position: center;
       overflow: hidden;
+      box-sizing: border-box;
     ">
       <!-- Username -->
       <div style="
         position: absolute;
-        left: ${template.usernameX}px;
-        top: ${template.usernameY}px;
-        font-size: ${template.usernameFontSize}px;
+        left: ${scaledUsernameX}mm;
+        top: ${scaledUsernameY}mm;
+        font-size: ${scaledUsernameFontSize}pt;
         font-family: ${usernameFontFamily};
         color: ${template.usernameFontColor};
         text-align: ${template.usernameAlign};
         white-space: nowrap;
+        transform-origin: left top;
       ">${card.username}</div>
       
       <!-- Password -->
       <div style="
         position: absolute;
-        left: ${template.passwordX}px;
-        top: ${template.passwordY}px;
-        font-size: ${template.passwordFontSize}px;
+        left: ${scaledPasswordX}mm;
+        top: ${scaledPasswordY}mm;
+        font-size: ${scaledPasswordFontSize}pt;
         font-family: ${passwordFontFamily};
         color: ${template.passwordFontColor};
         text-align: ${template.passwordAlign};
         white-space: nowrap;
+        transform-origin: left top;
       ">${card.password}</div>
       
       ${template.qrCodeEnabled && qrDataUrl ? `
         <!-- QR Code -->
         <img src="${qrDataUrl}" style="
           position: absolute;
-          left: ${template.qrCodeX}px;
-          top: ${template.qrCodeY}px;
-          width: ${template.qrCodeSize}px;
-          height: ${template.qrCodeSize}px;
+          left: ${scaledQrCodeX}mm;
+          top: ${scaledQrCodeY}mm;
+          width: ${scaledQrCodeSize}mm;
+          height: ${scaledQrCodeSize}mm;
         " />
       ` : ""}
     </div>
   `;
 }
 
-// Generate single card HTML (legacy)
-function generateCardHTML(card: CardData, hotspotUrl?: string, companyName?: string): string {
-  const qrData = hotspotUrl ? `${hotspotUrl}?username=${card.username}&password=${card.password}` : card.serialNumber;
-  const qrSvg = generateQRCodeSVG(qrData, 80);
+// Generate single card HTML (legacy - default design)
+function generateCardHTML(
+  card: CardData, 
+  cardWidth: number, 
+  cardHeight: number,
+  hotspotUrl?: string, 
+  companyName?: string
+): string {
+  // Calculate font sizes based on card dimensions
+  const baseFontSize = Math.min(cardWidth, cardHeight) * 0.08;
+  const smallFontSize = baseFontSize * 0.7;
+  const qrSize = Math.min(cardWidth, cardHeight) * 0.3;
   
   return `
-    <div class="card">
-      <div class="card-header">
-        <div class="company-name">${companyName || 'RADIUS SaaS'}</div>
-        <div class="plan-name">${card.planNameAr || card.planName}</div>
+    <div class="card" style="
+      width: ${cardWidth}mm;
+      height: ${cardHeight}mm;
+      border: 0.3mm solid #ddd;
+      border-radius: 1mm;
+      padding: 1mm;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      overflow: hidden;
+    ">
+      <div style="text-align: center; border-bottom: 0.2mm solid #dee2e6; padding-bottom: 0.5mm;">
+        <div style="font-size: ${baseFontSize}pt; font-weight: bold; color: #1a5f7a;">${companyName || 'RADIUS'}</div>
+        <div style="font-size: ${smallFontSize}pt; color: #666;">${card.planNameAr || card.planName}</div>
       </div>
       
-      <div class="card-body">
-        <div class="qr-section">
-          ${qrSvg}
-        </div>
-        
-        <div class="credentials">
-          <div class="credential-row">
-            <span class="label">اسم المستخدم:</span>
-            <span class="value username">${card.username}</span>
-          </div>
-          <div class="credential-row">
-            <span class="label">كلمة المرور:</span>
-            <span class="value password">${card.password}</span>
-          </div>
+      <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 1mm;">
+        <div style="text-align: center;">
+          <div style="font-size: ${smallFontSize}pt; color: #666;">اسم المستخدم</div>
+          <div style="font-size: ${baseFontSize * 1.1}pt; font-weight: bold; color: #0066cc; font-family: 'Courier New', monospace;">${card.username}</div>
+          <div style="font-size: ${smallFontSize}pt; color: #666; margin-top: 0.5mm;">كلمة المرور</div>
+          <div style="font-size: ${baseFontSize * 1.1}pt; font-weight: bold; color: #cc0000; font-family: 'Courier New', monospace;">${card.password}</div>
         </div>
       </div>
       
-      <div class="card-footer">
-        <div class="info-row">
-          <span>السرعة: ${card.downloadSpeed}/${card.uploadSpeed} Mbps</span>
-          <span>الصلاحية: ${card.validityDays} يوم</span>
-        </div>
-        <div class="serial">
-          <span class="serial-label">الرقم التسلسلي:</span>
-          <span class="serial-value">${card.serialNumber}</span>
-        </div>
+      <div style="text-align: center; border-top: 0.2mm solid #dee2e6; padding-top: 0.5mm;">
+        <div style="font-size: ${smallFontSize * 0.8}pt; color: #888;">${card.serialNumber}</div>
       </div>
     </div>
   `;
 }
 
-// Generate full PDF HTML with template
+// Generate full PDF HTML with template and enhanced print settings
 export async function generateCardsPDFHTMLWithTemplate(batch: BatchDataWithTemplate): Promise<string> {
   const template = batch.template;
+  const printSettings = batch.printSettings || DEFAULT_PRINT_SETTINGS;
   
-  if (!template) {
-    return generateCardsPDFHTML(batch);
-  }
-
-  const cardsPerPage = template.cardsPerPage || 8;
-  const columnsPerPage = template.columnsPerPage || 5;
-  const marginTop = parseFloat(template.marginTop) || 1.8;
-  const marginHorizontal = parseFloat(template.marginHorizontal) || 1.8;
+  // Calculate card dimensions based on print settings
+  const { cardWidth, cardHeight, rows } = calculateCardDimensions(printSettings);
+  const cardsPerPage = printSettings.columns * rows;
   const cards = batch.cards;
   const pages: string[] = [];
   
-  // Generate QR codes for all cards if enabled
+  // Generate QR codes for all cards if template has QR enabled
   const qrDataUrls: string[] = [];
-  if (template.qrCodeEnabled) {
+  if (template?.qrCodeEnabled) {
     for (const card of cards) {
       const qrData = template.qrCodeDomain 
         ? `${template.qrCodeDomain}?username=${card.username}&password=${card.password}`
@@ -256,20 +294,23 @@ export async function generateCardsPDFHTMLWithTemplate(batch: BatchDataWithTempl
     const pageCards = cards.slice(i, i + cardsPerPage);
     const pageQrUrls = qrDataUrls.slice(i, i + cardsPerPage);
     
-    const cardsHTML = await Promise.all(
-      pageCards.map((card, idx) => 
-        generateTemplateCardHTML(card, template, pageQrUrls[idx])
-      )
-    );
+    let cardsHTML: string[];
+    
+    if (template) {
+      cardsHTML = await Promise.all(
+        pageCards.map((card, idx) => 
+          generateTemplateCardHTML(card, template, cardWidth, cardHeight, pageQrUrls[idx])
+        )
+      );
+    } else {
+      cardsHTML = pageCards.map(card => 
+        generateCardHTML(card, cardWidth, cardHeight, batch.hotspotUrl, batch.companyName)
+      );
+    }
     
     pages.push(`
       <div class="page">
-        <div class="cards-grid" style="
-          display: grid;
-          grid-template-columns: repeat(${columnsPerPage}, 1fr);
-          gap: 4mm;
-          padding: ${marginTop}cm ${marginHorizontal}cm;
-        ">
+        <div class="cards-grid">
           ${cardsHTML.join('\n')}
         </div>
       </div>
@@ -307,15 +348,27 @@ export async function generateCardsPDFHTMLWithTemplate(batch: BatchDataWithTempl
     }
     
     .page {
-      width: 210mm;
-      min-height: 297mm;
+      width: ${A4_WIDTH_MM}mm;
+      height: ${A4_HEIGHT_MM}mm;
       margin: 0 auto;
       background: white;
       page-break-after: always;
+      overflow: hidden;
+      position: relative;
     }
     
     .page:last-child {
       page-break-after: auto;
+    }
+    
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(${printSettings.columns}, ${cardWidth}mm);
+      grid-template-rows: repeat(${rows}, ${cardHeight}mm);
+      gap: ${printSettings.spacingV}mm ${printSettings.spacingH}mm;
+      padding: ${printSettings.marginTop}mm ${printSettings.marginRight}mm ${printSettings.marginBottom}mm ${printSettings.marginLeft}mm;
+      justify-content: center;
+      align-content: start;
     }
     
     .card {
@@ -327,207 +380,71 @@ export async function generateCardsPDFHTMLWithTemplate(batch: BatchDataWithTempl
     @media print {
       body {
         background: white;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
       
       .page {
         margin: 0;
         box-shadow: none;
+        page-break-after: always;
+      }
+      
+      .page:last-child {
+        page-break-after: auto;
+      }
+      
+      @page {
+        size: A4;
+        margin: 0;
+      }
+    }
+    
+    @media screen {
+      .page {
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        margin: 10mm auto;
       }
     }
   </style>
 </head>
 <body>
   ${pages.join('\n')}
+  
+  <script>
+    // Auto-print when opened
+    // window.onload = function() { window.print(); }
+  </script>
 </body>
 </html>
   `;
 }
 
-// Generate full PDF HTML document (legacy)
-export function generateCardsPDFHTML(batch: BatchData): string {
-  const cardsPerPage = batch.cardsPerPage || 8;
-  const cards = batch.cards;
-  const pages: string[] = [];
-  
-  // Split cards into pages
-  for (let i = 0; i < cards.length; i += cardsPerPage) {
-    const pageCards = cards.slice(i, i + cardsPerPage);
-    const cardsHTML = pageCards.map(card => 
-      generateCardHTML(card, batch.hotspotUrl, batch.companyName)
-    ).join('\n');
-    
-    pages.push(`
-      <div class="page">
-        <div class="cards-grid">
-          ${cardsHTML}
-        </div>
-      </div>
-    `);
-  }
-  
-  return `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <title>بطاقات RADIUS - ${batch.batchName}</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
-    
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: 'Cairo', sans-serif;
-      background: #f5f5f5;
-      direction: rtl;
-    }
-    
-    .page {
-      width: 210mm;
-      min-height: 297mm;
-      padding: 10mm;
-      margin: 0 auto;
-      background: white;
-      page-break-after: always;
-    }
-    
-    .page:last-child {
-      page-break-after: auto;
-    }
-    
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8mm;
-    }
-    
-    .card {
-      border: 2px solid #2563eb;
-      border-radius: 8px;
-      padding: 8px;
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      height: 60mm;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .card-header {
-      text-align: center;
-      padding-bottom: 4px;
-      border-bottom: 1px solid #cbd5e1;
-      margin-bottom: 4px;
-    }
-    
-    .company-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: #1e40af;
-    }
-    
-    .plan-name {
-      font-size: 10px;
-      color: #64748b;
-      font-weight: 600;
-    }
-    
-    .card-body {
-      display: flex;
-      gap: 8px;
-      flex: 1;
-      align-items: center;
-    }
-    
-    .qr-section {
-      width: 70px;
-      height: 70px;
-      flex-shrink: 0;
-    }
-    
-    .qr-section svg {
-      width: 100%;
-      height: 100%;
-    }
-    
-    .credentials {
-      flex: 1;
-    }
-    
-    .credential-row {
-      display: flex;
-      flex-direction: column;
-      margin-bottom: 4px;
-    }
-    
-    .label {
-      font-size: 8px;
-      color: #64748b;
-    }
-    
-    .value {
-      font-size: 11px;
-      font-weight: 700;
-      color: #1e293b;
-      font-family: 'Courier New', monospace;
-      letter-spacing: 1px;
-      background: #fff;
-      padding: 2px 4px;
-      border-radius: 4px;
-      border: 1px dashed #94a3b8;
-    }
-    
-    .card-footer {
-      border-top: 1px solid #cbd5e1;
-      padding-top: 4px;
-      font-size: 8px;
-    }
-    
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      color: #64748b;
-      margin-bottom: 2px;
-    }
-    
-    .serial {
-      text-align: center;
-      color: #94a3b8;
-      font-size: 7px;
-    }
-    
-    .serial-value {
-      font-family: 'Courier New', monospace;
-      letter-spacing: 0.5px;
-    }
-    
-    @media print {
-      body {
-        background: white;
-      }
-      
-      .page {
-        margin: 0;
-        padding: 8mm;
-        box-shadow: none;
-      }
-      
-      .card {
-        break-inside: avoid;
-      }
-    }
-  </style>
-</head>
-<body>
-  ${pages.join('\n')}
-</body>
-</html>
-  `;
+// Legacy function for backward compatibility
+export async function generateCardsPDFHTML(batch: BatchData): Promise<string> {
+  return generateCardsPDFHTMLWithTemplate({
+    ...batch,
+    printSettings: DEFAULT_PRINT_SETTINGS,
+  });
 }
 
-// Generate CSV export
+// Generate and save PDF HTML to S3
+export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Promise<{ pdfUrl: string; pdfKey: string }> {
+  const html = await generateCardsPDFHTMLWithTemplate(batch);
+  const fileName = `batch-${batch.batchId}-${nanoid(6)}.html`;
+  const fileKey = `pdf/${fileName}`;
+  
+  const { url } = await storagePut(fileKey, html, "text/html");
+  
+  return { pdfUrl: url, pdfKey: fileKey };
+}
+
+// Legacy save function
+export async function saveBatchPDF(batch: BatchData): Promise<{ pdfUrl: string; pdfKey: string }> {
+  return saveBatchPDFWithTemplate(batch);
+}
+
+// Generate CSV content
 export function generateCardsCSV(cards: CardData[]): string {
   const headers = ['Serial Number', 'Username', 'Password', 'Plan', 'Validity (Days)', 'Download Speed', 'Upload Speed', 'Price'];
   const rows = cards.map(card => [
@@ -538,58 +455,21 @@ export function generateCardsCSV(cards: CardData[]): string {
     card.validityDays.toString(),
     card.downloadSpeed.toString(),
     card.uploadSpeed.toString(),
-    card.price
+    card.price,
   ]);
   
   return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
 }
 
-// Save PDF HTML to storage
-export async function saveBatchPDF(batch: BatchData): Promise<{ htmlUrl: string; csvUrl: string }> {
-  const html = generateCardsPDFHTML(batch);
-  const csv = generateCardsCSV(batch.cards);
+// Save CSV to S3
+export async function saveBatchCSV(batchId: string, cards: CardData[]): Promise<{ csvUrl: string; csvKey: string }> {
+  const csv = generateCardsCSV(cards);
+  const fileName = `batch-${batchId}-${nanoid(6)}.csv`;
+  const fileKey = `csv/${fileName}`;
   
-  const htmlKey = `cards/batches/${batch.batchId}/cards-${nanoid(6)}.html`;
-  const csvKey = `cards/batches/${batch.batchId}/cards-${nanoid(6)}.csv`;
+  const { url } = await storagePut(fileKey, csv, "text/csv");
   
-  const [htmlResult, csvResult] = await Promise.all([
-    storagePut(htmlKey, Buffer.from(html, 'utf-8'), 'text/html'),
-    storagePut(csvKey, Buffer.from(csv, 'utf-8'), 'text/csv'),
-  ]);
-  
-  return {
-    htmlUrl: htmlResult.url,
-    csvUrl: csvResult.url,
-  };
+  return { csvUrl: url, csvKey: fileKey };
 }
 
-// Save PDF HTML with template to storage
-export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Promise<{ htmlUrl: string; csvUrl: string }> {
-  const html = await generateCardsPDFHTMLWithTemplate(batch);
-  const csv = generateCardsCSV(batch.cards);
-  
-  const htmlKey = `cards/batches/${batch.batchId}/cards-${nanoid(6)}.html`;
-  const csvKey = `cards/batches/${batch.batchId}/cards-${nanoid(6)}.csv`;
-  
-  const [htmlResult, csvResult] = await Promise.all([
-    storagePut(htmlKey, Buffer.from(html, 'utf-8'), 'text/html'),
-    storagePut(csvKey, Buffer.from(csv, 'utf-8'), 'text/csv'),
-  ]);
-  
-  return {
-    htmlUrl: htmlResult.url,
-    csvUrl: csvResult.url,
-  };
-}
-
-// Generate single card print HTML
-export function generateSingleCardHTML(card: CardData, companyName?: string, hotspotUrl?: string): string {
-  return generateCardsPDFHTML({
-    batchId: 'single',
-    batchName: 'Single Card',
-    cards: [card],
-    companyName,
-    hotspotUrl,
-    cardsPerPage: 1,
-  });
-}
+export { CardData, TemplateSettings, PrintSettings, BatchData, BatchDataWithTemplate, DEFAULT_PRINT_SETTINGS };
