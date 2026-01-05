@@ -199,3 +199,38 @@
   - [x] Card activation time (hours/days) with "count from activation" option
   - [x] MAC binding option
   - [x] Create real RADIUS accounts (radcheck/radreply entries)
+
+## Card Templates System (NEW)
+- [x] Database schema for card templates
+  - [x] Template name, image URL, default flag
+  - [x] Text positions (username X/Y, password X/Y)
+  - [x] Font settings (size, family, color)
+  - [x] QR code settings (position, domain)
+- [x] Backend API for templates
+  - [x] Create template with multi-upload
+  - [x] List all templates
+  - [x] Update template settings
+  - [x] Delete template
+  - [x] Set default template
+- [x] Card Templates Page
+  - [x] Multi-file upload for template images
+  - [x] Template list with preview
+  - [x] Edit/Delete/Set Default buttons
+  - [x] Rename template functionality
+- [x] Drag & Drop Text Editor
+  - [x] Draggable username position
+  - [x] Draggable password position
+  - [x] Font size control
+  - [x] Font family selection (Normal, Clear, Digital)
+  - [x] Color picker
+  - [x] Text alignment (left/center/right)
+- [x] PDF Generation with Templates
+  - [x] Use template image as background
+  - [x] Apply text positions from template
+  - [x] Support multiple font families
+  - [x] Dynamic QR Code with IP/Domain
+- [x] Simplified Print Interface
+  - [x] Select template from dropdown
+  - [x] Cards per page setting
+  - [x] Margins setting
+  - [x] One-click PDF download

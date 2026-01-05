@@ -42,6 +42,8 @@ import {
   Building2,
   ChevronDown,
   Link2,
+  Image,
+  Printer,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -59,6 +61,8 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: Server, label: t("nav.nas"), path: "/nas" },
     { icon: Link2, label: t("nav.mikrotikSetup"), path: "/mikrotik-setup" },
     { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
+    { icon: Image, label: "قوالب البطاقات", path: "/card-templates" },
+    { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
     { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
     { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
     { icon: MessageSquare, label: t("nav.support"), path: "/support" },

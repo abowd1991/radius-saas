@@ -1,5 +1,6 @@
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
+import QRCode from "qrcode";
 
 // Card data interface
 interface CardData {
@@ -14,6 +15,38 @@ interface CardData {
   price: string;
 }
 
+// Template settings interface
+interface TemplateSettings {
+  imageUrl: string;
+  cardWidth: number;
+  cardHeight: number;
+  // Username settings
+  usernameX: number;
+  usernameY: number;
+  usernameFontSize: number;
+  usernameFontFamily: "normal" | "clear" | "digital";
+  usernameFontColor: string;
+  usernameAlign: "left" | "center" | "right";
+  // Password settings
+  passwordX: number;
+  passwordY: number;
+  passwordFontSize: number;
+  passwordFontFamily: "normal" | "clear" | "digital";
+  passwordFontColor: string;
+  passwordAlign: "left" | "center" | "right";
+  // QR Code settings
+  qrCodeEnabled: boolean;
+  qrCodeX: number;
+  qrCodeY: number;
+  qrCodeSize: number;
+  qrCodeDomain: string | null;
+  // Print settings
+  cardsPerPage: number;
+  marginTop: string;
+  marginHorizontal: string;
+  columnsPerPage: number;
+}
+
 // Batch data interface
 interface BatchData {
   batchId: string;
@@ -25,10 +58,43 @@ interface BatchData {
   cardsPerPage?: number;
 }
 
-// Generate QR Code SVG (simple implementation)
+// Batch data with template
+interface BatchDataWithTemplate extends BatchData {
+  template?: TemplateSettings;
+}
+
+// Font family CSS mapping
+const FONT_FAMILY_MAP: Record<string, string> = {
+  normal: "Arial, 'Segoe UI', sans-serif",
+  clear: "'Courier New', 'Consolas', monospace",
+  digital: "'DSEG7 Classic', 'Courier New', monospace",
+};
+
+// Generate QR Code as data URL
+async function generateQRCodeDataURL(data: string, size: number = 100): Promise<string> {
+  try {
+    return await QRCode.toDataURL(data, {
+      width: size,
+      margin: 1,
+      color: {
+        dark: "#000000",
+        light: "#ffffff",
+      },
+    });
+  } catch (error) {
+    console.error("QR Code generation error:", error);
+    // Return a placeholder SVG if QR generation fails
+    return `data:image/svg+xml,${encodeURIComponent(`
+      <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" fill="white" stroke="#000" stroke-width="2"/>
+        <text x="50" y="55" font-size="12" text-anchor="middle" fill="#666">QR</text>
+      </svg>
+    `)}`;
+  }
+}
+
+// Generate QR Code SVG (sync fallback)
 function generateQRCodeSVG(data: string, size: number = 100): string {
-  // Simple QR code placeholder - in production, use a proper QR library
-  // This creates a placeholder that shows the data
   const encoded = encodeURIComponent(data);
   return `
     <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -49,7 +115,73 @@ function generateQRCodeSVG(data: string, size: number = 100): string {
   `;
 }
 
-// Generate single card HTML
+// Generate single card HTML with template
+async function generateTemplateCardHTML(
+  card: CardData,
+  template: TemplateSettings,
+  qrDataUrl?: string
+): Promise<string> {
+  const usernameFontFamily = FONT_FAMILY_MAP[template.usernameFontFamily] || FONT_FAMILY_MAP.normal;
+  const passwordFontFamily = FONT_FAMILY_MAP[template.passwordFontFamily] || FONT_FAMILY_MAP.normal;
+
+  // Calculate text anchor based on alignment
+  const getTextAnchor = (align: string) => {
+    switch (align) {
+      case "left": return "start";
+      case "right": return "end";
+      default: return "middle";
+    }
+  };
+
+  return `
+    <div class="card" style="
+      width: ${template.cardWidth}px;
+      height: ${template.cardHeight}px;
+      position: relative;
+      background-image: url('${template.imageUrl}');
+      background-size: cover;
+      background-position: center;
+      overflow: hidden;
+    ">
+      <!-- Username -->
+      <div style="
+        position: absolute;
+        left: ${template.usernameX}px;
+        top: ${template.usernameY}px;
+        font-size: ${template.usernameFontSize}px;
+        font-family: ${usernameFontFamily};
+        color: ${template.usernameFontColor};
+        text-align: ${template.usernameAlign};
+        white-space: nowrap;
+      ">${card.username}</div>
+      
+      <!-- Password -->
+      <div style="
+        position: absolute;
+        left: ${template.passwordX}px;
+        top: ${template.passwordY}px;
+        font-size: ${template.passwordFontSize}px;
+        font-family: ${passwordFontFamily};
+        color: ${template.passwordFontColor};
+        text-align: ${template.passwordAlign};
+        white-space: nowrap;
+      ">${card.password}</div>
+      
+      ${template.qrCodeEnabled && qrDataUrl ? `
+        <!-- QR Code -->
+        <img src="${qrDataUrl}" style="
+          position: absolute;
+          left: ${template.qrCodeX}px;
+          top: ${template.qrCodeY}px;
+          width: ${template.qrCodeSize}px;
+          height: ${template.qrCodeSize}px;
+        " />
+      ` : ""}
+    </div>
+  `;
+}
+
+// Generate single card HTML (legacy)
 function generateCardHTML(card: CardData, hotspotUrl?: string, companyName?: string): string {
   const qrData = hotspotUrl ? `${hotspotUrl}?username=${card.username}&password=${card.password}` : card.serialNumber;
   const qrSvg = generateQRCodeSVG(qrData, 80);
@@ -92,7 +224,126 @@ function generateCardHTML(card: CardData, hotspotUrl?: string, companyName?: str
   `;
 }
 
-// Generate full PDF HTML document
+// Generate full PDF HTML with template
+export async function generateCardsPDFHTMLWithTemplate(batch: BatchDataWithTemplate): Promise<string> {
+  const template = batch.template;
+  
+  if (!template) {
+    return generateCardsPDFHTML(batch);
+  }
+
+  const cardsPerPage = template.cardsPerPage || 8;
+  const columnsPerPage = template.columnsPerPage || 5;
+  const marginTop = parseFloat(template.marginTop) || 1.8;
+  const marginHorizontal = parseFloat(template.marginHorizontal) || 1.8;
+  const cards = batch.cards;
+  const pages: string[] = [];
+  
+  // Generate QR codes for all cards if enabled
+  const qrDataUrls: string[] = [];
+  if (template.qrCodeEnabled) {
+    for (const card of cards) {
+      const qrData = template.qrCodeDomain 
+        ? `${template.qrCodeDomain}?username=${card.username}&password=${card.password}`
+        : card.serialNumber;
+      const qrDataUrl = await generateQRCodeDataURL(qrData, template.qrCodeSize);
+      qrDataUrls.push(qrDataUrl);
+    }
+  }
+
+  // Split cards into pages
+  for (let i = 0; i < cards.length; i += cardsPerPage) {
+    const pageCards = cards.slice(i, i + cardsPerPage);
+    const pageQrUrls = qrDataUrls.slice(i, i + cardsPerPage);
+    
+    const cardsHTML = await Promise.all(
+      pageCards.map((card, idx) => 
+        generateTemplateCardHTML(card, template, pageQrUrls[idx])
+      )
+    );
+    
+    pages.push(`
+      <div class="page">
+        <div class="cards-grid" style="
+          display: grid;
+          grid-template-columns: repeat(${columnsPerPage}, 1fr);
+          gap: 4mm;
+          padding: ${marginTop}cm ${marginHorizontal}cm;
+        ">
+          ${cardsHTML.join('\n')}
+        </div>
+      </div>
+    `);
+  }
+
+  // Digital font CSS
+  const digitalFontCSS = `
+    @font-face {
+      font-family: 'DSEG7 Classic';
+      src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Regular.woff2') format('woff2');
+    }
+  `;
+
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>بطاقات RADIUS - ${batch.batchName}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+    ${digitalFontCSS}
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: #f5f5f5;
+      direction: rtl;
+    }
+    
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: white;
+      page-break-after: always;
+    }
+    
+    .page:last-child {
+      page-break-after: auto;
+    }
+    
+    .card {
+      break-inside: avoid;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+    
+    @media print {
+      body {
+        background: white;
+      }
+      
+      .page {
+        margin: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  ${pages.join('\n')}
+</body>
+</html>
+  `;
+}
+
+// Generate full PDF HTML document (legacy)
 export function generateCardsPDFHTML(batch: BatchData): string {
   const cardsPerPage = batch.cardsPerPage || 8;
   const cards = batch.cards;
@@ -296,6 +547,25 @@ export function generateCardsCSV(cards: CardData[]): string {
 // Save PDF HTML to storage
 export async function saveBatchPDF(batch: BatchData): Promise<{ htmlUrl: string; csvUrl: string }> {
   const html = generateCardsPDFHTML(batch);
+  const csv = generateCardsCSV(batch.cards);
+  
+  const htmlKey = `cards/batches/${batch.batchId}/cards-${nanoid(6)}.html`;
+  const csvKey = `cards/batches/${batch.batchId}/cards-${nanoid(6)}.csv`;
+  
+  const [htmlResult, csvResult] = await Promise.all([
+    storagePut(htmlKey, Buffer.from(html, 'utf-8'), 'text/html'),
+    storagePut(csvKey, Buffer.from(csv, 'utf-8'), 'text/csv'),
+  ]);
+  
+  return {
+    htmlUrl: htmlResult.url,
+    csvUrl: csvResult.url,
+  };
+}
+
+// Save PDF HTML with template to storage
+export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Promise<{ htmlUrl: string; csvUrl: string }> {
+  const html = await generateCardsPDFHTMLWithTemplate(batch);
   const csv = generateCardsCSV(batch.cards);
   
   const htmlKey = `cards/batches/${batch.batchId}/cards-${nanoid(6)}.html`;

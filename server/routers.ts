@@ -13,7 +13,9 @@ import * as invoiceDb from "./db/invoices";
 import * as subscriptionDb from "./db/subscriptions";
 import * as ticketDb from "./db/tickets";
 import * as notificationDb from "./db/notifications";
-import { generateCardsPDFHTML, generateCardsCSV, saveBatchPDF } from "./services/pdfGenerator";
+import * as templateDb from "./db/cardTemplates";
+import { generateCardsPDFHTML, generateCardsCSV, saveBatchPDF, saveBatchPDFWithTemplate, generateCardsPDFHTMLWithTemplate } from "./services/pdfGenerator";
+import { storagePut } from "./storage";
 import * as mikrotikApi from "./services/mikrotikApi";
 
 // ============================================================================
@@ -439,6 +441,87 @@ const vouchersRouter = router({
       return { html };
     }),
 
+  // Generate PDF with template
+  generateBatchPDFWithTemplate: resellerProcedure
+    .input(z.object({
+      batchId: z.string(),
+      templateId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      // Get batch and cards
+      const batches = await cardDb.getAllBatches();
+      const batch = batches.find(b => b.batchId === input.batchId);
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+
+      const cards = await cardDb.getCardsByBatch(input.batchId);
+      if (!cards || cards.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No cards found in batch" });
+      }
+
+      // Get template
+      const template = await templateDb.getTemplateById(input.templateId);
+      if (!template) throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
+
+      // Get plan details for each card
+      const plans = await planDb.getAllPlans();
+      const planMap = new Map(plans.map(p => [p.id, p]));
+
+      const cardData = cards.map(card => {
+        const plan = planMap.get(card.planId);
+        return {
+          serialNumber: card.serialNumber,
+          username: card.username,
+          password: card.password,
+          planName: plan?.name || 'Unknown',
+          planNameAr: plan?.nameAr || undefined,
+          validityDays: plan?.validityValue || 30,
+          downloadSpeed: Math.round((plan?.downloadSpeed || 0) / 1000),
+          uploadSpeed: Math.round((plan?.uploadSpeed || 0) / 1000),
+          price: plan?.price || '0',
+        };
+      });
+
+      // Generate and save PDF with template
+      const result = await saveBatchPDFWithTemplate({
+        batchId: input.batchId,
+        batchName: batch.name,
+        cards: cardData,
+        template: {
+          imageUrl: template.imageUrl,
+          cardWidth: template.cardWidth || 400,
+          cardHeight: template.cardHeight || 250,
+          usernameX: template.usernameX || 100,
+          usernameY: template.usernameY || 100,
+          usernameFontSize: template.usernameFontSize || 14,
+          usernameFontFamily: (template.usernameFontFamily || "normal") as "normal" | "clear" | "digital",
+          usernameFontColor: template.usernameFontColor || "#0066cc",
+          usernameAlign: (template.usernameAlign || "left") as "left" | "center" | "right",
+          passwordX: template.passwordX || 100,
+          passwordY: template.passwordY || 130,
+          passwordFontSize: template.passwordFontSize || 14,
+          passwordFontFamily: (template.passwordFontFamily || "normal") as "normal" | "clear" | "digital",
+          passwordFontColor: template.passwordFontColor || "#cc0000",
+          passwordAlign: (template.passwordAlign || "left") as "left" | "center" | "right",
+          qrCodeEnabled: template.qrCodeEnabled || false,
+          qrCodeX: template.qrCodeX || 0,
+          qrCodeY: template.qrCodeY || 0,
+          qrCodeSize: template.qrCodeSize || 80,
+          qrCodeDomain: template.qrCodeDomain || null,
+          cardsPerPage: template.cardsPerPage || 8,
+          marginTop: template.marginTop || "1.8",
+          marginHorizontal: template.marginHorizontal || "1.8",
+          columnsPerPage: template.columnsPerPage || 5,
+        },
+      });
+
+      return {
+        success: true,
+        htmlUrl: result.htmlUrl,
+        csvUrl: result.csvUrl,
+        cardsCount: cards.length,
+      };
+    }),
+
   // Export batch as CSV
   exportBatchCSV: resellerProcedure
     .input(z.object({ batchId: z.string() }))
@@ -826,6 +909,139 @@ const sessionsRouter = router({
 });
 
 // ============================================================================
+// CARD TEMPLATES ROUTER
+// ============================================================================
+const templatesRouter = router({
+  // List all templates
+  list: resellerProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role === 'super_admin') {
+      return templateDb.getTemplates();
+    }
+    return templateDb.getTemplates(ctx.user.id);
+  }),
+
+  // Get single template
+  getById: resellerProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return templateDb.getTemplateById(input.id);
+    }),
+
+  // Get default template
+  getDefault: resellerProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role === 'super_admin') {
+      return templateDb.getDefaultTemplate();
+    }
+    return templateDb.getDefaultTemplate(ctx.user.id);
+  }),
+
+  // Create template with image upload
+  create: resellerProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      imageBase64: z.string(), // Base64 encoded image
+      imageType: z.string().default('image/png'),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Decode base64 and upload to S3
+      const buffer = Buffer.from(input.imageBase64, 'base64');
+      const fileKey = `templates/${ctx.user.id}/${Date.now()}-${input.name.replace(/\s+/g, '_')}.png`;
+      const { url } = await storagePut(fileKey, buffer, input.imageType);
+
+      // Create template in database
+      const id = await templateDb.createTemplate({
+        name: input.name,
+        resellerId: ctx.user.role === 'super_admin' ? null : ctx.user.id,
+        imageUrl: url,
+        imageKey: fileKey,
+      });
+
+      return { id, imageUrl: url };
+    }),
+
+  // Create multiple templates at once
+  createMultiple: resellerProcedure
+    .input(z.array(z.object({
+      name: z.string().min(1),
+      imageBase64: z.string(),
+      imageType: z.string().default('image/png'),
+    })))
+    .mutation(async ({ ctx, input }) => {
+      const results = [];
+      for (const template of input) {
+        const buffer = Buffer.from(template.imageBase64, 'base64');
+        const fileKey = `templates/${ctx.user.id}/${Date.now()}-${template.name.replace(/\s+/g, '_')}.png`;
+        const { url } = await storagePut(fileKey, buffer, template.imageType);
+
+        const id = await templateDb.createTemplate({
+          name: template.name,
+          resellerId: ctx.user.role === 'super_admin' ? null : ctx.user.id,
+          imageUrl: url,
+          imageKey: fileKey,
+        });
+
+        results.push({ id, name: template.name, imageUrl: url });
+      }
+      return results;
+    }),
+
+  // Update template
+  update: resellerProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      // Text positions
+      usernameX: z.number().optional(),
+      usernameY: z.number().optional(),
+      passwordX: z.number().optional(),
+      passwordY: z.number().optional(),
+      // Username font settings
+      usernameFontSize: z.number().optional(),
+      usernameFontFamily: z.enum(['normal', 'clear', 'digital']).optional(),
+      usernameFontColor: z.string().optional(),
+      usernameAlign: z.enum(['left', 'center', 'right']).optional(),
+      // Password font settings
+      passwordFontSize: z.number().optional(),
+      passwordFontFamily: z.enum(['normal', 'clear', 'digital']).optional(),
+      passwordFontColor: z.string().optional(),
+      passwordAlign: z.enum(['left', 'center', 'right']).optional(),
+      // QR Code settings
+      qrCodeEnabled: z.boolean().optional(),
+      qrCodeX: z.number().optional(),
+      qrCodeY: z.number().optional(),
+      qrCodeSize: z.number().optional(),
+      qrCodeDomain: z.string().optional(),
+      // Print settings
+      cardsPerPage: z.number().optional(),
+      marginTop: z.string().optional(),
+      marginHorizontal: z.string().optional(),
+      columnsPerPage: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await templateDb.updateTemplate(id, data);
+      return { success: true };
+    }),
+
+  // Set as default
+  setDefault: resellerProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const resellerId = ctx.user.role === 'super_admin' ? undefined : ctx.user.id;
+      await templateDb.setDefaultTemplate(input.id, resellerId);
+      return { success: true };
+    }),
+
+  // Delete template
+  delete: resellerProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await templateDb.deleteTemplate(input.id);
+      return { success: true };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -842,6 +1058,7 @@ export const appRouter = router({
   notifications: notificationsRouter,
   dashboard: dashboardRouter,
   sessions: sessionsRouter,
+  templates: templatesRouter,
 });
 
 export type AppRouter = typeof appRouter;

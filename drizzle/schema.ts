@@ -507,20 +507,41 @@ export const cardTemplates = mysqlTable("card_templates", {
   name: varchar("name", { length: 100 }).notNull(),
   resellerId: int("resellerId"), // null = system template
   imageUrl: text("imageUrl").notNull(),
-  // Position settings for printing (in pixels)
+  imageKey: text("imageKey"), // S3 key for deletion
+  
+  // Username text settings
   usernameX: int("usernameX").default(50),
   usernameY: int("usernameY").default(100),
+  usernameFontSize: int("usernameFontSize").default(14),
+  usernameFontFamily: mysqlEnum("usernameFontFamily", ["normal", "clear", "digital"]).default("normal"),
+  usernameFontColor: varchar("usernameFontColor", { length: 9 }).default("#000000"),
+  usernameAlign: mysqlEnum("usernameAlign", ["left", "center", "right"]).default("left"),
+  
+  // Password text settings
   passwordX: int("passwordX").default(50),
   passwordY: int("passwordY").default(130),
+  passwordFontSize: int("passwordFontSize").default(14),
+  passwordFontFamily: mysqlEnum("passwordFontFamily", ["normal", "clear", "digital"]).default("normal"),
+  passwordFontColor: varchar("passwordFontColor", { length: 9 }).default("#000000"),
+  passwordAlign: mysqlEnum("passwordAlign", ["left", "center", "right"]).default("left"),
+  
+  // QR Code settings
+  qrCodeEnabled: boolean("qrCodeEnabled").default(true),
   qrCodeX: int("qrCodeX").default(200),
   qrCodeY: int("qrCodeY").default(50),
   qrCodeSize: int("qrCodeSize").default(80),
-  // Font settings
-  fontSize: int("fontSize").default(12),
-  fontColor: varchar("fontColor", { length: 7 }).default("#000000"),
+  qrCodeDomain: varchar("qrCodeDomain", { length: 255 }), // IP or domain for QR
+  
   // Card dimensions
   cardWidth: int("cardWidth").default(350),
   cardHeight: int("cardHeight").default(200),
+  
+  // Print settings
+  cardsPerPage: int("cardsPerPage").default(8),
+  marginTop: decimal("marginTop", { precision: 4, scale: 2 }).default("1.8"),
+  marginHorizontal: decimal("marginHorizontal", { precision: 4, scale: 2 }).default("1.8"),
+  columnsPerPage: int("columnsPerPage").default(5),
+  
   isDefault: boolean("isDefault").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
