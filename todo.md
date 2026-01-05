@@ -287,3 +287,9 @@
   - [x] Add QR Code X/Y position inputs
 - [x] Update routers.ts to pass QR settings to PDF generator
 - [x] Ensure PDF output matches preview exactly (WYSIWYG)
+
+## Remove Card Templates Page (Jan 5, 2026)
+- [x] Remove "قوالب البطاقات" from sidebar navigation
+- [x] Redirect /card-templates route to /print-cards
+- [x] Keep CardTemplates.tsx file but make it inaccessible
+- [x] Ensure all template functionality is in print-cards page only

@@ -18,8 +18,8 @@ import NasDevices from "./pages/NasDevices";
 import Settings from "./pages/Settings";
 import Sessions from "./pages/Sessions";
 import MikrotikSetup from "./pages/MikrotikSetup";
-import CardTemplates from "./pages/CardTemplates";
 import PrintCards from "./pages/PrintCards";
+import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
 function Router() {
@@ -82,7 +82,7 @@ function Router() {
         </DashboardLayout>
       </Route>
       <Route path="/card-templates">
-        <CardTemplates />
+        <Redirect to="/print-cards" />
       </Route>
       <Route path="/print-cards">
         <PrintCards />
