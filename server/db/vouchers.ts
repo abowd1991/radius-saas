@@ -460,18 +460,6 @@ export async function generateCards(data: {
       expiresAt,
       purchasePrice: data.purchasePrice ? String(data.purchasePrice) : plan.resellerPrice,
       salePrice: data.salePrice || data.cardPrice ? String(data.salePrice || data.cardPrice) : plan.price,
-      simultaneousUse,
-      hotspotPort: data.hotspotPort || null,
-      timeFromActivation,
-      internetTimeValue: data.internetTimeValue || 0,
-      internetTimeUnit: data.internetTimeUnit || 'hours',
-      cardTimeValue: data.cardTimeValue || 0,
-      cardTimeUnit: data.cardTimeUnit || 'hours',
-      macBinding: data.macBinding || false,
-      prefix: prefix || null,
-      usernameLength,
-      passwordLength,
-      subscriberGroup,
     });
     
     generatedCards.push({ serialNumber, username, password });

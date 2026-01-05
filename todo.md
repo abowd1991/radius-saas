@@ -293,3 +293,9 @@
 - [x] Redirect /card-templates route to /print-cards
 - [x] Keep CardTemplates.tsx file but make it inaccessible
 - [x] Ensure all template functionality is in print-cards page only
+
+## Bug Fix - Bulk Insert Error (Jan 5, 2026)
+- [x] Fix Bulk Insert failing for large batches (100 cards)
+- [x] Reduce batch size or fix query structure
+- [x] Tested with 100 cards - SUCCESS
+- [x] Tested with 500 cards - SUCCESS
