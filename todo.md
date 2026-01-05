@@ -274,3 +274,16 @@
 - [x] Add live preview that updates instantly on any change
 - [x] Update PDF generation to match preview exactly (WYSIWYG)
 - [x] Keep all controls in same print page (no navigation)
+
+## PDF WYSIWYG Fix (Jan 5, 2026)
+- [x] Fix PDF generation to use textSettings from preview
+  - [x] Apply username X/Y position from preview (percentage-based)
+  - [x] Apply password X/Y position from preview (percentage-based)
+  - [x] Apply font family/size/color from preview
+  - [x] Apply text alignment from preview
+- [x] Add QR Code positioning in preview
+  - [x] Make QR Code draggable element
+  - [x] Add QR Code size control
+  - [x] Add QR Code X/Y position inputs
+- [x] Update routers.ts to pass QR settings to PDF generator
+- [x] Ensure PDF output matches preview exactly (WYSIWYG)

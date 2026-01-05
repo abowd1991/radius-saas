@@ -78,6 +78,11 @@ export default function PrintCards() {
   // QR Code settings
   const [qrEnabled, setQrEnabled] = useState(false);
   const [qrDomain, setQrDomain] = useState("");
+  const [qrSettings, setQrSettings] = useState({
+    x: 10,
+    y: 10,
+    size: 60,
+  });
   
   // Text positioning settings
   const [usernameSettings, setUsernameSettings] = useState<TextSettings>({
@@ -112,7 +117,7 @@ export default function PrintCards() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   
   // Drag state
-  const [dragging, setDragging] = useState<"username" | "password" | null>(null);
+  const [dragging, setDragging] = useState<"username" | "password" | "qr" | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
   // Calculate rows based on columns and cards per page
@@ -231,7 +236,7 @@ export default function PrintCards() {
   };
 
   // Handle drag for text positioning
-  const handleMouseDown = (type: "username" | "password") => (e: React.MouseEvent) => {
+  const handleMouseDown = (type: "username" | "password" | "qr") => (e: React.MouseEvent) => {
     e.preventDefault();
     setDragging(type);
   };
@@ -245,8 +250,10 @@ export default function PrintCards() {
     
     if (dragging === "username") {
       setUsernameSettings(prev => ({ ...prev, x, y }));
-    } else {
+    } else if (dragging === "password") {
       setPasswordSettings(prev => ({ ...prev, x, y }));
+    } else if (dragging === "qr") {
+      setQrSettings(prev => ({ ...prev, x, y }));
     }
   }, [dragging]);
   
@@ -290,6 +297,7 @@ export default function PrintCards() {
       },
       qrEnabled,
       qrDomain: qrEnabled ? qrDomain : undefined,
+      qrSettings: qrEnabled ? qrSettings : undefined,
       textSettings: {
         username: usernameSettings,
         password: passwordSettings,
@@ -619,6 +627,32 @@ export default function PrintCards() {
                           <span>1234</span>
                         </div>
                       </div>
+                      
+                      {/* QR Code Overlay */}
+                      {qrEnabled && (
+                        <div
+                          className={`absolute cursor-move transition-shadow ${dragging === "qr" ? "ring-2 ring-green-500" : ""}`}
+                          style={{
+                            left: `${qrSettings.x}%`,
+                            top: `${qrSettings.y}%`,
+                            transform: "translate(-50%, -50%)",
+                            width: `${qrSettings.size}px`,
+                            height: `${qrSettings.size}px`,
+                            backgroundColor: "white",
+                            borderRadius: "4px",
+                            border: "2px dashed #22c55e",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          onMouseDown={handleMouseDown("qr")}
+                        >
+                          <div className="flex flex-col items-center">
+                            <QrCode className="text-green-600" style={{ width: `${qrSettings.size * 0.6}px`, height: `${qrSettings.size * 0.6}px` }} />
+                            <GripVertical className="h-3 w-3 text-green-500 mt-1" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1067,16 +1101,53 @@ export default function PrintCards() {
                   </div>
                   
                   {qrEnabled && (
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">رابط الدخول (IP أو Domain)</Label>
-                      <Input
-                        value={qrDomain}
-                        onChange={(e) => setQrDomain(e.target.value)}
-                        placeholder="مثال: http://192.168.1.1/login أو http://hotspot.example.com"
-                        dir="ltr"
-                      />
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">رابط الدخول (IP أو Domain)</Label>
+                        <Input
+                          value={qrDomain}
+                          onChange={(e) => setQrDomain(e.target.value)}
+                          placeholder="مثال: http://192.168.1.1/login أو http://hotspot.example.com"
+                          dir="ltr"
+                        />
+                      </div>
+                      
+                      {/* QR Position */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-xs">X %</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={qrSettings.x.toFixed(0)}
+                            onChange={(e) => setQrSettings(prev => ({ ...prev, x: Number(e.target.value) }))}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Y %</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={qrSettings.y.toFixed(0)}
+                            onChange={(e) => setQrSettings(prev => ({ ...prev, y: Number(e.target.value) }))}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">الحجم</Label>
+                          <Input
+                            type="number"
+                            min="20"
+                            max="150"
+                            value={qrSettings.size}
+                            onChange={(e) => setQrSettings(prev => ({ ...prev, size: Number(e.target.value) }))}
+                          />
+                        </div>
+                      </div>
+                      
                       <p className="text-xs text-muted-foreground">
-                        سيتم إضافة QR Code يحتوي على هذا الرابط لكل بطاقة
+                        اسحب QR Code في المعاينة أو أدخل الإحداثيات يدوياً
                       </p>
                     </div>
                   )}

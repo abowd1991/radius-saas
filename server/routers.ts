@@ -457,6 +457,11 @@ const vouchersRouter = router({
       }).optional(),
       qrEnabled: z.boolean().optional(),
       qrDomain: z.string().optional(),
+      qrSettings: z.object({
+        x: z.number(),
+        y: z.number(),
+        size: z.number(),
+      }).optional(),
       textSettings: z.object({
         username: z.object({
           x: z.number(),
@@ -524,7 +529,17 @@ const vouchersRouter = router({
         spacingV: 2,
       };
 
-      // Generate and save PDF with template
+      // Use textSettings from preview if provided, otherwise fall back to template settings
+      const textSettings = input.textSettings;
+      const qrSettings = {
+        enabled: input.qrEnabled ?? template?.qrCodeEnabled ?? false,
+        domain: input.qrDomain ?? template?.qrCodeDomain ?? null,
+        x: input.qrSettings?.x ?? template?.qrCodeX ?? 10,
+        y: input.qrSettings?.y ?? template?.qrCodeY ?? 10,
+        size: input.qrSettings?.size ?? template?.qrCodeSize ?? 80,
+      };
+
+      // Generate and save PDF with template - using preview settings (WYSIWYG)
       const result = await saveBatchPDFWithTemplate({
         batchId: input.batchId,
         batchName: batch.name,
@@ -534,23 +549,25 @@ const vouchersRouter = router({
           imageUrl: template.imageUrl,
           cardWidth: template.cardWidth || 400,
           cardHeight: template.cardHeight || 250,
-          usernameX: template.usernameX || 100,
-          usernameY: template.usernameY || 100,
-          usernameFontSize: template.usernameFontSize || 14,
-          usernameFontFamily: (template.usernameFontFamily || "normal") as "normal" | "clear" | "digital",
-          usernameFontColor: template.usernameFontColor || "#0066cc",
-          usernameAlign: (template.usernameAlign || "left") as "left" | "center" | "right",
-          passwordX: template.passwordX || 100,
-          passwordY: template.passwordY || 130,
-          passwordFontSize: template.passwordFontSize || 14,
-          passwordFontFamily: (template.passwordFontFamily || "normal") as "normal" | "clear" | "digital",
-          passwordFontColor: template.passwordFontColor || "#cc0000",
-          passwordAlign: (template.passwordAlign || "left") as "left" | "center" | "right",
-          qrCodeEnabled: template.qrCodeEnabled || false,
-          qrCodeX: template.qrCodeX || 0,
-          qrCodeY: template.qrCodeY || 0,
-          qrCodeSize: template.qrCodeSize || 80,
-          qrCodeDomain: template.qrCodeDomain || null,
+          // Use textSettings from preview if provided (WYSIWYG)
+          usernameX: textSettings?.username.x ?? template.usernameX ?? 50,
+          usernameY: textSettings?.username.y ?? template.usernameY ?? 40,
+          usernameFontSize: textSettings?.username.fontSize ?? template.usernameFontSize ?? 14,
+          usernameFontFamily: (textSettings?.username.fontFamily ?? template.usernameFontFamily ?? "normal") as "normal" | "clear" | "digital",
+          usernameFontColor: textSettings?.username.color ?? template.usernameFontColor ?? "#0066cc",
+          usernameAlign: (textSettings?.username.align ?? template.usernameAlign ?? "center") as "left" | "center" | "right",
+          passwordX: textSettings?.password.x ?? template.passwordX ?? 50,
+          passwordY: textSettings?.password.y ?? template.passwordY ?? 60,
+          passwordFontSize: textSettings?.password.fontSize ?? template.passwordFontSize ?? 14,
+          passwordFontFamily: (textSettings?.password.fontFamily ?? template.passwordFontFamily ?? "normal") as "normal" | "clear" | "digital",
+          passwordFontColor: textSettings?.password.color ?? template.passwordFontColor ?? "#cc0000",
+          passwordAlign: (textSettings?.password.align ?? template.passwordAlign ?? "center") as "left" | "center" | "right",
+          // Use QR settings from preview (WYSIWYG)
+          qrCodeEnabled: qrSettings.enabled,
+          qrCodeX: qrSettings.x,
+          qrCodeY: qrSettings.y,
+          qrCodeSize: qrSettings.size,
+          qrCodeDomain: qrSettings.domain,
           cardsPerPage: template.cardsPerPage || 8,
           marginTop: template.marginTop || "1.8",
           marginHorizontal: template.marginHorizontal || "1.8",

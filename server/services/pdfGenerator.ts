@@ -140,7 +140,8 @@ function calculateCardDimensions(settings: PrintSettings): { cardWidth: number; 
   return { cardWidth, cardHeight, rows };
 }
 
-// Generate single card HTML with template (scaled to fit)
+// Generate single card HTML with template (scaled to fit) - WYSIWYG
+// Uses percentage-based positioning to match preview exactly
 async function generateTemplateCardHTML(
   card: CardData,
   template: TemplateSettings,
@@ -151,21 +152,23 @@ async function generateTemplateCardHTML(
   const usernameFontFamily = FONT_FAMILY_MAP[template.usernameFontFamily] || FONT_FAMILY_MAP.normal;
   const passwordFontFamily = FONT_FAMILY_MAP[template.passwordFontFamily] || FONT_FAMILY_MAP.normal;
 
-  // Calculate scale factor to fit template into card dimensions
-  const scaleX = cardWidth / template.cardWidth;
-  const scaleY = cardHeight / template.cardHeight;
-  const scale = Math.min(scaleX, scaleY);
+  // Scale font size based on card dimensions (assuming preview is ~400px wide)
+  const fontScale = cardWidth / 40; // Convert mm to approximate scale factor
+  const scaledUsernameFontSize = Math.max(6, template.usernameFontSize * fontScale * 0.3);
+  const scaledPasswordFontSize = Math.max(6, template.passwordFontSize * fontScale * 0.3);
+  
+  // QR Code size scaled to card dimensions
+  const qrSizePercent = (template.qrCodeSize / 400) * 100; // Assuming 400px preview width
+  const scaledQrSize = (qrSizePercent / 100) * cardWidth;
 
-  // Scale positions and font sizes
-  const scaledUsernameX = template.usernameX * scale;
-  const scaledUsernameY = template.usernameY * scale;
-  const scaledUsernameFontSize = template.usernameFontSize * scale;
-  const scaledPasswordX = template.passwordX * scale;
-  const scaledPasswordY = template.passwordY * scale;
-  const scaledPasswordFontSize = template.passwordFontSize * scale;
-  const scaledQrCodeX = template.qrCodeX * scale;
-  const scaledQrCodeY = template.qrCodeY * scale;
-  const scaledQrCodeSize = template.qrCodeSize * scale;
+  // Get text alignment transform
+  const getAlignTransform = (align: string) => {
+    switch (align) {
+      case 'left': return 'translate(0, -50%)';
+      case 'right': return 'translate(-100%, -50%)';
+      default: return 'translate(-50%, -50%)';
+    }
+  };
 
   return `
     <div class="card" style="
@@ -178,40 +181,41 @@ async function generateTemplateCardHTML(
       overflow: hidden;
       box-sizing: border-box;
     ">
-      <!-- Username -->
+      <!-- Username - WYSIWYG positioning using percentages -->
       <div style="
         position: absolute;
-        left: ${scaledUsernameX}mm;
-        top: ${scaledUsernameY}mm;
+        left: ${template.usernameX}%;
+        top: ${template.usernameY}%;
+        transform: ${getAlignTransform(template.usernameAlign)};
         font-size: ${scaledUsernameFontSize}pt;
         font-family: ${usernameFontFamily};
         color: ${template.usernameFontColor};
         text-align: ${template.usernameAlign};
         white-space: nowrap;
-        transform-origin: left top;
       ">${card.username}</div>
       
-      <!-- Password -->
+      <!-- Password - WYSIWYG positioning using percentages -->
       <div style="
         position: absolute;
-        left: ${scaledPasswordX}mm;
-        top: ${scaledPasswordY}mm;
+        left: ${template.passwordX}%;
+        top: ${template.passwordY}%;
+        transform: ${getAlignTransform(template.passwordAlign)};
         font-size: ${scaledPasswordFontSize}pt;
         font-family: ${passwordFontFamily};
         color: ${template.passwordFontColor};
         text-align: ${template.passwordAlign};
         white-space: nowrap;
-        transform-origin: left top;
       ">${card.password}</div>
       
       ${template.qrCodeEnabled && qrDataUrl ? `
-        <!-- QR Code -->
+        <!-- QR Code - WYSIWYG positioning using percentages -->
         <img src="${qrDataUrl}" style="
           position: absolute;
-          left: ${scaledQrCodeX}mm;
-          top: ${scaledQrCodeY}mm;
-          width: ${scaledQrCodeSize}mm;
-          height: ${scaledQrCodeSize}mm;
+          left: ${template.qrCodeX}%;
+          top: ${template.qrCodeY}%;
+          transform: translate(-50%, -50%);
+          width: ${scaledQrSize}mm;
+          height: ${scaledQrSize}mm;
         " />
       ` : ""}
     </div>
