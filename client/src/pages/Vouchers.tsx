@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,7 @@ import {
   Ban,
   RefreshCw,
   FileSpreadsheet,
+  Wifi,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -72,11 +74,24 @@ export default function Vouchers() {
   const [redeemCode, setRedeemCode] = useState("");
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   
-  // Form state for generating cards
+  // Form state for generating cards - Updated with all new fields
   const [generateForm, setGenerateForm] = useState({
     planId: "",
-    quantity: "10",
+    quantity: "1",
     batchName: "",
+    cardPrice: "0",
+    prefix: "",
+    simultaneousUse: "1",
+    usernameLength: "6",
+    passwordLength: "4",
+    subscriberGroup: "Default group",
+    hotspotPort: "",
+    internetTimeValue: "0",
+    internetTimeUnit: "hours" as "hours" | "days",
+    cardTimeValue: "0",
+    cardTimeUnit: "hours" as "hours" | "days",
+    timeFromActivation: true,
+    macBinding: false,
   });
 
   // Print settings
@@ -97,27 +112,29 @@ export default function Vouchers() {
   // Fetch plans for selection
   const { data: plans } = trpc.plans.list.useQuery();
 
+  // Fetch subscriber groups
+  const { data: subscriberGroups } = trpc.vouchers.getSubscriberGroups.useQuery();
+
   // Mutations
-  const generateVouchers = trpc.vouchers.generate.useMutation({
+  const generateMutation = trpc.vouchers.generate.useMutation({
     onSuccess: (data) => {
-      toast.success(
-        language === "ar" 
-          ? `تم إنشاء ${data.quantity} بطاقة بنجاح` 
-          : `Successfully generated ${data.quantity} cards`
+      toast.success(language === 'ar' 
+        ? `تم إنشاء ${data.quantity} كرت بنجاح` 
+        : `Successfully generated ${data.quantity} cards`
       );
       setIsGenerateDialogOpen(false);
-      setGenerateForm({ planId: "", quantity: "10", batchName: "" });
       refetch();
       refetchBatches();
+      resetGenerateForm();
     },
     onError: (error) => {
       toast.error(error.message);
     },
   });
 
-  const redeemVoucher = trpc.vouchers.redeem.useMutation({
+  const redeemMutation = trpc.vouchers.redeem.useMutation({
     onSuccess: () => {
-      toast.success(language === "ar" ? "تم تفعيل البطاقة بنجاح" : "Card activated successfully");
+      toast.success(language === 'ar' ? 'تم تفعيل الكرت بنجاح' : 'Card activated successfully');
       setIsRedeemDialogOpen(false);
       setRedeemCode("");
       refetch();
@@ -127,13 +144,32 @@ export default function Vouchers() {
     },
   });
 
-  const generatePDF = trpc.vouchers.generateBatchPDF.useMutation({
+  const suspendMutation = trpc.vouchers.suspend.useMutation({
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تعليق الكرت' : 'Card suspended');
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const unsuspendMutation = trpc.vouchers.unsuspend.useMutation({
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم إعادة تفعيل الكرت' : 'Card reactivated');
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const generatePDFMutation = trpc.vouchers.generateBatchPDF.useMutation({
     onSuccess: (data) => {
-      toast.success(language === "ar" ? "تم إنشاء ملف الطباعة بنجاح" : "Print file generated successfully");
-      // Open the HTML in a new tab for printing
       if (data.htmlUrl) {
         window.open(data.htmlUrl, '_blank');
       }
+      toast.success(language === 'ar' ? 'تم إنشاء ملف PDF' : 'PDF generated successfully');
       setIsPrintDialogOpen(false);
     },
     onError: (error) => {
@@ -141,29 +177,77 @@ export default function Vouchers() {
     },
   });
 
-  const suspendCard = trpc.vouchers.suspend.useMutation({
-    onSuccess: () => {
-      toast.success(language === "ar" ? "تم إيقاف البطاقة" : "Card suspended");
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  const resetGenerateForm = () => {
+    setGenerateForm({
+      planId: "",
+      quantity: "1",
+      batchName: "",
+      cardPrice: "0",
+      prefix: "",
+      simultaneousUse: "1",
+      usernameLength: "6",
+      passwordLength: "4",
+      subscriberGroup: "Default group",
+      hotspotPort: "",
+      internetTimeValue: "0",
+      internetTimeUnit: "hours",
+      cardTimeValue: "0",
+      cardTimeUnit: "hours",
+      timeFromActivation: true,
+      macBinding: false,
+    });
+  };
 
-  const unsuspendCard = trpc.vouchers.unsuspend.useMutation({
-    onSuccess: () => {
-      toast.success(language === "ar" ? "تم تفعيل البطاقة" : "Card reactivated");
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  const handleGenerateCards = () => {
+    if (!generateForm.planId) {
+      toast.error(language === 'ar' ? 'يرجى اختيار الخدمة' : 'Please select a plan');
+      return;
+    }
+    
+    generateMutation.mutate({
+      planId: parseInt(generateForm.planId),
+      quantity: parseInt(generateForm.quantity) || 1,
+      batchName: generateForm.batchName || undefined,
+      cardPrice: parseFloat(generateForm.cardPrice) || 0,
+      prefix: generateForm.prefix || undefined,
+      simultaneousUse: parseInt(generateForm.simultaneousUse) || 1,
+      usernameLength: parseInt(generateForm.usernameLength) || 6,
+      passwordLength: parseInt(generateForm.passwordLength) || 4,
+      subscriberGroup: generateForm.subscriberGroup || 'Default group',
+      hotspotPort: generateForm.hotspotPort || undefined,
+      internetTimeValue: parseInt(generateForm.internetTimeValue) || 0,
+      internetTimeUnit: generateForm.internetTimeUnit,
+      cardTimeValue: parseInt(generateForm.cardTimeValue) || 0,
+      cardTimeUnit: generateForm.cardTimeUnit,
+      timeFromActivation: generateForm.timeFromActivation,
+      macBinding: generateForm.macBinding,
+    });
+  };
+
+  const handleRedeemCard = () => {
+    if (!redeemCode.trim()) {
+      toast.error(language === 'ar' ? 'يرجى إدخال رمز الكرت' : 'Please enter card code');
+      return;
+    }
+    redeemMutation.mutate({ code: redeemCode.trim() });
+  };
+
+  const handlePrintBatch = () => {
+    if (!selectedBatchId) {
+      toast.error(language === 'ar' ? 'يرجى اختيار دفعة' : 'Please select a batch');
+      return;
+    }
+    generatePDFMutation.mutate({
+      batchId: selectedBatchId,
+      companyName: printSettings.companyName,
+      hotspotUrl: printSettings.hotspotUrl,
+      cardsPerPage: parseInt(printSettings.cardsPerPage) || 8,
+    });
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(language === "ar" ? "تم النسخ" : "Copied");
+    toast.success(language === 'ar' ? 'تم النسخ' : 'Copied');
   };
 
   const getStatusBadge = (status: string) => {
@@ -172,88 +256,70 @@ export default function Vouchers() {
       active: { variant: "default", label: "Active", labelAr: "نشط" },
       used: { variant: "outline", label: "Used", labelAr: "مستخدم" },
       expired: { variant: "destructive", label: "Expired", labelAr: "منتهي" },
-      suspended: { variant: "destructive", label: "Suspended", labelAr: "موقوف" },
+      suspended: { variant: "destructive", label: "Suspended", labelAr: "معلق" },
       cancelled: { variant: "destructive", label: "Cancelled", labelAr: "ملغي" },
     };
     const config = statusConfig[status] || statusConfig.unused;
     return (
       <Badge variant={config.variant}>
-        {language === "ar" ? config.labelAr : config.label}
+        {language === 'ar' ? config.labelAr : config.label}
       </Badge>
     );
   };
 
-  const handleGenerateCards = () => {
-    if (!generateForm.planId || !generateForm.quantity) {
-      toast.error(language === "ar" ? "يرجى ملء جميع الحقول المطلوبة" : "Please fill all required fields");
-      return;
-    }
-    generateVouchers.mutate({
-      planId: parseInt(generateForm.planId),
-      quantity: parseInt(generateForm.quantity),
-      batchName: generateForm.batchName || undefined,
-    });
-  };
-
-  const handlePrintBatch = () => {
-    if (!selectedBatchId) {
-      toast.error(language === "ar" ? "يرجى اختيار دفعة" : "Please select a batch");
-      return;
-    }
-    generatePDF.mutate({
-      batchId: selectedBatchId,
-      companyName: printSettings.companyName,
-      hotspotUrl: printSettings.hotspotUrl || undefined,
-      cardsPerPage: parseInt(printSettings.cardsPerPage),
-    });
-  };
-
   const filteredVouchers = vouchers?.filter(v => {
     if (!searchQuery) return true;
-    return v.serialNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           v.username.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    return (
+      v.username?.toLowerCase().includes(query) ||
+      v.serialNumber?.toLowerCase().includes(query) ||
+      v.password?.toLowerCase().includes(query)
+    );
   });
 
   const isAdmin = user?.role === 'super_admin';
   const isReseller = user?.role === 'reseller' || isAdmin;
+  const isClient = user?.role === 'client';
 
   return (
     <div className="space-y-6" dir={direction}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">
-            {language === "ar" ? "بطاقات RADIUS" : "RADIUS Cards"}
+          <h1 className="text-3xl font-bold tracking-tight">
+            {language === 'ar' ? 'إدارة الكروت' : 'Card Management'}
           </h1>
           <p className="text-muted-foreground">
-            {language === "ar" 
-              ? "إدارة بطاقات الإنترنت وتوليد دفعات جديدة"
-              : "Manage internet cards and generate new batches"}
+            {language === 'ar' 
+              ? 'إنشاء وإدارة كروت RADIUS للمشتركين'
+              : 'Create and manage RADIUS cards for subscribers'
+            }
           </p>
         </div>
-        <div className="flex gap-2">
-          {user?.role === 'client' && (
+        <div className="flex gap-2 flex-wrap">
+          {isClient && (
             <Dialog open={isRedeemDialogOpen} onOpenChange={setIsRedeemDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <CreditCard className="h-4 w-4 me-2" />
-                  {language === "ar" ? "تفعيل بطاقة" : "Activate Card"}
+                  {language === 'ar' ? 'شحن كرت' : 'Redeem Card'}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{language === "ar" ? "تفعيل بطاقة" : "Activate Card"}</DialogTitle>
+                  <DialogTitle>{language === 'ar' ? 'شحن كرت' : 'Redeem Card'}</DialogTitle>
                   <DialogDescription>
-                    {language === "ar" 
-                      ? "أدخل الرقم التسلسلي للبطاقة لتفعيلها"
-                      : "Enter the card serial number to activate it"}
+                    {language === 'ar' 
+                      ? 'أدخل رقم الكرت أو الرقم التسلسلي لتفعيله'
+                      : 'Enter the card number or serial to activate it'
+                    }
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label>{language === "ar" ? "الرقم التسلسلي" : "Serial Number"}</Label>
+                    <Label>{language === 'ar' ? 'رمز الكرت' : 'Card Code'}</Label>
                     <Input
-                      placeholder="XXXX-XXXX-XXXX"
+                      placeholder={language === 'ar' ? 'أدخل رقم الكرت...' : 'Enter card code...'}
                       value={redeemCode}
                       onChange={(e) => setRedeemCode(e.target.value)}
                     />
@@ -261,13 +327,13 @@ export default function Vouchers() {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsRedeemDialogOpen(false)}>
-                    {language === "ar" ? "إلغاء" : "Cancel"}
+                    {language === 'ar' ? 'إلغاء' : 'Cancel'}
                   </Button>
-                  <Button 
-                    onClick={() => redeemVoucher.mutate({ code: redeemCode })}
-                    disabled={redeemVoucher.isPending}
-                  >
-                    {language === "ar" ? "تفعيل" : "Activate"}
+                  <Button onClick={handleRedeemCard} disabled={redeemMutation.isPending}>
+                    {redeemMutation.isPending 
+                      ? (language === 'ar' ? 'جاري التفعيل...' : 'Activating...')
+                      : (language === 'ar' ? 'تفعيل' : 'Activate')
+                    }
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -280,54 +346,55 @@ export default function Vouchers() {
                 <DialogTrigger asChild>
                   <Button variant="outline">
                     <Printer className="h-4 w-4 me-2" />
-                    {language === "ar" ? "طباعة PDF" : "Print PDF"}
+                    {language === 'ar' ? 'طباعة PDF' : 'Print PDF'}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>{language === "ar" ? "طباعة البطاقات" : "Print Cards"}</DialogTitle>
+                    <DialogTitle>{language === 'ar' ? 'طباعة الكروت' : 'Print Cards'}</DialogTitle>
                     <DialogDescription>
-                      {language === "ar" 
-                        ? "اختر الدفعة وإعدادات الطباعة"
-                        : "Select batch and print settings"}
+                      {language === 'ar' 
+                        ? 'اختر الدفعة وإعدادات الطباعة'
+                        : 'Select batch and print settings'
+                      }
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label>{language === "ar" ? "الدفعة" : "Batch"}</Label>
+                      <Label>{language === 'ar' ? 'اختر الدفعة' : 'Select Batch'}</Label>
                       <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
                         <SelectTrigger>
-                          <SelectValue placeholder={language === "ar" ? "اختر دفعة" : "Select batch"} />
+                          <SelectValue placeholder={language === 'ar' ? 'اختر دفعة...' : 'Select batch...'} />
                         </SelectTrigger>
                         <SelectContent>
-                          {batches?.map((batch) => (
+                          {batches?.map((batch: any) => (
                             <SelectItem key={batch.batchId} value={batch.batchId}>
-                              {batch.name} ({batch.quantity} {language === "ar" ? "بطاقة" : "cards"})
+                              {batch.name} ({batch.quantity} {language === 'ar' ? 'كرت' : 'cards'})
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>{language === "ar" ? "اسم الشركة" : "Company Name"}</Label>
+                      <Label>{language === 'ar' ? 'اسم الشركة' : 'Company Name'}</Label>
                       <Input
                         value={printSettings.companyName}
-                        onChange={(e) => setPrintSettings(s => ({ ...s, companyName: e.target.value }))}
+                        onChange={(e) => setPrintSettings(prev => ({ ...prev, companyName: e.target.value }))}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>{language === "ar" ? "رابط Hotspot (اختياري)" : "Hotspot URL (optional)"}</Label>
+                      <Label>{language === 'ar' ? 'رابط Hotspot' : 'Hotspot URL'}</Label>
                       <Input
-                        placeholder="http://hotspot.example.com/login"
+                        placeholder="http://hotspot.local"
                         value={printSettings.hotspotUrl}
-                        onChange={(e) => setPrintSettings(s => ({ ...s, hotspotUrl: e.target.value }))}
+                        onChange={(e) => setPrintSettings(prev => ({ ...prev, hotspotUrl: e.target.value }))}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>{language === "ar" ? "عدد البطاقات في الصفحة" : "Cards per Page"}</Label>
+                      <Label>{language === 'ar' ? 'عدد الكروت في الصفحة' : 'Cards per Page'}</Label>
                       <Select 
                         value={printSettings.cardsPerPage} 
-                        onValueChange={(v) => setPrintSettings(s => ({ ...s, cardsPerPage: v }))}
+                        onValueChange={(v) => setPrintSettings(prev => ({ ...prev, cardsPerPage: v }))}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -337,17 +404,20 @@ export default function Vouchers() {
                           <SelectItem value="6">6</SelectItem>
                           <SelectItem value="8">8</SelectItem>
                           <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="12">12</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsPrintDialogOpen(false)}>
-                      {language === "ar" ? "إلغاء" : "Cancel"}
+                      {language === 'ar' ? 'إلغاء' : 'Cancel'}
                     </Button>
-                    <Button onClick={handlePrintBatch} disabled={generatePDF.isPending}>
-                      <Printer className="h-4 w-4 me-2" />
-                      {language === "ar" ? "إنشاء PDF" : "Generate PDF"}
+                    <Button onClick={handlePrintBatch} disabled={generatePDFMutation.isPending}>
+                      {generatePDFMutation.isPending 
+                        ? (language === 'ar' ? 'جاري الإنشاء...' : 'Generating...')
+                        : (language === 'ar' ? 'إنشاء PDF' : 'Generate PDF')
+                      }
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -357,62 +427,251 @@ export default function Vouchers() {
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="h-4 w-4 me-2" />
-                    {language === "ar" ? "إنشاء بطاقات" : "Generate Cards"}
+                    {language === 'ar' ? 'إنشاء كروت' : 'Generate Cards'}
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>{language === "ar" ? "إنشاء بطاقات جديدة" : "Generate New Cards"}</DialogTitle>
+                    <DialogTitle>{language === 'ar' ? 'إنشاء كروت RADIUS جديدة' : 'Generate New RADIUS Cards'}</DialogTitle>
                     <DialogDescription>
-                      {language === "ar" 
-                        ? "سيتم إنشاء حسابات RADIUS حقيقية لكل بطاقة"
-                        : "Real RADIUS accounts will be created for each card"}
+                      {language === 'ar' 
+                        ? 'كل كرت يمثل حساب RADIUS حقيقي جاهز للاستخدام على MikroTik'
+                        : 'Each card represents a real RADIUS account ready for MikroTik'
+                      }
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label>{language === "ar" ? "الخطة" : "Plan"} *</Label>
-                      <Select 
-                        value={generateForm.planId} 
-                        onValueChange={(v) => setGenerateForm(f => ({ ...f, planId: v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={language === "ar" ? "اختر خطة" : "Select plan"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {plans?.map((plan) => (
-                            <SelectItem key={plan.id} value={plan.id.toString()}>
-                              {language === "ar" ? plan.nameAr || plan.name : plan.name} - {plan.price} $
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  
+                  <div className="space-y-6 py-4">
+                    {/* Row 1: Quantity, Price, Prefix */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'كمية' : 'Quantity'}</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="1000"
+                          value={generateForm.quantity}
+                          onChange={(e) => setGenerateForm(prev => ({ ...prev, quantity: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'سعر الكرت' : 'Card Price'}</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={generateForm.cardPrice}
+                          onChange={(e) => setGenerateForm(prev => ({ ...prev, cardPrice: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'حرف او رقم يبدأ الكرت به' : 'Card Prefix'}</Label>
+                        <Input
+                          maxLength={10}
+                          placeholder=""
+                          value={generateForm.prefix}
+                          onChange={(e) => setGenerateForm(prev => ({ ...prev, prefix: e.target.value }))}
+                        />
+                      </div>
                     </div>
+
+                    {/* Row 2: Simultaneous Use, Username Length, Password Length */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'عدد الأجهزة التي يمكنها الاتصال' : 'Simultaneous Connections'}</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={generateForm.simultaneousUse}
+                          onChange={(e) => setGenerateForm(prev => ({ ...prev, simultaneousUse: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'طول رقم الكرت' : 'Username Length'}</Label>
+                        <Select 
+                          value={generateForm.usernameLength} 
+                          onValueChange={(v) => setGenerateForm(prev => ({ ...prev, usernameLength: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[4, 5, 6, 7, 8, 9, 10, 12, 14, 16].map(n => (
+                              <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'طول كلمة السر' : 'Password Length'}</Label>
+                        <Select 
+                          value={generateForm.passwordLength} 
+                          onValueChange={(v) => setGenerateForm(prev => ({ ...prev, passwordLength: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[4, 5, 6, 7, 8, 9, 10, 12, 14, 16].map(n => (
+                              <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Row 3: Plan and Subscriber Group */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'الخدمة المرتبطة بالكرت' : 'Service Plan'}</Label>
+                        <Select 
+                          value={generateForm.planId} 
+                          onValueChange={(v) => setGenerateForm(prev => ({ ...prev, planId: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={language === 'ar' ? 'اختر الخدمة...' : 'Select plan...'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {plans?.map((plan: any) => (
+                              <SelectItem key={plan.id} value={String(plan.id)}>
+                                {language === 'ar' && plan.nameAr ? plan.nameAr : plan.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'مجموعة المشتركين' : 'Subscriber Group'}</Label>
+                        <Select 
+                          value={generateForm.subscriberGroup} 
+                          onValueChange={(v) => setGenerateForm(prev => ({ ...prev, subscriberGroup: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(subscriberGroups || ['Default group']).map((group: string) => (
+                              <SelectItem key={group} value={group}>{group}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Row 4: Hotspot Port */}
                     <div className="space-y-2">
-                      <Label>{language === "ar" ? "العدد" : "Quantity"} *</Label>
+                      <Label>{language === 'ar' ? 'تحديد منفذ هوتسبوت' : 'Hotspot Port Restriction'}</Label>
                       <Input
-                        type="number"
-                        min="1"
-                        max="1000"
-                        value={generateForm.quantity}
-                        onChange={(e) => setGenerateForm(f => ({ ...f, quantity: e.target.value }))}
+                        placeholder={language === 'ar' ? 'فارغ = السماح للجميع' : 'Empty = Allow all'}
+                        value={generateForm.hotspotPort}
+                        onChange={(e) => setGenerateForm(prev => ({ ...prev, hotspotPort: e.target.value }))}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'ar' 
+                          ? 'مثال: hs-LAN 5, hs-LAN 1, hs-LAN 2'
+                          : 'Example: hs-LAN 5, hs-LAN 1, hs-LAN 2'
+                        }
+                      </p>
                     </div>
+
+                    {/* Row 5: Internet Time and Card Time */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'الوقت المتاح على الانترنت' : 'Internet Time Limit'}</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            className="flex-1"
+                            value={generateForm.internetTimeValue}
+                            onChange={(e) => setGenerateForm(prev => ({ ...prev, internetTimeValue: e.target.value }))}
+                          />
+                          <Select 
+                            value={generateForm.internetTimeUnit} 
+                            onValueChange={(v: "hours" | "days") => setGenerateForm(prev => ({ ...prev, internetTimeUnit: v }))}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="hours">{language === 'ar' ? 'ساعة' : 'Hours'}</SelectItem>
+                              <SelectItem value="days">{language === 'ar' ? 'يوم' : 'Days'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'الوقت المتاح من تفعيل الكرت' : 'Card Validity Time'}</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            className="flex-1"
+                            value={generateForm.cardTimeValue}
+                            onChange={(e) => setGenerateForm(prev => ({ ...prev, cardTimeValue: e.target.value }))}
+                          />
+                          <Select 
+                            value={generateForm.cardTimeUnit} 
+                            onValueChange={(v: "hours" | "days") => setGenerateForm(prev => ({ ...prev, cardTimeUnit: v }))}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="hours">{language === 'ar' ? 'ساعة' : 'Hours'}</SelectItem>
+                              <SelectItem value="days">{language === 'ar' ? 'يوم' : 'Days'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Row 6: Switches */}
+                    <div className="flex flex-wrap gap-6">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={generateForm.timeFromActivation}
+                          onCheckedChange={(checked) => setGenerateForm(prev => ({ ...prev, timeFromActivation: checked }))}
+                        />
+                        <Label className="cursor-pointer">
+                          {language === 'ar' ? 'تحسب من تفعيل الكرت' : 'Count from activation'}
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={generateForm.macBinding}
+                          onCheckedChange={(checked) => setGenerateForm(prev => ({ ...prev, macBinding: checked }))}
+                        />
+                        <Label className="cursor-pointer">
+                          {language === 'ar' ? 'عدم ربط الماك' : 'No MAC binding'}
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Row 7: Batch Name */}
                     <div className="space-y-2">
-                      <Label>{language === "ar" ? "اسم الدفعة (اختياري)" : "Batch Name (optional)"}</Label>
+                      <Label>{language === 'ar' ? 'اسم الدفعة (اختياري)' : 'Batch Name (Optional)'}</Label>
                       <Input
-                        placeholder={language === "ar" ? "مثال: دفعة يناير 2024" : "e.g., January 2024 Batch"}
+                        placeholder={language === 'ar' ? 'مثال: دفعة يناير 2026' : 'e.g., January 2026 Batch'}
                         value={generateForm.batchName}
-                        onChange={(e) => setGenerateForm(f => ({ ...f, batchName: e.target.value }))}
+                        onChange={(e) => setGenerateForm(prev => ({ ...prev, batchName: e.target.value }))}
                       />
                     </div>
                   </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsGenerateDialogOpen(false)}>
-                      {language === "ar" ? "إلغاء" : "Cancel"}
+
+                  <DialogFooter className="gap-2">
+                    <Button variant="outline" onClick={() => {
+                      setIsGenerateDialogOpen(false);
+                      resetGenerateForm();
+                    }}>
+                      {language === 'ar' ? 'إلغاء' : 'Discard'}
                     </Button>
-                    <Button onClick={handleGenerateCards} disabled={generateVouchers.isPending}>
-                      {language === "ar" ? "إنشاء" : "Generate"}
+                    <Button onClick={handleGenerateCards} disabled={generateMutation.isPending}>
+                      {generateMutation.isPending 
+                        ? (language === 'ar' ? 'جاري الإنشاء...' : 'Generating...')
+                        : (language === 'ar' ? 'إنشاء' : 'Submit')
+                      }
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -422,53 +681,101 @@ export default function Vouchers() {
         </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {language === 'ar' ? 'إجمالي الكروت' : 'Total Cards'}
+            </CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{vouchers?.length || 0}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {language === 'ar' ? 'غير مستخدمة' : 'Unused'}
+            </CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {vouchers?.filter(v => v.status === 'unused').length || 0}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {language === 'ar' ? 'نشطة' : 'Active'}
+            </CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {vouchers?.filter(v => v.status === 'active').length || 0}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {language === 'ar' ? 'الدفعات' : 'Batches'}
+            </CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{batches?.length || 0}</div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="cards">
             <CreditCard className="h-4 w-4 me-2" />
-            {language === "ar" ? "البطاقات" : "Cards"}
+            {language === 'ar' ? 'الكروت' : 'Cards'}
           </TabsTrigger>
-          {isReseller && (
-            <TabsTrigger value="batches">
-              <Package className="h-4 w-4 me-2" />
-              {language === "ar" ? "الدفعات" : "Batches"}
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="batches">
+            <Package className="h-4 w-4 me-2" />
+            {language === 'ar' ? 'الدفعات' : 'Batches'}
+          </TabsTrigger>
         </TabsList>
 
-        {/* Cards Tab */}
         <TabsContent value="cards" className="space-y-4">
           {/* Filters */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={language === "ar" ? "بحث بالرقم التسلسلي أو اسم المستخدم..." : "Search by serial or username..."}
-                    className="ps-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <Filter className="h-4 w-4 me-2" />
-                    <SelectValue placeholder={language === "ar" ? "الحالة" : "Status"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{language === "ar" ? "الكل" : "All"}</SelectItem>
-                    <SelectItem value="unused">{language === "ar" ? "غير مستخدم" : "Unused"}</SelectItem>
-                    <SelectItem value="active">{language === "ar" ? "نشط" : "Active"}</SelectItem>
-                    <SelectItem value="used">{language === "ar" ? "مستخدم" : "Used"}</SelectItem>
-                    <SelectItem value="expired">{language === "ar" ? "منتهي" : "Expired"}</SelectItem>
-                    <SelectItem value="suspended">{language === "ar" ? "موقوف" : "Suspended"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder={language === 'ar' ? 'بحث بالرقم أو اسم المستخدم...' : 'Search by number or username...'}
+                className="ps-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-4 w-4 me-2" />
+                <SelectValue placeholder={language === 'ar' ? 'الحالة' : 'Status'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{language === 'ar' ? 'الكل' : 'All'}</SelectItem>
+                <SelectItem value="unused">{language === 'ar' ? 'غير مستخدم' : 'Unused'}</SelectItem>
+                <SelectItem value="active">{language === 'ar' ? 'نشط' : 'Active'}</SelectItem>
+                <SelectItem value="used">{language === 'ar' ? 'مستخدم' : 'Used'}</SelectItem>
+                <SelectItem value="expired">{language === 'ar' ? 'منتهي' : 'Expired'}</SelectItem>
+                <SelectItem value="suspended">{language === 'ar' ? 'معلق' : 'Suspended'}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
 
           {/* Cards Table */}
           <Card>
@@ -476,99 +783,87 @@ export default function Vouchers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{language === "ar" ? "الرقم التسلسلي" : "Serial Number"}</TableHead>
-                    <TableHead>{language === "ar" ? "اسم المستخدم" : "Username"}</TableHead>
-                    <TableHead>{language === "ar" ? "كلمة المرور" : "Password"}</TableHead>
-                    <TableHead>{language === "ar" ? "الحالة" : "Status"}</TableHead>
-                    <TableHead>{language === "ar" ? "تاريخ الإنشاء" : "Created"}</TableHead>
-                    <TableHead>{language === "ar" ? "تاريخ الانتهاء" : "Expires"}</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead>{language === 'ar' ? 'رقم الكرت (Username)' : 'Card Number (Username)'}</TableHead>
+                    <TableHead>{language === 'ar' ? 'كلمة السر' : 'Password'}</TableHead>
+                    <TableHead>{language === 'ar' ? 'الرقم التسلسلي' : 'Serial'}</TableHead>
+                    <TableHead>{language === 'ar' ? 'الحالة' : 'Status'}</TableHead>
+                    <TableHead>{language === 'ar' ? 'تاريخ الإنشاء' : 'Created'}</TableHead>
+                    <TableHead className="text-end">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                      <TableCell colSpan={6} className="text-center py-8">
+                        {language === 'ar' ? 'جاري التحميل...' : 'Loading...'}
                       </TableCell>
                     </TableRow>
                   ) : filteredVouchers?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        {language === "ar" ? "لا توجد بطاقات" : "No cards found"}
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        {language === 'ar' ? 'لا توجد كروت' : 'No cards found'}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredVouchers?.map((card) => (
-                      <TableRow key={card.id}>
-                        <TableCell className="font-mono text-sm">
+                    filteredVouchers?.map((voucher: any) => (
+                      <TableRow key={voucher.id}>
+                        <TableCell className="font-mono">
                           <div className="flex items-center gap-2">
-                            {card.serialNumber}
+                            {voucher.username}
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6"
-                              onClick={() => copyToClipboard(card.serialNumber)}
+                              onClick={() => copyToClipboard(voucher.username)}
                             >
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-sm">{card.username}</TableCell>
-                        <TableCell className="font-mono text-sm">
+                        <TableCell className="font-mono">
                           <div className="flex items-center gap-2">
-                            {card.password}
+                            {voucher.password}
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6"
-                              onClick={() => copyToClipboard(card.password)}
+                              onClick={() => copyToClipboard(voucher.password)}
                             >
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell>{getStatusBadge(card.status)}</TableCell>
+                        <TableCell className="font-mono text-xs">{voucher.serialNumber}</TableCell>
+                        <TableCell>{getStatusBadge(voucher.status)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(card.createdAt).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US")}
+                          {voucher.createdAt ? new Date(voucher.createdAt).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '-'}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {card.expiresAt 
-                            ? new Date(card.expiresAt).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US")
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {isAdmin && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => copyToClipboard(`${card.username}:${card.password}`)}>
-                                  <Copy className="h-4 w-4 me-2" />
-                                  {language === "ar" ? "نسخ البيانات" : "Copy Credentials"}
+                        <TableCell className="text-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => copyToClipboard(`${voucher.username}:${voucher.password}`)}>
+                                <Copy className="h-4 w-4 me-2" />
+                                {language === 'ar' ? 'نسخ البيانات' : 'Copy Credentials'}
+                              </DropdownMenuItem>
+                              {isAdmin && voucher.status === 'active' && (
+                                <DropdownMenuItem onClick={() => suspendMutation.mutate({ cardId: voucher.id })}>
+                                  <Ban className="h-4 w-4 me-2" />
+                                  {language === 'ar' ? 'تعليق' : 'Suspend'}
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {card.status === 'active' && (
-                                  <DropdownMenuItem 
-                                    onClick={() => suspendCard.mutate({ cardId: card.id })}
-                                    className="text-destructive"
-                                  >
-                                    <Ban className="h-4 w-4 me-2" />
-                                    {language === "ar" ? "إيقاف" : "Suspend"}
-                                  </DropdownMenuItem>
-                                )}
-                                {card.status === 'suspended' && (
-                                  <DropdownMenuItem onClick={() => unsuspendCard.mutate({ cardId: card.id })}>
-                                    <CheckCircle2 className="h-4 w-4 me-2" />
-                                    {language === "ar" ? "تفعيل" : "Reactivate"}
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
+                              )}
+                              {isAdmin && voucher.status === 'suspended' && (
+                                <DropdownMenuItem onClick={() => unsuspendMutation.mutate({ cardId: voucher.id })}>
+                                  <RefreshCw className="h-4 w-4 me-2" />
+                                  {language === 'ar' ? 'إعادة تفعيل' : 'Reactivate'}
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))
@@ -579,68 +874,65 @@ export default function Vouchers() {
           </Card>
         </TabsContent>
 
-        {/* Batches Tab */}
-        {isReseller && (
-          <TabsContent value="batches" className="space-y-4">
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
+        <TabsContent value="batches" className="space-y-4">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{language === 'ar' ? 'اسم الدفعة' : 'Batch Name'}</TableHead>
+                    <TableHead>{language === 'ar' ? 'الكمية' : 'Quantity'}</TableHead>
+                    <TableHead>{language === 'ar' ? 'الحالة' : 'Status'}</TableHead>
+                    <TableHead>{language === 'ar' ? 'تاريخ الإنشاء' : 'Created'}</TableHead>
+                    <TableHead className="text-end">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {batches?.length === 0 ? (
                     <TableRow>
-                      <TableHead>{language === "ar" ? "معرف الدفعة" : "Batch ID"}</TableHead>
-                      <TableHead>{language === "ar" ? "الاسم" : "Name"}</TableHead>
-                      <TableHead>{language === "ar" ? "العدد" : "Quantity"}</TableHead>
-                      <TableHead>{language === "ar" ? "الحالة" : "Status"}</TableHead>
-                      <TableHead>{language === "ar" ? "تاريخ الإنشاء" : "Created"}</TableHead>
-                      <TableHead className="w-[100px]"></TableHead>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        {language === 'ar' ? 'لا توجد دفعات' : 'No batches found'}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {batches?.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          {language === "ar" ? "لا توجد دفعات" : "No batches found"}
+                  ) : (
+                    batches?.map((batch: any) => (
+                      <TableRow key={batch.batchId}>
+                        <TableCell className="font-medium">{batch.name}</TableCell>
+                        <TableCell>{batch.quantity}</TableCell>
+                        <TableCell>
+                          <Badge variant={batch.status === 'completed' ? 'default' : 'secondary'}>
+                            {batch.status === 'completed' 
+                              ? (language === 'ar' ? 'مكتمل' : 'Completed')
+                              : (language === 'ar' ? 'قيد الإنشاء' : 'Generating')
+                            }
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {batch.createdAt ? new Date(batch.createdAt).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '-'}
+                        </TableCell>
+                        <TableCell className="text-end">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedBatchId(batch.batchId);
+                                setIsPrintDialogOpen(true);
+                              }}
+                            >
+                              <Printer className="h-4 w-4 me-1" />
+                              PDF
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      batches?.map((batch) => (
-                        <TableRow key={batch.batchId}>
-                          <TableCell className="font-mono text-sm">{batch.batchId}</TableCell>
-                          <TableCell>{batch.name}</TableCell>
-                          <TableCell>{batch.quantity}</TableCell>
-                          <TableCell>
-                            <Badge variant={batch.status === 'completed' ? 'default' : 'secondary'}>
-                              {batch.status === 'completed' 
-                                ? (language === "ar" ? "مكتمل" : "Completed")
-                                : (language === "ar" ? "قيد الإنشاء" : "Generating")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {new Date(batch.createdAt).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US")}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setSelectedBatchId(batch.batchId);
-                                  setIsPrintDialogOpen(true);
-                                }}
-                              >
-                                <Printer className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );

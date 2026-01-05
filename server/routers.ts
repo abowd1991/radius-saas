@@ -269,6 +269,20 @@ const vouchersRouter = router({
       batchName: z.string().optional(),
       purchasePrice: z.number().optional(),
       salePrice: z.number().optional(),
+      // New fields for RADIUS card creation
+      simultaneousUse: z.number().min(1).max(100).default(1),
+      hotspotPort: z.string().optional(),
+      timeFromActivation: z.boolean().default(true),
+      internetTimeValue: z.number().min(0).default(0),
+      internetTimeUnit: z.enum(['hours', 'days']).default('hours'),
+      cardTimeValue: z.number().min(0).default(0),
+      cardTimeUnit: z.enum(['hours', 'days']).default('hours'),
+      macBinding: z.boolean().default(false),
+      prefix: z.string().max(10).optional(),
+      usernameLength: z.number().min(4).max(20).default(6),
+      passwordLength: z.number().min(4).max(20).default(4),
+      subscriberGroup: z.string().default('Default group'),
+      cardPrice: z.number().default(0),
     }))
     .mutation(async ({ ctx, input }) => {
       return cardDb.generateCards({
@@ -277,6 +291,11 @@ const vouchersRouter = router({
         resellerId: ctx.user.role === 'reseller' ? ctx.user.id : undefined,
       });
     }),
+
+  // Get subscriber groups for dropdown
+  getSubscriberGroups: resellerProcedure.query(async () => {
+    return cardDb.getSubscriberGroups();
+  }),
 
   activate: clientProcedure
     .input(z.object({ serialNumber: z.string() }))

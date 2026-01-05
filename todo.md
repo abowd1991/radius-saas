@@ -183,3 +183,19 @@
   - [x] require-message-auth command
   - [x] Copy button for each command
   - [x] Arabic explanations for each step
+
+## Card Creation Page Redesign
+- [x] Redesign card creation page with full RADIUS integration
+  - [x] Quantity field for bulk card creation
+  - [x] Card number (Username) with configurable length
+  - [x] Password with configurable length
+  - [x] Prefix option (letter/number to start card with)
+  - [x] Card price field
+  - [x] Simultaneous-Use (number of devices allowed)
+  - [x] Service/Plan selection (with rate limit and validity)
+  - [x] Subscriber group selection
+  - [x] Hotspot port restriction (empty = allow all)
+  - [x] Internet time available (hours/days)
+  - [x] Card activation time (hours/days) with "count from activation" option
+  - [x] MAC binding option
+  - [x] Create real RADIUS accounts (radcheck/radreply entries)

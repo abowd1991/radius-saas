@@ -3,21 +3,21 @@ import { getDb } from "../db";
 import { radiusCards, cardBatches, plans, radcheck, radreply, radusergroup } from "../../drizzle/schema";
 import { nanoid } from "nanoid";
 
-// Generate random username (8 characters)
-function generateUsername(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
+// Generate random username with configurable length and prefix
+function generateUsername(length: number = 6, prefix: string = ''): string {
+  const chars = '0123456789';
+  let result = prefix;
+  for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
 }
 
-// Generate random password (8 characters)
-function generatePassword(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+// Generate random password with configurable length
+function generatePassword(length: number = 4): string {
+  const chars = '0123456789';
   let result = '';
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
@@ -30,8 +30,8 @@ function generateSerialNumber(): string {
   return timestamp + random;
 }
 
-// Create RADIUS card and insert into FreeRADIUS tables
-export async function createRadiusCard(data: {
+// Card creation options interface
+interface CardCreationOptions {
   planId: number;
   createdBy: number;
   resellerId?: number;
@@ -39,7 +39,23 @@ export async function createRadiusCard(data: {
   purchasePrice?: number;
   salePrice?: number;
   notes?: string;
-}) {
+  // New fields
+  simultaneousUse?: number;
+  hotspotPort?: string;
+  timeFromActivation?: boolean;
+  internetTimeValue?: number;
+  internetTimeUnit?: 'hours' | 'days';
+  cardTimeValue?: number;
+  cardTimeUnit?: 'hours' | 'days';
+  macBinding?: boolean;
+  prefix?: string;
+  usernameLength?: number;
+  passwordLength?: number;
+  subscriberGroup?: string;
+}
+
+// Create RADIUS card and insert into FreeRADIUS tables
+export async function createRadiusCard(data: CardCreationOptions) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -47,9 +63,23 @@ export async function createRadiusCard(data: {
   const [plan] = await db.select().from(plans).where(eq(plans.id, data.planId)).limit(1);
   if (!plan) throw new Error("Plan not found");
 
-  const username = generateUsername();
-  const password = generatePassword();
+  const usernameLength = data.usernameLength || 6;
+  const passwordLength = data.passwordLength || 4;
+  const prefix = data.prefix || '';
+  
+  const username = generateUsername(usernameLength, prefix);
+  const password = generatePassword(passwordLength);
   const serialNumber = generateSerialNumber();
+
+  // Calculate session timeout based on card time settings
+  let sessionTimeout: number | null = null;
+  if (data.cardTimeValue && data.cardTimeValue > 0) {
+    if (data.cardTimeUnit === 'days') {
+      sessionTimeout = data.cardTimeValue * 24 * 60 * 60; // days to seconds
+    } else {
+      sessionTimeout = data.cardTimeValue * 60 * 60; // hours to seconds
+    }
+  }
 
   // Insert into radius_cards table
   const [result] = await db.insert(radiusCards).values({
@@ -64,7 +94,20 @@ export async function createRadiusCard(data: {
     salePrice: data.salePrice?.toString() || null,
     notes: data.notes || null,
     status: 'unused',
-  });
+    // New fields
+    simultaneousUse: data.simultaneousUse || 1,
+    hotspotPort: data.hotspotPort || null,
+    timeFromActivation: data.timeFromActivation !== false,
+    internetTimeValue: data.internetTimeValue || 0,
+    internetTimeUnit: data.internetTimeUnit || 'hours',
+    cardTimeValue: data.cardTimeValue || 0,
+    cardTimeUnit: data.cardTimeUnit || 'hours',
+    macBinding: data.macBinding || false,
+    prefix: prefix || null,
+    usernameLength,
+    passwordLength,
+    subscriberGroup: data.subscriberGroup || 'Default group',
+  } as any);
 
   const cardId = result.insertId;
 
@@ -76,13 +119,46 @@ export async function createRadiusCard(data: {
     value: password,
   });
 
-  // Insert Expiration attribute (card not activated yet, set far future)
-  await db.insert(radcheck).values({
-    username,
-    attribute: 'Expiration',
-    op: ':=',
-    value: 'Jan 01 2099 00:00:00',
-  });
+  // Insert Expiration attribute based on timeFromActivation setting
+  if (data.timeFromActivation === false) {
+    // Calculate expiration from now (card creation)
+    let expiresAt: Date;
+    const now = new Date();
+    
+    if (data.cardTimeValue && data.cardTimeValue > 0) {
+      if (data.cardTimeUnit === 'days') {
+        expiresAt = new Date(now.getTime() + data.cardTimeValue * 24 * 60 * 60 * 1000);
+      } else {
+        expiresAt = new Date(now.getTime() + data.cardTimeValue * 60 * 60 * 1000);
+      }
+    } else if (plan.validityValue) {
+      if (plan.validityType === 'days') {
+        expiresAt = new Date(now.getTime() + plan.validityValue * 24 * 60 * 60 * 1000);
+      } else if (plan.validityType === 'hours') {
+        expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 60 * 1000);
+      } else {
+        expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 1000);
+      }
+    } else {
+      expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    }
+    
+    const expirationStr = formatExpirationDate(expiresAt);
+    await db.insert(radcheck).values({
+      username,
+      attribute: 'Expiration',
+      op: ':=',
+      value: expirationStr,
+    });
+  } else {
+    // Set far future expiration (will be updated on first login)
+    await db.insert(radcheck).values({
+      username,
+      attribute: 'Expiration',
+      op: ':=',
+      value: 'Jan 01 2099 00:00:00',
+    });
+  }
 
   // Insert Auth-Type attribute
   await db.insert(radcheck).values({
@@ -92,16 +168,26 @@ export async function createRadiusCard(data: {
     value: 'Accept',
   });
 
+  // Insert Simultaneous-Use in radcheck (this is a check attribute)
+  const simultaneousUse = data.simultaneousUse || plan.simultaneousUse || 1;
+  await db.insert(radcheck).values({
+    username,
+    attribute: 'Simultaneous-Use',
+    op: ':=',
+    value: simultaneousUse.toString(),
+  });
+
   // Insert into radreply table based on plan settings
   const radreplyValues = [];
 
-  // Session-Timeout (in seconds)
-  if (plan.sessionTimeout && plan.sessionTimeout > 0) {
+  // Session-Timeout (in seconds) - from card settings or plan
+  const finalSessionTimeout = sessionTimeout || plan.sessionTimeout;
+  if (finalSessionTimeout && finalSessionTimeout > 0) {
     radreplyValues.push({
       username,
       attribute: 'Session-Timeout',
       op: '=',
-      value: plan.sessionTimeout.toString(),
+      value: finalSessionTimeout.toString(),
     });
   }
 
@@ -116,23 +202,21 @@ export async function createRadiusCard(data: {
   }
 
   // MikroTik Rate-Limit (download/upload)
-  if (plan.downloadSpeed || plan.uploadSpeed) {
-    const rateLimit = `${plan.uploadSpeed || 0}M/${plan.downloadSpeed || 0}M`;
+  if (plan.mikrotikRateLimit) {
     radreplyValues.push({
       username,
       attribute: 'Mikrotik-Rate-Limit',
       op: '=',
-      value: rateLimit,
+      value: plan.mikrotikRateLimit,
     });
-  }
-
-  // Simultaneous-Use (max connections)
-  if (plan.simultaneousUse && plan.simultaneousUse > 0) {
+  } else if (plan.downloadSpeed || plan.uploadSpeed) {
+    const download = plan.downloadSpeed ? `${plan.downloadSpeed}k` : '0';
+    const upload = plan.uploadSpeed ? `${plan.uploadSpeed}k` : '0';
     radreplyValues.push({
       username,
-      attribute: 'Simultaneous-Use',
-      op: ':=',
-      value: plan.simultaneousUse.toString(),
+      attribute: 'Mikrotik-Rate-Limit',
+      op: '=',
+      value: `${upload}/${download}`,
     });
   }
 
@@ -146,15 +230,42 @@ export async function createRadiusCard(data: {
     });
   }
 
+  // Hotspot port restriction (Called-Station-Id)
+  if (data.hotspotPort) {
+    radreplyValues.push({
+      username,
+      attribute: 'Called-Station-Id',
+      op: '==',
+      value: data.hotspotPort,
+    });
+  }
+
+  // Max-All-Session (total time allowed on internet)
+  if (data.internetTimeValue && data.internetTimeValue > 0) {
+    let maxAllSession: number;
+    if (data.internetTimeUnit === 'days') {
+      maxAllSession = data.internetTimeValue * 24 * 60 * 60;
+    } else {
+      maxAllSession = data.internetTimeValue * 60 * 60;
+    }
+    radreplyValues.push({
+      username,
+      attribute: 'Max-All-Session',
+      op: ':=',
+      value: maxAllSession.toString(),
+    });
+  }
+
   // Insert all radreply values
   if (radreplyValues.length > 0) {
     await db.insert(radreply).values(radreplyValues);
   }
 
-  // Insert into radusergroup (link user to plan group)
+  // Insert into radusergroup (link user to subscriber group)
+  const groupName = data.subscriberGroup || 'Default group';
   await db.insert(radusergroup).values({
     username,
-    groupname: `plan_${plan.id}`,
+    groupname: groupName,
     priority: 1,
   });
 
@@ -165,11 +276,24 @@ export async function createRadiusCard(data: {
     serialNumber,
     planId: data.planId,
     planName: plan.name,
+    simultaneousUse,
   };
 }
 
-// Create batch of RADIUS cards
-export async function createCardBatch(data: {
+// Format expiration date for FreeRADIUS
+function formatExpirationDate(date: Date): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const day = date.getDate().toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+  return `${month} ${day} ${year} ${hours}:${minutes}:${seconds}`;
+}
+
+// Batch creation options interface
+interface BatchCreationOptions {
   name: string;
   planId: number;
   quantity: number;
@@ -177,13 +301,30 @@ export async function createCardBatch(data: {
   resellerId?: number;
   purchasePrice?: number;
   salePrice?: number;
-}) {
+  // New fields
+  simultaneousUse?: number;
+  hotspotPort?: string;
+  timeFromActivation?: boolean;
+  internetTimeValue?: number;
+  internetTimeUnit?: 'hours' | 'days';
+  cardTimeValue?: number;
+  cardTimeUnit?: 'hours' | 'days';
+  macBinding?: boolean;
+  prefix?: string;
+  usernameLength?: number;
+  passwordLength?: number;
+  subscriberGroup?: string;
+  cardPrice?: number;
+}
+
+// Create batch of RADIUS cards
+export async function createCardBatch(data: BatchCreationOptions) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const batchId = `BATCH-${Date.now()}-${nanoid(6)}`;
 
-  // Create batch record
+  // Create batch record with all new fields
   await db.insert(cardBatches).values({
     batchId,
     name: data.name,
@@ -192,7 +333,21 @@ export async function createCardBatch(data: {
     resellerId: data.resellerId || null,
     quantity: data.quantity,
     status: 'generating',
-  });
+    // New fields
+    simultaneousUse: data.simultaneousUse || 1,
+    hotspotPort: data.hotspotPort || null,
+    timeFromActivation: data.timeFromActivation !== false,
+    internetTimeValue: data.internetTimeValue || 0,
+    internetTimeUnit: data.internetTimeUnit || 'hours',
+    cardTimeValue: data.cardTimeValue || 0,
+    cardTimeUnit: data.cardTimeUnit || 'hours',
+    macBinding: data.macBinding || false,
+    prefix: data.prefix || null,
+    usernameLength: data.usernameLength || 6,
+    passwordLength: data.passwordLength || 4,
+    subscriberGroup: data.subscriberGroup || 'Default group',
+    cardPrice: data.cardPrice?.toString() || '0',
+  } as any);
 
   // Create cards
   const cards = [];
@@ -204,7 +359,20 @@ export async function createCardBatch(data: {
         resellerId: data.resellerId,
         batchId,
         purchasePrice: data.purchasePrice,
-        salePrice: data.salePrice,
+        salePrice: data.salePrice || data.cardPrice,
+        // Pass all new fields
+        simultaneousUse: data.simultaneousUse,
+        hotspotPort: data.hotspotPort,
+        timeFromActivation: data.timeFromActivation,
+        internetTimeValue: data.internetTimeValue,
+        internetTimeUnit: data.internetTimeUnit,
+        cardTimeValue: data.cardTimeValue,
+        cardTimeUnit: data.cardTimeUnit,
+        macBinding: data.macBinding,
+        prefix: data.prefix,
+        usernameLength: data.usernameLength,
+        passwordLength: data.passwordLength,
+        subscriberGroup: data.subscriberGroup,
       });
       cards.push(card);
     } catch (error) {
@@ -225,7 +393,7 @@ export async function createCardBatch(data: {
   };
 }
 
-// Activate a RADIUS card
+// Activate a RADIUS card (on first login)
 export async function activateRadiusCard(cardId: number, userId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -242,16 +410,47 @@ export async function activateRadiusCard(cardId: number, userId?: number) {
   const now = new Date();
   let expiresAt: Date;
 
-  // Calculate expiration based on plan validity
-  if (plan.validityType === 'days' && plan.validityValue) {
-    expiresAt = new Date(now.getTime() + plan.validityValue * 24 * 60 * 60 * 1000);
-  } else if (plan.validityType === 'hours' && plan.validityValue) {
-    expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 60 * 1000);
-  } else if (plan.validityType === 'minutes' && plan.validityValue) {
-    expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 1000);
+  // Check if card has custom time settings
+  const cardTimeValue = (card as any).cardTimeValue;
+  const cardTimeUnit = (card as any).cardTimeUnit;
+  const timeFromActivation = (card as any).timeFromActivation;
+
+  // Only update expiration if timeFromActivation is true
+  if (timeFromActivation !== false) {
+    if (cardTimeValue && cardTimeValue > 0) {
+      if (cardTimeUnit === 'days') {
+        expiresAt = new Date(now.getTime() + cardTimeValue * 24 * 60 * 60 * 1000);
+      } else {
+        expiresAt = new Date(now.getTime() + cardTimeValue * 60 * 60 * 1000);
+      }
+    } else if (plan.validityValue) {
+      if (plan.validityType === 'days') {
+        expiresAt = new Date(now.getTime() + plan.validityValue * 24 * 60 * 60 * 1000);
+      } else if (plan.validityType === 'hours') {
+        expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 60 * 1000);
+      } else {
+        expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 1000);
+      }
+    } else {
+      expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Update radcheck Expiration attribute
+    const expirationStr = formatExpirationDate(expiresAt);
+    await db.update(radcheck)
+      .set({ value: expirationStr })
+      .where(and(
+        eq(radcheck.username, card.username),
+        eq(radcheck.attribute, 'Expiration')
+      ));
   } else {
-    // Default 30 days
-    expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    // Get existing expiration
+    const [expRecord] = await db.select().from(radcheck)
+      .where(and(
+        eq(radcheck.username, card.username),
+        eq(radcheck.attribute, 'Expiration')
+      )).limit(1);
+    expiresAt = expRecord ? new Date(expRecord.value) : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   }
 
   // Update card status
@@ -259,28 +458,11 @@ export async function activateRadiusCard(cardId: number, userId?: number) {
     .set({
       status: 'active',
       activatedAt: now,
+      firstLoginAt: now,
       expiresAt,
       usedBy: userId || null,
     })
     .where(eq(radiusCards.id, cardId));
-
-  // Update radcheck Expiration attribute
-  const expirationStr = expiresAt.toLocaleString('en-US', {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).replace(',', '');
-
-  await db.update(radcheck)
-    .set({ value: expirationStr })
-    .where(and(
-      eq(radcheck.username, card.username),
-      eq(radcheck.attribute, 'Expiration')
-    ));
 
   return {
     id: cardId,
@@ -381,138 +563,128 @@ export async function getCardByUsername(username: string) {
   const [card] = await db.select().from(radiusCards)
     .where(eq(radiusCards.username, username))
     .limit(1);
-
+  
   return card;
 }
 
-// Get card by serial number
-export async function getCardBySerial(serialNumber: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const [card] = await db.select().from(radiusCards)
-    .where(eq(radiusCards.serialNumber, serialNumber))
-    .limit(1);
-
-  return card;
-}
-
-// List all cards with pagination and filters
-export async function listRadiusCards(options: {
-  page?: number;
-  limit?: number;
+// List all cards with filters
+export async function listCards(filters?: {
   status?: string;
   planId?: number;
   resellerId?: number;
+  createdBy?: number;
   batchId?: string;
+  limit?: number;
+  offset?: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const page = options.page || 1;
-  const limit = options.limit || 20;
-  const offset = (page - 1) * limit;
+  let query = db.select({
+    card: radiusCards,
+    plan: plans,
+  })
+    .from(radiusCards)
+    .leftJoin(plans, eq(radiusCards.planId, plans.id))
+    .orderBy(desc(radiusCards.createdAt));
 
-  let query = db.select().from(radiusCards);
   const conditions = [];
-
-  if (options.status) {
-    conditions.push(eq(radiusCards.status, options.status as any));
+  
+  if (filters?.status) {
+    conditions.push(eq(radiusCards.status, filters.status as any));
   }
-  if (options.planId) {
-    conditions.push(eq(radiusCards.planId, options.planId));
+  if (filters?.planId) {
+    conditions.push(eq(radiusCards.planId, filters.planId));
   }
-  if (options.resellerId) {
-    conditions.push(eq(radiusCards.resellerId, options.resellerId));
+  if (filters?.resellerId) {
+    conditions.push(eq(radiusCards.resellerId, filters.resellerId));
   }
-  if (options.batchId) {
-    conditions.push(eq(radiusCards.batchId, options.batchId));
+  if (filters?.createdBy) {
+    conditions.push(eq(radiusCards.createdBy, filters.createdBy));
+  }
+  if (filters?.batchId) {
+    conditions.push(eq(radiusCards.batchId, filters.batchId));
   }
 
   if (conditions.length > 0) {
     query = query.where(and(...conditions)) as any;
   }
 
-  const cards = await query
-    .orderBy(desc(radiusCards.createdAt))
-    .limit(limit)
-    .offset(offset);
+  if (filters?.limit) {
+    query = query.limit(filters.limit) as any;
+  }
+  if (filters?.offset) {
+    query = query.offset(filters.offset) as any;
+  }
 
-  return cards;
+  return await query;
 }
 
 // List all batches
-export async function listCardBatches(options: {
-  page?: number;
-  limit?: number;
+export async function listBatches(filters?: {
   resellerId?: number;
+  createdBy?: number;
+  status?: string;
+  limit?: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const page = options.page || 1;
-  const limit = options.limit || 20;
-  const offset = (page - 1) * limit;
+  let query = db.select({
+    batch: cardBatches,
+    plan: plans,
+  })
+    .from(cardBatches)
+    .leftJoin(plans, eq(cardBatches.planId, plans.id))
+    .orderBy(desc(cardBatches.createdAt));
 
-  let query = db.select().from(cardBatches);
-
-  if (options.resellerId) {
-    query = query.where(eq(cardBatches.resellerId, options.resellerId)) as any;
+  const conditions = [];
+  
+  if (filters?.resellerId) {
+    conditions.push(eq(cardBatches.resellerId, filters.resellerId));
+  }
+  if (filters?.createdBy) {
+    conditions.push(eq(cardBatches.createdBy, filters.createdBy));
+  }
+  if (filters?.status) {
+    conditions.push(eq(cardBatches.status, filters.status as any));
   }
 
-  return await query
-    .orderBy(desc(cardBatches.createdAt))
-    .limit(limit)
-    .offset(offset);
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  if (filters?.limit) {
+    query = query.limit(filters.limit) as any;
+  }
+
+  return await query;
 }
 
-// Recharge card (extend validity)
-export async function rechargeCard(cardId: number, additionalDays: number) {
+// Get batch by ID
+export async function getBatchById(batchId: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [card] = await db.select().from(radiusCards).where(eq(radiusCards.id, cardId)).limit(1);
-  if (!card) throw new Error("Card not found");
+  const [batch] = await db.select({
+    batch: cardBatches,
+    plan: plans,
+  })
+    .from(cardBatches)
+    .leftJoin(plans, eq(cardBatches.planId, plans.id))
+    .where(eq(cardBatches.batchId, batchId))
+    .limit(1);
 
-  const currentExpiry = card.expiresAt || new Date();
-  const newExpiry = new Date(currentExpiry.getTime() + additionalDays * 24 * 60 * 60 * 1000);
+  return batch;
+}
 
-  // Update card
-  await db.update(radiusCards)
-    .set({
-      expiresAt: newExpiry,
-      status: 'active',
-    })
-    .where(eq(radiusCards.id, cardId));
+// Get subscriber groups
+export async function getSubscriberGroups() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
 
-  // Update radcheck Expiration
-  const expirationStr = newExpiry.toLocaleString('en-US', {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).replace(',', '');
+  const groups = await db.selectDistinct({ groupname: radusergroup.groupname })
+    .from(radusergroup);
 
-  await db.update(radcheck)
-    .set({ value: expirationStr })
-    .where(and(
-      eq(radcheck.username, card.username),
-      eq(radcheck.attribute, 'Expiration')
-    ));
-
-  // Update Auth-Type to Accept
-  await db.update(radcheck)
-    .set({ value: 'Accept' })
-    .where(and(
-      eq(radcheck.username, card.username),
-      eq(radcheck.attribute, 'Auth-Type')
-    ));
-
-  return {
-    id: cardId,
-    newExpiresAt: newExpiry,
-  };
+  return groups.map(g => g.groupname);
 }

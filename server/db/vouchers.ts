@@ -203,6 +203,38 @@ export async function getCardByUsername(username: string) {
   return result[0] || null;
 }
 
+// Generate username with configurable length and prefix
+function generateUsernameWithOptions(length: number = 6, prefix: string = ''): string {
+  const chars = '0123456789';
+  let result = prefix;
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// Generate password with configurable length
+function generatePasswordWithLength(length: number = 4): string {
+  const chars = '0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// Format expiration date for FreeRADIUS
+function formatExpirationDate(date: Date): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const day = date.getDate().toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+  return `${month} ${day} ${year} ${hours}:${minutes}:${seconds}`;
+}
+
 // Generate RADIUS cards with real RADIUS accounts
 export async function generateCards(data: {
   planId: number;
@@ -212,6 +244,20 @@ export async function generateCards(data: {
   batchName?: string;
   purchasePrice?: number;
   salePrice?: number;
+  // New fields
+  simultaneousUse?: number;
+  hotspotPort?: string;
+  timeFromActivation?: boolean;
+  internetTimeValue?: number;
+  internetTimeUnit?: 'hours' | 'days';
+  cardTimeValue?: number;
+  cardTimeUnit?: 'hours' | 'days';
+  macBinding?: boolean;
+  prefix?: string;
+  usernameLength?: number;
+  passwordLength?: number;
+  subscriberGroup?: string;
+  cardPrice?: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -222,8 +268,14 @@ export async function generateCards(data: {
   if (!plan) throw new Error("Plan not found");
   
   const batchId = nanoid(10);
+  const usernameLength = data.usernameLength || 6;
+  const passwordLength = data.passwordLength || 4;
+  const prefix = data.prefix || '';
+  const simultaneousUse = data.simultaneousUse || 1;
+  const subscriberGroup = data.subscriberGroup || 'Default group';
+  const timeFromActivation = data.timeFromActivation !== false;
   
-  // Create batch record
+  // Create batch record with all new fields
   await db.insert(cardBatches).values({
     batchId,
     name: data.batchName || `Batch ${batchId}`,
@@ -232,23 +284,180 @@ export async function generateCards(data: {
     resellerId: data.resellerId,
     quantity: data.quantity,
     status: "generating",
-  });
+    simultaneousUse,
+    hotspotPort: data.hotspotPort || null,
+    timeFromActivation,
+    internetTimeValue: data.internetTimeValue || 0,
+    internetTimeUnit: data.internetTimeUnit || 'hours',
+    cardTimeValue: data.cardTimeValue || 0,
+    cardTimeUnit: data.cardTimeUnit || 'hours',
+    macBinding: data.macBinding || false,
+    prefix: prefix || null,
+    usernameLength,
+    passwordLength,
+    subscriberGroup,
+    cardPrice: data.cardPrice ? String(data.cardPrice) : '0',
+  } as any);
   
   // Generate cards with RADIUS accounts
   const generatedCards: { serialNumber: string; username: string; password: string }[] = [];
   
   for (let i = 0; i < data.quantity; i++) {
-    const username = generateUsername();
-    const password = generatePassword();
+    const username = generateUsernameWithOptions(usernameLength, prefix);
+    const password = generatePasswordWithLength(passwordLength);
     const serialNumber = generateSerialNumber();
     
-    // Calculate expiration based on plan settings
-    const expiresAt = calculateExpiration(plan, plan.validityStartFrom as any);
+    // Calculate session timeout based on card time settings
+    let sessionTimeout: number | null = null;
+    if (data.cardTimeValue && data.cardTimeValue > 0) {
+      if (data.cardTimeUnit === 'days') {
+        sessionTimeout = data.cardTimeValue * 24 * 60 * 60;
+      } else {
+        sessionTimeout = data.cardTimeValue * 60 * 60;
+      }
+    }
     
-    // Insert RADIUS attributes (radcheck, radreply, radusergroup)
-    await insertRadiusAttributes(db, username, password, plan);
+    // Calculate expiration based on timeFromActivation setting
+    let expiresAt: Date | null = null;
+    if (!timeFromActivation) {
+      const now = new Date();
+      if (data.cardTimeValue && data.cardTimeValue > 0) {
+        if (data.cardTimeUnit === 'days') {
+          expiresAt = new Date(now.getTime() + data.cardTimeValue * 24 * 60 * 60 * 1000);
+        } else {
+          expiresAt = new Date(now.getTime() + data.cardTimeValue * 60 * 60 * 1000);
+        }
+      } else if (plan.validityValue) {
+        if (plan.validityType === 'days') {
+          expiresAt = new Date(now.getTime() + plan.validityValue * 24 * 60 * 60 * 1000);
+        } else if (plan.validityType === 'hours') {
+          expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 60 * 1000);
+        } else {
+          expiresAt = new Date(now.getTime() + plan.validityValue * 60 * 1000);
+        }
+      } else {
+        expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      }
+    }
     
-    // Create card record
+    // Insert into radcheck (authentication)
+    const radcheckValues = [
+      { username, attribute: "Cleartext-Password", op: ":=", value: password },
+      { username, attribute: "Simultaneous-Use", op: ":=", value: String(simultaneousUse) },
+      { username, attribute: "Auth-Type", op: ":=", value: "Accept" },
+    ];
+    
+    // Add expiration attribute
+    if (!timeFromActivation && expiresAt) {
+      radcheckValues.push({
+        username,
+        attribute: "Expiration",
+        op: ":=",
+        value: formatExpirationDate(expiresAt),
+      });
+    } else {
+      // Set far future expiration (will be updated on first login)
+      radcheckValues.push({
+        username,
+        attribute: "Expiration",
+        op: ":=",
+        value: "Jan 01 2099 00:00:00",
+      });
+    }
+    
+    await db.insert(radcheck).values(radcheckValues);
+    
+    // Build radreply attributes
+    const replyAttributes: { username: string; attribute: string; op: string; value: string }[] = [];
+    
+    // Speed limit (MikroTik Rate-Limit)
+    if (plan.mikrotikRateLimit) {
+      replyAttributes.push({
+        username,
+        attribute: "Mikrotik-Rate-Limit",
+        op: "=",
+        value: plan.mikrotikRateLimit,
+      });
+    } else if (plan.downloadSpeed && plan.uploadSpeed) {
+      const rateLimit = `${plan.downloadSpeed}k/${plan.uploadSpeed}k`;
+      replyAttributes.push({
+        username,
+        attribute: "Mikrotik-Rate-Limit",
+        op: "=",
+        value: rateLimit,
+      });
+    }
+    
+    // Session timeout (from card settings or plan)
+    const finalSessionTimeout = sessionTimeout || plan.sessionTimeout;
+    if (finalSessionTimeout && finalSessionTimeout > 0) {
+      replyAttributes.push({
+        username,
+        attribute: "Session-Timeout",
+        op: "=",
+        value: String(finalSessionTimeout),
+      });
+    }
+    
+    // Idle timeout
+    if (plan.idleTimeout) {
+      replyAttributes.push({
+        username,
+        attribute: "Idle-Timeout",
+        op: "=",
+        value: String(plan.idleTimeout),
+      });
+    }
+    
+    // Address pool
+    if (plan.mikrotikAddressPool) {
+      replyAttributes.push({
+        username,
+        attribute: "Framed-Pool",
+        op: "=",
+        value: plan.mikrotikAddressPool,
+      });
+    }
+    
+    // Hotspot port restriction (Called-Station-Id)
+    if (data.hotspotPort) {
+      replyAttributes.push({
+        username,
+        attribute: "Called-Station-Id",
+        op: "==",
+        value: data.hotspotPort,
+      });
+    }
+    
+    // Max-All-Session (total time allowed on internet)
+    if (data.internetTimeValue && data.internetTimeValue > 0) {
+      let maxAllSession: number;
+      if (data.internetTimeUnit === 'days') {
+        maxAllSession = data.internetTimeValue * 24 * 60 * 60;
+      } else {
+        maxAllSession = data.internetTimeValue * 60 * 60;
+      }
+      replyAttributes.push({
+        username,
+        attribute: "Max-All-Session",
+        op: ":=",
+        value: String(maxAllSession),
+      });
+    }
+    
+    // Insert reply attributes
+    if (replyAttributes.length > 0) {
+      await db.insert(radreply).values(replyAttributes);
+    }
+    
+    // Add to subscriber group
+    await db.insert(radusergroup).values({
+      username,
+      groupname: subscriberGroup,
+      priority: 1,
+    });
+    
+    // Create card record with all new fields
     await db.insert(radiusCards).values({
       username,
       password,
@@ -260,8 +469,20 @@ export async function generateCards(data: {
       status: "unused",
       expiresAt,
       purchasePrice: data.purchasePrice ? String(data.purchasePrice) : plan.resellerPrice,
-      salePrice: data.salePrice ? String(data.salePrice) : plan.price,
-    });
+      salePrice: data.salePrice || data.cardPrice ? String(data.salePrice || data.cardPrice) : plan.price,
+      simultaneousUse,
+      hotspotPort: data.hotspotPort || null,
+      timeFromActivation,
+      internetTimeValue: data.internetTimeValue || 0,
+      internetTimeUnit: data.internetTimeUnit || 'hours',
+      cardTimeValue: data.cardTimeValue || 0,
+      cardTimeUnit: data.cardTimeUnit || 'hours',
+      macBinding: data.macBinding || false,
+      prefix: prefix || null,
+      usernameLength,
+      passwordLength,
+      subscriberGroup,
+    } as any);
     
     generatedCards.push({ serialNumber, username, password });
   }
@@ -442,3 +663,27 @@ export const getVoucherById = getCardById;
 export const getVoucherByCode = getCardBySerial;
 export const generateVouchers = generateCards;
 export const redeemVoucher = activateCard;
+
+
+// Get subscriber groups for dropdown
+export async function getSubscriberGroups() {
+  const db = await getDb();
+  if (!db) return ['Default group'];
+
+  try {
+    const groups = await db.selectDistinct({ groupname: radusergroup.groupname })
+      .from(radusergroup);
+
+    const groupNames = groups.map(g => g.groupname).filter(Boolean);
+    
+    // Always include default group
+    if (!groupNames.includes('Default group')) {
+      groupNames.unshift('Default group');
+    }
+    
+    return groupNames;
+  } catch (error) {
+    console.error('Error fetching subscriber groups:', error);
+    return ['Default group'];
+  }
+}

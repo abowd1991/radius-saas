@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE radius_cards \nADD COLUMN simultaneousUse INT DEFAULT 1,\nADD COLUMN hotspotPort VARCHAR(100),\nADD COLUMN timeFromActivation BOOLEAN DEFAULT TRUE,\nADD COLUMN internetTimeValue INT DEFAULT 0,\nADD COLUMN internetTimeUnit ENUM('hours', 'days') DEFAULT 'hours',\nADD COLUMN cardTimeValue INT DEFAULT 0,\nADD COLUMN cardTimeUnit ENUM('hours', 'days') DEFAULT 'hours',\nADD COLUMN macBinding BOOLEAN DEFAULT FALSE,\nADD COLUMN prefix VARCHAR(10),\nADD COLUMN usernameLength INT DEFAULT 6,\nADD COLUMN passwordLength INT DEFAULT 4,\nADD COLUMN subscriberGroup VARCHAR(64) DEFAULT 'Default group';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute ALTER TABLE radius_cards \nADD COLUMN simultaneousUse INT DEFAULT 1,\nADD COLUMN hotspotPort VARCHAR(100),\nADD COLUMN timeFromActivation BOOLEAN DEFAULT TRUE,\nADD COLUMN internetTimeValue INT DEFAULT 0,\nADD COLUMN internetTimeUnit ENUM('hours', 'days') DEFAULT 'hours',\nADD COLUMN cardTimeValue INT DEFAULT 0,\nADD COLUMN cardTimeUnit ENUM('hours', 'days') DEFAULT 'hours',\nADD COLUMN macBinding BOOLEAN DEFAULT FALSE,\nADD COLUMN prefix VARCHAR(10),\nADD COLUMN usernameLength INT DEFAULT 6,\nADD COLUMN passwordLength INT DEFAULT 4,\nADD COLUMN subscriberGroup VARCHAR(64) DEFAULT 'Default group';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 4739
+}
