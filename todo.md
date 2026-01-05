@@ -361,3 +361,30 @@
 - [x] For VPN: Use the VPN tunnel IP that MikroTik can reach
 - [x] Add RADIUS server configuration in system settings
 - [x] Ensure RADIUS connection is real and testable
+
+
+## FreeRADIUS Server Setup (Jan 6, 2026)
+- [x] Create complete FreeRADIUS installation script
+  - [x] Single command installation for Ubuntu 20.04/22.04
+  - [x] Install FreeRADIUS with MySQL support
+  - [x] Configure database connection
+  - [x] Auto-configure all required modules
+- [x] Create ready-to-use configuration files
+  - [x] radiusd.conf - main configuration
+  - [x] sql.conf - database connection
+  - [x] clients.conf - NAS clients configuration
+  - [x] default site configuration
+- [x] VPN Server Setup (PPTP/SSTP)
+  - [x] PPTP server installation script
+  - [x] VPN user management
+  - [x] Network routing configuration
+- [x] Testing and verification
+  - [x] radtest commands for authentication testing
+  - [x] MikroTik PPP integration guide
+  - [x] MikroTik Hotspot integration guide
+  - [x] Accounting verification
+- [x] Complete step-by-step guide
+  - [x] Installation steps
+  - [x] MikroTik connection steps
+  - [x] Testing procedures
+  - [x] Common errors and solutions

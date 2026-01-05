@@ -1,0 +1,176 @@
+#===============================================================================
+# FreeRADIUS Default Site Configuration
+# For RADIUS SaaS Platform
+#
+# Copy this file to: /etc/freeradius/3.0/sites-available/default
+# It should already be enabled in sites-enabled/
+#===============================================================================
+
+server default {
+    #===========================================================================
+    # LISTEN SECTIONS
+    # Define which ports and protocols to listen on
+    #===========================================================================
+    
+    # Authentication listener (port 1812)
+    listen {
+        type = auth
+        ipaddr = *
+        port = 1812
+        
+        limit {
+            max_connections = 256
+            lifetime = 0
+            idle_timeout = 30
+        }
+    }
+    
+    # Accounting listener (port 1813)
+    listen {
+        type = acct
+        ipaddr = *
+        port = 1813
+        
+        limit {
+            max_connections = 256
+            lifetime = 0
+            idle_timeout = 30
+        }
+    }
+    
+    # CoA/Disconnect listener (port 3799)
+    # Used for disconnecting users or changing their attributes
+    listen {
+        type = coa
+        ipaddr = *
+        port = 3799
+    }
+    
+    #===========================================================================
+    # AUTHORIZE SECTION
+    # Process authorization requests (check if user can connect)
+    #===========================================================================
+    
+    authorize {
+        # Preprocess the request
+        preprocess
+        
+        # Remove leading/trailing spaces from username
+        filter_username
+        
+        # Check user in SQL database (radcheck table)
+        sql
+        
+        # Check for disabled users
+        # If Auth-Type is set to Reject in radcheck, deny access
+        if (&control:Auth-Type == "Reject") {
+            reject
+        }
+        
+        # Set default Auth-Type if not already set
+        if (!control:Auth-Type) {
+            update control {
+                Auth-Type := "PAP"
+            }
+        }
+        
+        # Check expiration date
+        expiration
+        
+        # Check login time restrictions
+        logintime
+        
+        # Check simultaneous use (from radreply Simultaneous-Use attribute)
+        # This is handled by the sql module
+    }
+    
+    #===========================================================================
+    # AUTHENTICATE SECTION
+    # Verify user credentials
+    #===========================================================================
+    
+    authenticate {
+        # PAP - Plain text password (most common for Hotspot)
+        Auth-Type PAP {
+            pap
+        }
+        
+        # CHAP - Challenge Handshake Authentication Protocol
+        Auth-Type CHAP {
+            chap
+        }
+        
+        # MS-CHAP - Microsoft CHAP (used by PPPoE/PPTP)
+        Auth-Type MS-CHAP {
+            mschap
+        }
+        
+        # MS-CHAPv2
+        Auth-Type MS-CHAP-V2 {
+            mschap
+        }
+    }
+    
+    #===========================================================================
+    # PREACCT SECTION
+    # Preprocess accounting requests
+    #===========================================================================
+    
+    preacct {
+        preprocess
+        
+        # Generate unique session ID
+        acct_unique
+    }
+    
+    #===========================================================================
+    # ACCOUNTING SECTION
+    # Log session data (start, interim, stop)
+    #===========================================================================
+    
+    accounting {
+        # Log all accounting to SQL (radacct table)
+        sql
+    }
+    
+    #===========================================================================
+    # SESSION SECTION
+    # Check for simultaneous sessions
+    #===========================================================================
+    
+    session {
+        sql
+    }
+    
+    #===========================================================================
+    # POST-AUTH SECTION
+    # Actions after successful authentication
+    #===========================================================================
+    
+    post-auth {
+        # Log authentication to SQL (radpostauth table)
+        sql
+        
+        # Copy session state to reply
+        if (session-state:) {
+            update reply {
+                &session-state:
+            }
+        }
+        
+        # Handle rejected authentications
+        Post-Auth-Type REJECT {
+            sql
+        }
+    }
+    
+    #===========================================================================
+    # PROXY SECTIONS (usually not needed for local auth)
+    #===========================================================================
+    
+    pre-proxy {
+    }
+    
+    post-proxy {
+    }
+}
