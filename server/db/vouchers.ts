@@ -1,4 +1,4 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { radiusCards, cardBatches, radcheck, radreply, radusergroup, plans, InsertRadiusCard, InsertCardBatch } from "../../drizzle/schema";
 import { nanoid } from "nanoid";
@@ -728,6 +728,7 @@ export async function getBatchStats(batchId: string) {
 }
 
 // Enable batch - activate all cards in batch for RADIUS authentication
+// OPTIMIZED: Uses bulk operations for better performance
 export async function enableBatch(batchId: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -737,40 +738,40 @@ export async function enableBatch(batchId: string) {
   
   // Get all cards in batch
   const cards = await getCardsByBatch(batchId);
+  if (cards.length === 0) {
+    await db.update(cardBatches)
+      .set({ enabled: true, updatedAt: new Date() })
+      .where(eq(cardBatches.batchId, batchId));
+    return { success: true, affectedCards: 0 };
+  }
   
-  // Remove Auth-Type := Reject from all cards in batch
-  for (const card of cards) {
-    await db.delete(radcheck)
-      .where(and(
-        eq(radcheck.username, card.username),
-        eq(radcheck.attribute, "Auth-Type"),
-        eq(radcheck.value, "Reject")
-      ));
-    
-    // Ensure Auth-Type := Accept exists
-    const existingAccept = await db.select()
-      .from(radcheck)
-      .where(and(
-        eq(radcheck.username, card.username),
-        eq(radcheck.attribute, "Auth-Type"),
-        eq(radcheck.value, "Accept")
-      ))
-      .limit(1);
-    
-    if (existingAccept.length === 0) {
-      await db.insert(radcheck).values({
-        username: card.username,
-        attribute: "Auth-Type",
-        op: ":=",
-        value: "Accept",
-      });
+  const usernames = cards.map(c => c.username);
+  
+  // BULK: Remove Auth-Type := Reject from all cards in batch
+  await db.delete(radcheck)
+    .where(and(
+      inArray(radcheck.username, usernames),
+      eq(radcheck.attribute, "Auth-Type"),
+      eq(radcheck.value, "Reject")
+    ));
+  
+  // BULK: Update suspended cards back to their original status
+  const suspendedCards = cards.filter(c => c.status === 'suspended');
+  if (suspendedCards.length > 0) {
+    // Update cards with activatedAt to 'active'
+    const activatedIds = suspendedCards.filter(c => c.activatedAt).map(c => c.id);
+    if (activatedIds.length > 0) {
+      await db.update(radiusCards)
+        .set({ status: 'active' })
+        .where(inArray(radiusCards.id, activatedIds));
     }
     
-    // Update card status if it was suspended by batch disable
-    if (card.status === 'suspended') {
+    // Update cards without activatedAt to 'unused'
+    const unusedIds = suspendedCards.filter(c => !c.activatedAt).map(c => c.id);
+    if (unusedIds.length > 0) {
       await db.update(radiusCards)
-        .set({ status: card.activatedAt ? 'active' : 'unused' })
-        .where(eq(radiusCards.id, card.id));
+        .set({ status: 'unused' })
+        .where(inArray(radiusCards.id, unusedIds));
     }
   }
   
@@ -783,6 +784,7 @@ export async function enableBatch(batchId: string) {
 }
 
 // Disable batch - disable all cards in batch for RADIUS authentication
+// OPTIMIZED: Uses bulk operations for better performance
 export async function disableBatch(batchId: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -792,29 +794,42 @@ export async function disableBatch(batchId: string) {
   
   // Get all cards in batch
   const cards = await getCardsByBatch(batchId);
-  
-  // Set Auth-Type := Reject for all cards
-  for (const card of cards) {
-    // Remove any existing Auth-Type attribute
-    await db.delete(radcheck)
-      .where(and(
-        eq(radcheck.username, card.username),
-        eq(radcheck.attribute, "Auth-Type")
-      ));
-    
-    // Add Auth-Type := Reject
-    await db.insert(radcheck).values({
-      username: card.username,
-      attribute: "Auth-Type",
-      op: ":=",
-      value: "Reject",
-    });
-    
-    // Update card status to suspended
-    await db.update(radiusCards)
-      .set({ status: 'suspended' })
-      .where(eq(radiusCards.id, card.id));
+  if (cards.length === 0) {
+    await db.update(cardBatches)
+      .set({ enabled: false, updatedAt: new Date() })
+      .where(eq(cardBatches.batchId, batchId));
+    return { success: true, affectedCards: 0 };
   }
+  
+  const usernames = cards.map(c => c.username);
+  const cardIds = cards.map(c => c.id);
+  
+  // BULK: Remove any existing Auth-Type attributes
+  await db.delete(radcheck)
+    .where(and(
+      inArray(radcheck.username, usernames),
+      eq(radcheck.attribute, "Auth-Type")
+    ));
+  
+  // BULK: Insert Auth-Type := Reject for all cards
+  const rejectEntries = usernames.map(username => ({
+    username,
+    attribute: "Auth-Type",
+    op: ":=",
+    value: "Reject",
+  }));
+  
+  // Insert in batches of 100 to avoid query size limits
+  const BATCH_SIZE = 100;
+  for (let i = 0; i < rejectEntries.length; i += BATCH_SIZE) {
+    const batch = rejectEntries.slice(i, i + BATCH_SIZE);
+    await db.insert(radcheck).values(batch);
+  }
+  
+  // BULK: Update all card statuses to suspended
+  await db.update(radiusCards)
+    .set({ status: 'suspended' })
+    .where(inArray(radiusCards.id, cardIds));
   
   // Update batch enabled status
   await db.update(cardBatches)
@@ -825,6 +840,7 @@ export async function disableBatch(batchId: string) {
 }
 
 // Update batch time settings
+// OPTIMIZED: Uses bulk operations for better performance
 export async function updateBatchTime(batchId: string, data: {
   cardTimeValue?: number;
   cardTimeUnit?: 'hours' | 'days';
@@ -840,6 +856,23 @@ export async function updateBatchTime(batchId: string, data: {
   
   // Get all cards in batch
   const cards = await getCardsByBatch(batchId);
+  if (cards.length === 0) {
+    // Just update batch settings
+    await db.update(cardBatches)
+      .set({
+        cardTimeValue: data.cardTimeValue ?? batch.cardTimeValue,
+        cardTimeUnit: data.cardTimeUnit ?? batch.cardTimeUnit,
+        internetTimeValue: data.internetTimeValue ?? batch.internetTimeValue,
+        internetTimeUnit: data.internetTimeUnit ?? batch.internetTimeUnit,
+        timeFromActivation: data.timeFromActivation ?? batch.timeFromActivation,
+        updatedAt: new Date(),
+      })
+      .where(eq(cardBatches.batchId, batchId));
+    return { success: true, affectedCards: 0 };
+  }
+  
+  const usernames = cards.map(c => c.username);
+  const cardIds = cards.map(c => c.id);
   
   // Calculate new session timeout
   let sessionTimeout: number | null = null;
@@ -867,48 +900,57 @@ export async function updateBatchTime(batchId: string, data: {
     }
   }
   
-  // Update RADIUS attributes for all cards
-  for (const card of cards) {
-    // Update Session-Timeout
-    if (sessionTimeout !== null) {
-      // Remove old Session-Timeout
-      await db.delete(radreply)
-        .where(and(
-          eq(radreply.username, card.username),
-          eq(radreply.attribute, "Session-Timeout")
-        ));
-      
-      // Add new Session-Timeout
-      await db.insert(radreply).values({
-        username: card.username,
-        attribute: "Session-Timeout",
-        op: "=",
-        value: String(sessionTimeout),
-      });
+  // BULK: Update Session-Timeout
+  if (sessionTimeout !== null) {
+    // Remove old Session-Timeout for all cards
+    await db.delete(radreply)
+      .where(and(
+        inArray(radreply.username, usernames),
+        eq(radreply.attribute, "Session-Timeout")
+      ));
+    
+    // Insert new Session-Timeout for all cards
+    const timeoutEntries = usernames.map(username => ({
+      username,
+      attribute: "Session-Timeout",
+      op: "=",
+      value: String(sessionTimeout),
+    }));
+    
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < timeoutEntries.length; i += BATCH_SIZE) {
+      const batchEntries = timeoutEntries.slice(i, i + BATCH_SIZE);
+      await db.insert(radreply).values(batchEntries);
+    }
+  }
+  
+  // BULK: Update Expiration if not counting from activation
+  if (!timeFromActivation && expiresAt) {
+    // Remove old Expiration for all cards
+    await db.delete(radcheck)
+      .where(and(
+        inArray(radcheck.username, usernames),
+        eq(radcheck.attribute, "Expiration")
+      ));
+    
+    // Insert new Expiration for all cards
+    const expirationEntries = usernames.map(username => ({
+      username,
+      attribute: "Expiration",
+      op: ":=",
+      value: formatExpirationDate(expiresAt!),
+    }));
+    
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < expirationEntries.length; i += BATCH_SIZE) {
+      const batchEntries = expirationEntries.slice(i, i + BATCH_SIZE);
+      await db.insert(radcheck).values(batchEntries);
     }
     
-    // Update Expiration if not counting from activation
-    if (!timeFromActivation && expiresAt) {
-      // Remove old Expiration
-      await db.delete(radcheck)
-        .where(and(
-          eq(radcheck.username, card.username),
-          eq(radcheck.attribute, "Expiration")
-        ));
-      
-      // Add new Expiration
-      await db.insert(radcheck).values({
-        username: card.username,
-        attribute: "Expiration",
-        op: ":=",
-        value: formatExpirationDate(expiresAt),
-      });
-      
-      // Update card expiration
-      await db.update(radiusCards)
-        .set({ expiresAt })
-        .where(eq(radiusCards.id, card.id));
-    }
+    // Update card expiration dates
+    await db.update(radiusCards)
+      .set({ expiresAt })
+      .where(inArray(radiusCards.id, cardIds));
   }
   
   // Update batch settings
@@ -927,6 +969,7 @@ export async function updateBatchTime(batchId: string, data: {
 }
 
 // Update batch properties (simultaneous use, plan, etc.)
+// OPTIMIZED: Uses bulk operations for better performance
 export async function updateBatchProperties(batchId: string, data: {
   simultaneousUse?: number;
   planId?: number;
@@ -942,78 +985,7 @@ export async function updateBatchProperties(batchId: string, data: {
   // Get all cards in batch
   const cards = await getCardsByBatch(batchId);
   
-  // Get plan if changing
-  let plan = null;
-  if (data.planId) {
-    const planResult = await db.select().from(plans).where(eq(plans.id, data.planId)).limit(1);
-    plan = planResult[0];
-    if (!plan) throw new Error("Plan not found");
-  }
-  
-  // Update RADIUS attributes for all cards
-  for (const card of cards) {
-    // Update Simultaneous-Use
-    if (data.simultaneousUse !== undefined) {
-      // Remove old Simultaneous-Use
-      await db.delete(radcheck)
-        .where(and(
-          eq(radcheck.username, card.username),
-          eq(radcheck.attribute, "Simultaneous-Use")
-        ));
-      
-      // Add new Simultaneous-Use
-      await db.insert(radcheck).values({
-        username: card.username,
-        attribute: "Simultaneous-Use",
-        op: ":=",
-        value: String(data.simultaneousUse),
-      });
-    }
-    
-    // Update rate limit if plan changed
-    if (plan) {
-      // Remove old rate limit
-      await db.delete(radreply)
-        .where(and(
-          eq(radreply.username, card.username),
-          eq(radreply.attribute, "Mikrotik-Rate-Limit")
-        ));
-      
-      // Add new rate limit
-      let rateLimitValue: string | null = null;
-      if (plan.mikrotikRateLimit) {
-        rateLimitValue = plan.mikrotikRateLimit;
-      } else if (plan.downloadSpeed && plan.uploadSpeed) {
-        rateLimitValue = `${plan.downloadSpeed}k/${plan.uploadSpeed}k`;
-      }
-      
-      if (rateLimitValue) {
-        await db.insert(radreply).values({
-          username: card.username,
-          attribute: "Mikrotik-Rate-Limit",
-          op: "=",
-          value: rateLimitValue,
-        });
-      }
-      
-      // Update user group
-      await db.delete(radusergroup)
-        .where(eq(radusergroup.username, card.username));
-      
-      await db.insert(radusergroup).values({
-        username: card.username,
-        groupname: `plan_${plan.id}`,
-        priority: 1,
-      });
-      
-      // Update card plan
-      await db.update(radiusCards)
-        .set({ planId: plan.id })
-        .where(eq(radiusCards.id, card.id));
-    }
-  }
-  
-  // Update batch settings
+  // Update batch settings first
   const updateData: any = { updatedAt: new Date() };
   if (data.simultaneousUse !== undefined) updateData.simultaneousUse = data.simultaneousUse;
   if (data.planId !== undefined) updateData.planId = data.planId;
@@ -1023,6 +995,98 @@ export async function updateBatchProperties(batchId: string, data: {
   await db.update(cardBatches)
     .set(updateData)
     .where(eq(cardBatches.batchId, batchId));
+  
+  if (cards.length === 0) {
+    return { success: true, affectedCards: 0 };
+  }
+  
+  const usernames = cards.map(c => c.username);
+  const cardIds = cards.map(c => c.id);
+  const BATCH_SIZE = 100;
+  
+  // Get plan if changing
+  let plan = null;
+  if (data.planId) {
+    const planResult = await db.select().from(plans).where(eq(plans.id, data.planId)).limit(1);
+    plan = planResult[0];
+    if (!plan) throw new Error("Plan not found");
+  }
+  
+  // BULK: Update Simultaneous-Use
+  if (data.simultaneousUse !== undefined) {
+    // Remove old Simultaneous-Use for all cards
+    await db.delete(radcheck)
+      .where(and(
+        inArray(radcheck.username, usernames),
+        eq(radcheck.attribute, "Simultaneous-Use")
+      ));
+    
+    // Insert new Simultaneous-Use for all cards
+    const simUseEntries = usernames.map(username => ({
+      username,
+      attribute: "Simultaneous-Use",
+      op: ":=",
+      value: String(data.simultaneousUse),
+    }));
+    
+    for (let i = 0; i < simUseEntries.length; i += BATCH_SIZE) {
+      const batchEntries = simUseEntries.slice(i, i + BATCH_SIZE);
+      await db.insert(radcheck).values(batchEntries);
+    }
+  }
+  
+  // BULK: Update rate limit if plan changed
+  if (plan) {
+    // Remove old rate limit for all cards
+    await db.delete(radreply)
+      .where(and(
+        inArray(radreply.username, usernames),
+        eq(radreply.attribute, "Mikrotik-Rate-Limit")
+      ));
+    
+    // Add new rate limit
+    let rateLimitValue: string | null = null;
+    if (plan.mikrotikRateLimit) {
+      rateLimitValue = plan.mikrotikRateLimit;
+    } else if (plan.downloadSpeed && plan.uploadSpeed) {
+      rateLimitValue = `${plan.downloadSpeed}k/${plan.uploadSpeed}k`;
+    }
+    
+    if (rateLimitValue) {
+      const rateLimitEntries = usernames.map(username => ({
+        username,
+        attribute: "Mikrotik-Rate-Limit",
+        op: "=",
+        value: rateLimitValue!,
+      }));
+      
+      for (let i = 0; i < rateLimitEntries.length; i += BATCH_SIZE) {
+        const batchEntries = rateLimitEntries.slice(i, i + BATCH_SIZE);
+        await db.insert(radreply).values(batchEntries);
+      }
+    }
+    
+    // Remove old user groups for all cards
+    await db.delete(radusergroup)
+      .where(inArray(radusergroup.username, usernames));
+    
+    // Insert new user groups for all cards
+    const groupEntries = usernames.map(username => ({
+      username,
+      groupname: `plan_${plan!.id}`,
+      priority: 1,
+    }));
+    
+    for (let i = 0; i < groupEntries.length; i += BATCH_SIZE) {
+      const batchEntries = groupEntries.slice(i, i + BATCH_SIZE);
+      await db.insert(radusergroup).values(batchEntries);
+    }
+    
+    // Update card plans
+    await db.update(radiusCards)
+      .set({ planId: plan.id })
+      .where(inArray(radiusCards.id, cardIds));
+  }
   
   return { success: true, affectedCards: cards.length };
 }
@@ -1097,4 +1161,54 @@ export async function getBatchesByResellerWithStats(resellerId: number) {
   );
   
   return batchesWithStats;
+}
+
+// Delete batch with options
+// OPTIMIZED: Uses bulk operations for better performance
+export async function deleteBatch(batchId: string, deleteCards: boolean = false) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const batch = await getBatchById(batchId);
+  if (!batch) throw new Error("Batch not found");
+  
+  // Get all cards in batch
+  const cards = await getCardsByBatch(batchId);
+  
+  if (deleteCards && cards.length > 0) {
+    const usernames = cards.map(c => c.username);
+    const cardIds = cards.map(c => c.id);
+    
+    // BULK: Delete from radcheck
+    await db.delete(radcheck)
+      .where(inArray(radcheck.username, usernames));
+    
+    // BULK: Delete from radreply
+    await db.delete(radreply)
+      .where(inArray(radreply.username, usernames));
+    
+    // BULK: Delete from radusergroup
+    await db.delete(radusergroup)
+      .where(inArray(radusergroup.username, usernames));
+    
+    // BULK: Delete cards
+    await db.delete(radiusCards)
+      .where(inArray(radiusCards.id, cardIds));
+  } else if (cards.length > 0) {
+    // Just unlink cards from batch (set batchId to null)
+    const cardIds = cards.map(c => c.id);
+    await db.update(radiusCards)
+      .set({ batchId: null })
+      .where(inArray(radiusCards.id, cardIds));
+  }
+  
+  // Delete batch
+  await db.delete(cardBatches)
+    .where(eq(cardBatches.batchId, batchId));
+  
+  return { 
+    success: true, 
+    deletedCards: deleteCards ? cards.length : 0,
+    unlinkedCards: deleteCards ? 0 : cards.length
+  };
 }

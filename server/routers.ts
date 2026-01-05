@@ -374,6 +374,16 @@ const vouchersRouter = router({
       return cardDb.updateBatchProperties(batchId, data);
     }),
 
+  // Delete batch
+  deleteBatch: superAdminProcedure
+    .input(z.object({
+      batchId: z.string(),
+      deleteCards: z.boolean().default(false),
+    }))
+    .mutation(async ({ input }) => {
+      return cardDb.deleteBatch(input.batchId, input.deleteCards);
+    }),
+
   getCardsByBatch: resellerProcedure
     .input(z.object({ batchId: z.string() }))
     .query(async ({ input }) => {

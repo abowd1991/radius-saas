@@ -1,0 +1,55 @@
+{
+  "query": "SELECT batchId, name, cardTimeValue, cardTimeUnit, internetTimeValue, internetTimeUnit, timeFromActivation FROM card_batches LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT batchId, name, cardTimeValue, cardTimeUnit, internetTimeValue, internetTimeUnit, timeFromActivation FROM card_batches LIMIT 5;",
+  "rows": [
+    {
+      "batchId": "u3g55mxDyw",
+      "name": "Batch u3g55mxDyw",
+      "cardTimeValue": "0",
+      "cardTimeUnit": "hours",
+      "internetTimeValue": "0",
+      "internetTimeUnit": "hours",
+      "timeFromActivation": "1"
+    },
+    {
+      "batchId": "PLxX55OBp4",
+      "name": "Batch PLxX55OBp4",
+      "cardTimeValue": "0",
+      "cardTimeUnit": "hours",
+      "internetTimeValue": "0",
+      "internetTimeUnit": "hours",
+      "timeFromActivation": "1"
+    },
+    {
+      "batchId": "q1HBwVr2uG",
+      "name": "دفعة اختبار يناير 2026",
+      "cardTimeValue": "0",
+      "cardTimeUnit": "hours",
+      "internetTimeValue": "0",
+      "internetTimeUnit": "hours",
+      "timeFromActivation": "1"
+    },
+    {
+      "batchId": "NwesNaadwJ",
+      "name": "Batch NwesNaadwJ",
+      "cardTimeValue": "5",
+      "cardTimeUnit": "hours",
+      "internetTimeValue": "5",
+      "internetTimeUnit": "hours",
+      "timeFromActivation": "1"
+    },
+    {
+      "batchId": "pdQS0H356d",
+      "name": "دفعة عبود",
+      "cardTimeValue": "0",
+      "cardTimeUnit": "hours",
+      "internetTimeValue": "0",
+      "internetTimeUnit": "hours",
+      "timeFromActivation": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "batchId\tname\tcardTimeValue\tcardTimeUnit\tinternetTimeValue\tinternetTimeUnit\ttimeFromActivation\nu3g55mxDyw\tBatch u3g55mxDyw\t0\thours\t0\thours\t1\nPLxX55OBp4\tBatch PLxX55OBp4\t0\thours\t0\thours\t1\nq1HBwVr2uG\tدفعة اختبار يناير 2026\t0\thours\t0\thours\t1\nNwesNaadwJ\tBatch NwesNaadwJ\t5\thours\t5\thours\t1\npdQS0H356d\tدفعة عبود\t0\thours\t0\thours\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1635
+}

@@ -79,6 +79,8 @@ export default function Vouchers() {
   // Batch management dialogs
   const [isEditTimeDialogOpen, setIsEditTimeDialogOpen] = useState(false);
   const [isEditPropertiesDialogOpen, setIsEditPropertiesDialogOpen] = useState(false);
+  const [isDeleteBatchDialogOpen, setIsDeleteBatchDialogOpen] = useState(false);
+  const [deleteWithCards, setDeleteWithCards] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<any>(null);
   
   // Edit time form
@@ -285,6 +287,27 @@ export default function Vouchers() {
     },
   });
 
+  const deleteBatchMutation = trpc.vouchers.deleteBatch.useMutation({
+    onSuccess: (data) => {
+      if (data.deletedCards > 0) {
+        toast.success(language === 'ar' 
+          ? `تم حذف الدفعة و ${data.deletedCards} كرت` 
+          : `Batch and ${data.deletedCards} cards deleted`);
+      } else {
+        toast.success(language === 'ar' 
+          ? `تم حذف الدفعة (الكروت موجودة)` 
+          : `Batch deleted (cards preserved)`);
+      }
+      setIsDeleteBatchDialogOpen(false);
+      setDeleteWithCards(false);
+      refetchBatches();
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   // Batch action handlers
   const handleEnableBatch = (batchId: string) => {
     enableBatchMutation.mutate({ batchId });
@@ -315,6 +338,20 @@ export default function Vouchers() {
       macBinding: batch.macBinding || false,
     });
     setIsEditPropertiesDialogOpen(true);
+  };
+
+  const openDeleteBatchDialog = (batch: any) => {
+    setSelectedBatch(batch);
+    setDeleteWithCards(false);
+    setIsDeleteBatchDialogOpen(true);
+  };
+
+  const handleDeleteBatch = () => {
+    if (!selectedBatch) return;
+    deleteBatchMutation.mutate({
+      batchId: selectedBatch.batchId,
+      deleteCards: deleteWithCards,
+    });
   };
 
   const handleUpdateBatchTime = () => {
@@ -1102,6 +1139,14 @@ export default function Vouchers() {
                                   <RefreshCw className="h-4 w-4 me-2" />
                                   {language === 'ar' ? 'تعديل الخصائص' : 'Edit Properties'}
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => openDeleteBatchDialog(batch)}
+                                  className="text-destructive"
+                                >
+                                  <Ban className="h-4 w-4 me-2" />
+                                  {language === 'ar' ? 'حذف الدفعة' : 'Delete Batch'}
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
@@ -1271,6 +1316,70 @@ export default function Vouchers() {
               {updateBatchPropertiesMutation.isPending 
                 ? (language === 'ar' ? 'جاري التحديث...' : 'Updating...')
                 : (language === 'ar' ? 'تحديث' : 'Update')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Batch Dialog */}
+      <Dialog open={isDeleteBatchDialogOpen} onOpenChange={setIsDeleteBatchDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">
+              {language === 'ar' ? 'حذف الدفعة' : 'Delete Batch'}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'ar' 
+                ? `هل أنت متأكد من حذف الدفعة: ${selectedBatch?.name}؟` 
+                : `Are you sure you want to delete batch: ${selectedBatch?.name}?`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+              <p className="text-sm text-destructive">
+                {language === 'ar' 
+                  ? `هذه الدفعة تحتوي على ${selectedBatch?.stats?.total || selectedBatch?.quantity || 0} كرت` 
+                  : `This batch contains ${selectedBatch?.stats?.total || selectedBatch?.quantity || 0} cards`}
+              </p>
+            </div>
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <Label className="text-base">
+                  {language === 'ar' ? 'حذف الكروت أيضاً' : 'Delete cards too'}
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  {language === 'ar' 
+                    ? 'إذا لم يتم تفعيله، سيتم فقط حذف الدفعة مع بقاء الكروت' 
+                    : 'If disabled, only batch will be deleted, cards will remain'}
+                </p>
+              </div>
+              <Switch
+                checked={deleteWithCards}
+                onCheckedChange={setDeleteWithCards}
+              />
+            </div>
+            {deleteWithCards && (
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
+                  {language === 'ar' 
+                    ? '⚠️ تحذير: سيتم حذف جميع الكروت وبياناتها من RADIUS بشكل نهائي!' 
+                    : '⚠️ Warning: All cards and their RADIUS data will be permanently deleted!'}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteBatchDialogOpen(false)}>
+              {language === 'ar' ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeleteBatch}
+              disabled={deleteBatchMutation.isPending}
+            >
+              {deleteBatchMutation.isPending 
+                ? (language === 'ar' ? 'جاري الحذف...' : 'Deleting...')
+                : (language === 'ar' ? 'حذف' : 'Delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -322,3 +322,20 @@
 - [x] Unified batch/card logic
   - [x] All batch actions reflect on cards
   - [x] Consistent behavior between single card and batch operations
+
+
+## Batch Management Fixes (Jan 6, 2026)
+- [x] Fix slow enable/disable batch operations
+  - [x] Use Bulk Update instead of processing cards one by one
+  - [x] Add Loading Indicator during operation
+  - [x] Show clear success/failure messages
+- [x] Add delete batch functionality
+  - [x] Add delete option to batch actions menu
+  - [x] Show confirmation dialog before delete
+  - [x] Option to delete batch only OR batch with all cards
+- [x] Fix slow bulk modification operations
+  - [x] Optimize time/properties update for large batches
+  - [x] Use Bulk SQL operations instead of sequential updates
+- [x] Fix edit time dialog showing zeros
+  - [x] Load original batch values when opening edit dialog
+  - [x] Display current settings in form fields

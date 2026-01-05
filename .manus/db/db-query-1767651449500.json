@@ -1,0 +1,40 @@
+{
+  "query": "SELECT batchId, name, cardTimeValue, cardTimeUnit, internetTimeValue, internetTimeUnit, timeFromActivation, simultaneousUse FROM card_batches ORDER BY createdAt DESC LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT batchId, name, cardTimeValue, cardTimeUnit, internetTimeValue, internetTimeUnit, timeFromActivation, simultaneousUse FROM card_batches ORDER BY createdAt DESC LIMIT 3;",
+  "rows": [
+    {
+      "batchId": "OgWWoeC9A7",
+      "name": "tesdt",
+      "cardTimeValue": "0",
+      "cardTimeUnit": "hours",
+      "internetTimeValue": "0",
+      "internetTimeUnit": "hours",
+      "timeFromActivation": "1",
+      "simultaneousUse": "1"
+    },
+    {
+      "batchId": "yeCaWrg6Vk",
+      "name": "Batch yeCaWrg6Vk",
+      "cardTimeValue": "0",
+      "cardTimeUnit": "hours",
+      "internetTimeValue": "0",
+      "internetTimeUnit": "hours",
+      "timeFromActivation": "1",
+      "simultaneousUse": "1"
+    },
+    {
+      "batchId": "oCRZjLNP1V",
+      "name": "Batch oCRZjLNP1V",
+      "cardTimeValue": "0",
+      "cardTimeUnit": "hours",
+      "internetTimeValue": "0",
+      "internetTimeUnit": "hours",
+      "timeFromActivation": "1",
+      "simultaneousUse": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "batchId\tname\tcardTimeValue\tcardTimeUnit\tinternetTimeValue\tinternetTimeUnit\ttimeFromActivation\tsimultaneousUse\nOgWWoeC9A7\ttesdt\t0\thours\t0\thours\t1\t1\nyeCaWrg6Vk\tBatch yeCaWrg6Vk\t0\thours\t0\thours\t1\t1\noCRZjLNP1V\tBatch oCRZjLNP1V\t0\thours\t0\thours\t1\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1535
+}
