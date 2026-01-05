@@ -694,3 +694,407 @@ export async function getSubscriberGroups() {
     return ['Default group'];
   }
 }
+
+
+// ============================================================================
+// BATCH MANAGEMENT FUNCTIONS
+// ============================================================================
+
+// Get batch statistics
+export async function getBatchStats(batchId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const cards = await db.select()
+    .from(radiusCards)
+    .where(eq(radiusCards.batchId, batchId));
+  
+  const total = cards.length;
+  const unused = cards.filter(c => c.status === 'unused').length;
+  const active = cards.filter(c => c.status === 'active').length;
+  const used = cards.filter(c => c.status === 'used').length;
+  const expired = cards.filter(c => c.status === 'expired').length;
+  const suspended = cards.filter(c => c.status === 'suspended').length;
+  
+  return {
+    total,
+    unused,
+    active,
+    used,
+    expired,
+    suspended,
+    currentlyActive: active, // Cards that are currently in use
+  };
+}
+
+// Enable batch - activate all cards in batch for RADIUS authentication
+export async function enableBatch(batchId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const batch = await getBatchById(batchId);
+  if (!batch) throw new Error("Batch not found");
+  
+  // Get all cards in batch
+  const cards = await getCardsByBatch(batchId);
+  
+  // Remove Auth-Type := Reject from all cards in batch
+  for (const card of cards) {
+    await db.delete(radcheck)
+      .where(and(
+        eq(radcheck.username, card.username),
+        eq(radcheck.attribute, "Auth-Type"),
+        eq(radcheck.value, "Reject")
+      ));
+    
+    // Ensure Auth-Type := Accept exists
+    const existingAccept = await db.select()
+      .from(radcheck)
+      .where(and(
+        eq(radcheck.username, card.username),
+        eq(radcheck.attribute, "Auth-Type"),
+        eq(radcheck.value, "Accept")
+      ))
+      .limit(1);
+    
+    if (existingAccept.length === 0) {
+      await db.insert(radcheck).values({
+        username: card.username,
+        attribute: "Auth-Type",
+        op: ":=",
+        value: "Accept",
+      });
+    }
+    
+    // Update card status if it was suspended by batch disable
+    if (card.status === 'suspended') {
+      await db.update(radiusCards)
+        .set({ status: card.activatedAt ? 'active' : 'unused' })
+        .where(eq(radiusCards.id, card.id));
+    }
+  }
+  
+  // Update batch enabled status
+  await db.update(cardBatches)
+    .set({ enabled: true, updatedAt: new Date() })
+    .where(eq(cardBatches.batchId, batchId));
+  
+  return { success: true, affectedCards: cards.length };
+}
+
+// Disable batch - disable all cards in batch for RADIUS authentication
+export async function disableBatch(batchId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const batch = await getBatchById(batchId);
+  if (!batch) throw new Error("Batch not found");
+  
+  // Get all cards in batch
+  const cards = await getCardsByBatch(batchId);
+  
+  // Set Auth-Type := Reject for all cards
+  for (const card of cards) {
+    // Remove any existing Auth-Type attribute
+    await db.delete(radcheck)
+      .where(and(
+        eq(radcheck.username, card.username),
+        eq(radcheck.attribute, "Auth-Type")
+      ));
+    
+    // Add Auth-Type := Reject
+    await db.insert(radcheck).values({
+      username: card.username,
+      attribute: "Auth-Type",
+      op: ":=",
+      value: "Reject",
+    });
+    
+    // Update card status to suspended
+    await db.update(radiusCards)
+      .set({ status: 'suspended' })
+      .where(eq(radiusCards.id, card.id));
+  }
+  
+  // Update batch enabled status
+  await db.update(cardBatches)
+    .set({ enabled: false, updatedAt: new Date() })
+    .where(eq(cardBatches.batchId, batchId));
+  
+  return { success: true, affectedCards: cards.length };
+}
+
+// Update batch time settings
+export async function updateBatchTime(batchId: string, data: {
+  cardTimeValue?: number;
+  cardTimeUnit?: 'hours' | 'days';
+  internetTimeValue?: number;
+  internetTimeUnit?: 'hours' | 'days';
+  timeFromActivation?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const batch = await getBatchById(batchId);
+  if (!batch) throw new Error("Batch not found");
+  
+  // Get all cards in batch
+  const cards = await getCardsByBatch(batchId);
+  
+  // Calculate new session timeout
+  let sessionTimeout: number | null = null;
+  const cardTimeValue = data.cardTimeValue ?? batch.cardTimeValue ?? 0;
+  const cardTimeUnit = data.cardTimeUnit ?? batch.cardTimeUnit ?? 'hours';
+  
+  if (cardTimeValue > 0) {
+    if (cardTimeUnit === 'days') {
+      sessionTimeout = cardTimeValue * 24 * 60 * 60;
+    } else {
+      sessionTimeout = cardTimeValue * 60 * 60;
+    }
+  }
+  
+  // Calculate new expiration
+  const timeFromActivation = data.timeFromActivation ?? batch.timeFromActivation ?? true;
+  let expiresAt: Date | null = null;
+  
+  if (!timeFromActivation && cardTimeValue > 0) {
+    const now = new Date();
+    if (cardTimeUnit === 'days') {
+      expiresAt = new Date(now.getTime() + cardTimeValue * 24 * 60 * 60 * 1000);
+    } else {
+      expiresAt = new Date(now.getTime() + cardTimeValue * 60 * 60 * 1000);
+    }
+  }
+  
+  // Update RADIUS attributes for all cards
+  for (const card of cards) {
+    // Update Session-Timeout
+    if (sessionTimeout !== null) {
+      // Remove old Session-Timeout
+      await db.delete(radreply)
+        .where(and(
+          eq(radreply.username, card.username),
+          eq(radreply.attribute, "Session-Timeout")
+        ));
+      
+      // Add new Session-Timeout
+      await db.insert(radreply).values({
+        username: card.username,
+        attribute: "Session-Timeout",
+        op: "=",
+        value: String(sessionTimeout),
+      });
+    }
+    
+    // Update Expiration if not counting from activation
+    if (!timeFromActivation && expiresAt) {
+      // Remove old Expiration
+      await db.delete(radcheck)
+        .where(and(
+          eq(radcheck.username, card.username),
+          eq(radcheck.attribute, "Expiration")
+        ));
+      
+      // Add new Expiration
+      await db.insert(radcheck).values({
+        username: card.username,
+        attribute: "Expiration",
+        op: ":=",
+        value: formatExpirationDate(expiresAt),
+      });
+      
+      // Update card expiration
+      await db.update(radiusCards)
+        .set({ expiresAt })
+        .where(eq(radiusCards.id, card.id));
+    }
+  }
+  
+  // Update batch settings
+  await db.update(cardBatches)
+    .set({
+      cardTimeValue: data.cardTimeValue ?? batch.cardTimeValue,
+      cardTimeUnit: data.cardTimeUnit ?? batch.cardTimeUnit,
+      internetTimeValue: data.internetTimeValue ?? batch.internetTimeValue,
+      internetTimeUnit: data.internetTimeUnit ?? batch.internetTimeUnit,
+      timeFromActivation: data.timeFromActivation ?? batch.timeFromActivation,
+      updatedAt: new Date(),
+    })
+    .where(eq(cardBatches.batchId, batchId));
+  
+  return { success: true, affectedCards: cards.length };
+}
+
+// Update batch properties (simultaneous use, plan, etc.)
+export async function updateBatchProperties(batchId: string, data: {
+  simultaneousUse?: number;
+  planId?: number;
+  hotspotPort?: string;
+  macBinding?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const batch = await getBatchById(batchId);
+  if (!batch) throw new Error("Batch not found");
+  
+  // Get all cards in batch
+  const cards = await getCardsByBatch(batchId);
+  
+  // Get plan if changing
+  let plan = null;
+  if (data.planId) {
+    const planResult = await db.select().from(plans).where(eq(plans.id, data.planId)).limit(1);
+    plan = planResult[0];
+    if (!plan) throw new Error("Plan not found");
+  }
+  
+  // Update RADIUS attributes for all cards
+  for (const card of cards) {
+    // Update Simultaneous-Use
+    if (data.simultaneousUse !== undefined) {
+      // Remove old Simultaneous-Use
+      await db.delete(radcheck)
+        .where(and(
+          eq(radcheck.username, card.username),
+          eq(radcheck.attribute, "Simultaneous-Use")
+        ));
+      
+      // Add new Simultaneous-Use
+      await db.insert(radcheck).values({
+        username: card.username,
+        attribute: "Simultaneous-Use",
+        op: ":=",
+        value: String(data.simultaneousUse),
+      });
+    }
+    
+    // Update rate limit if plan changed
+    if (plan) {
+      // Remove old rate limit
+      await db.delete(radreply)
+        .where(and(
+          eq(radreply.username, card.username),
+          eq(radreply.attribute, "Mikrotik-Rate-Limit")
+        ));
+      
+      // Add new rate limit
+      let rateLimitValue: string | null = null;
+      if (plan.mikrotikRateLimit) {
+        rateLimitValue = plan.mikrotikRateLimit;
+      } else if (plan.downloadSpeed && plan.uploadSpeed) {
+        rateLimitValue = `${plan.downloadSpeed}k/${plan.uploadSpeed}k`;
+      }
+      
+      if (rateLimitValue) {
+        await db.insert(radreply).values({
+          username: card.username,
+          attribute: "Mikrotik-Rate-Limit",
+          op: "=",
+          value: rateLimitValue,
+        });
+      }
+      
+      // Update user group
+      await db.delete(radusergroup)
+        .where(eq(radusergroup.username, card.username));
+      
+      await db.insert(radusergroup).values({
+        username: card.username,
+        groupname: `plan_${plan.id}`,
+        priority: 1,
+      });
+      
+      // Update card plan
+      await db.update(radiusCards)
+        .set({ planId: plan.id })
+        .where(eq(radiusCards.id, card.id));
+    }
+  }
+  
+  // Update batch settings
+  const updateData: any = { updatedAt: new Date() };
+  if (data.simultaneousUse !== undefined) updateData.simultaneousUse = data.simultaneousUse;
+  if (data.planId !== undefined) updateData.planId = data.planId;
+  if (data.hotspotPort !== undefined) updateData.hotspotPort = data.hotspotPort;
+  if (data.macBinding !== undefined) updateData.macBinding = data.macBinding;
+  
+  await db.update(cardBatches)
+    .set(updateData)
+    .where(eq(cardBatches.batchId, batchId));
+  
+  return { success: true, affectedCards: cards.length };
+}
+
+// Get batch with statistics
+export async function getBatchWithStats(batchId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const batch = await getBatchById(batchId);
+  if (!batch) return null;
+  
+  const stats = await getBatchStats(batchId);
+  
+  // Get plan name
+  const planResult = await db.select().from(plans).where(eq(plans.id, batch.planId)).limit(1);
+  const plan = planResult[0];
+  
+  return {
+    ...batch,
+    stats,
+    planName: plan?.name || 'Unknown',
+  };
+}
+
+// Get all batches with statistics
+export async function getAllBatchesWithStats() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const batches = await db.select().from(cardBatches).orderBy(desc(cardBatches.createdAt));
+  
+  const batchesWithStats = await Promise.all(
+    batches.map(async (batch) => {
+      const stats = await getBatchStats(batch.batchId);
+      const planResult = await db.select().from(plans).where(eq(plans.id, batch.planId)).limit(1);
+      const plan = planResult[0];
+      
+      return {
+        ...batch,
+        stats,
+        planName: plan?.name || 'Unknown',
+      };
+    })
+  );
+  
+  return batchesWithStats;
+}
+
+// Get batches by reseller with statistics
+export async function getBatchesByResellerWithStats(resellerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const batches = await db.select()
+    .from(cardBatches)
+    .where(eq(cardBatches.resellerId, resellerId))
+    .orderBy(desc(cardBatches.createdAt));
+  
+  const batchesWithStats = await Promise.all(
+    batches.map(async (batch) => {
+      const stats = await getBatchStats(batch.batchId);
+      const planResult = await db.select().from(plans).where(eq(plans.id, batch.planId)).limit(1);
+      const plan = planResult[0];
+      
+      return {
+        ...batch,
+        stats,
+        planName: plan?.name || 'Unknown',
+      };
+    })
+  );
+  
+  return batchesWithStats;
+}

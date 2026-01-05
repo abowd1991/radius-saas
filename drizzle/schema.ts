@@ -285,7 +285,24 @@ export const cardBatches = mysqlTable("card_batches", {
   // Status
   status: mysqlEnum("status", ["generating", "completed", "failed"]).default("generating").notNull(),
   errorMessage: text("errorMessage"),
+  // Batch control settings
+  enabled: boolean("enabled").default(true).notNull(), // Enable/Disable all cards in batch
+  simultaneousUse: int("simultaneousUse").default(1), // Number of devices allowed
+  // Time settings
+  cardTimeValue: int("cardTimeValue").default(0), // Card activation time
+  cardTimeUnit: mysqlEnum("cardTimeUnit", ["hours", "days"]).default("hours"),
+  internetTimeValue: int("internetTimeValue").default(0), // Internet time available
+  internetTimeUnit: mysqlEnum("internetTimeUnit", ["hours", "days"]).default("hours"),
+  timeFromActivation: boolean("timeFromActivation").default(true), // Count from activation
+  // Additional settings
+  hotspotPort: varchar("hotspotPort", { length: 100 }), // Hotspot port restriction
+  macBinding: boolean("macBinding").default(false), // MAC binding option
+  prefix: varchar("prefix", { length: 20 }), // Card prefix
+  usernameLength: int("usernameLength").default(6),
+  passwordLength: int("passwordLength").default(4),
+  cardPrice: decimal("cardPrice", { precision: 10, scale: 2 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
 });
 
 export type CardBatch = typeof cardBatches.$inferSelect;

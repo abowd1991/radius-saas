@@ -299,3 +299,26 @@
 - [x] Reduce batch size or fix query structure
 - [x] Tested with 100 cards - SUCCESS
 - [x] Tested with 500 cards - SUCCESS
+
+## Batch Management Features (Jan 5, 2026)
+- [x] Enable/Disable batch functionality
+  - [x] Add batch status field (enabled/disabled)
+  - [x] Enable batch - activate all cards in batch
+  - [x] Disable batch - deactivate all cards in batch (RADIUS Auth-Type := Reject)
+  - [x] Sync with RADIUS radcheck table
+- [x] Batch time modification
+  - [x] Modify card activation time for all cards in batch
+  - [x] Modify internet time for all cards in batch
+  - [x] Support hours/days units
+- [x] Batch properties modification
+  - [x] Modify simultaneous-use for all cards
+  - [x] Modify linked service/plan for all cards
+  - [x] Modify validity for all cards
+- [x] Batch statistics display
+  - [x] Total cards count
+  - [x] Used cards count
+  - [x] Unused cards count
+  - [x] Currently active cards count
+- [x] Unified batch/card logic
+  - [x] All batch actions reflect on cards
+  - [x] Consistent behavior between single card and batch operations

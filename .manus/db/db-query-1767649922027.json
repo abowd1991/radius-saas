@@ -1,0 +1,234 @@
+{
+  "query": "DESCRIBE card_batches",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute DESCRIBE card_batches",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "batchId",
+      "Type": "varchar(50)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "name",
+      "Type": "varchar(100)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "planId",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "createdBy",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "resellerId",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "quantity",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "templateImageUrl",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "cardsPerPage",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "8",
+      "Extra": ""
+    },
+    {
+      "Field": "qrCodeUrl",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "pdfUrl",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "csvUrl",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "status",
+      "Type": "enum('generating','completed','failed')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "generating",
+      "Extra": ""
+    },
+    {
+      "Field": "errorMessage",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "simultaneousUse",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "hotspotPort",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "timeFromActivation",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "internetTimeValue",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "internetTimeUnit",
+      "Type": "enum('hours','days')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "hours",
+      "Extra": ""
+    },
+    {
+      "Field": "cardTimeValue",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "cardTimeUnit",
+      "Type": "enum('hours','days')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "hours",
+      "Extra": ""
+    },
+    {
+      "Field": "macBinding",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "prefix",
+      "Type": "varchar(10)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "usernameLength",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "6",
+      "Extra": ""
+    },
+    {
+      "Field": "passwordLength",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "4",
+      "Extra": ""
+    },
+    {
+      "Field": "subscriberGroup",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "Default group",
+      "Extra": ""
+    },
+    {
+      "Field": "cardPrice",
+      "Type": "decimal(10,2)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\nbatchId\tvarchar(50)\tNO\tUNI\tNULL\t\nname\tvarchar(100)\tNO\t\tNULL\t\nplanId\tint(11)\tNO\tMUL\tNULL\t\ncreatedBy\tint(11)\tNO\tMUL\tNULL\t\nresellerId\tint(11)\tYES\t\tNULL\t\nquantity\tint(11)\tNO\t\tNULL\t\ntemplateImageUrl\ttext\tYES\t\tNULL\t\ncardsPerPage\tint(11)\tYES\t\t8\t\nqrCodeUrl\tvarchar(255)\tYES\t\tNULL\t\npdfUrl\ttext\tYES\t\tNULL\t\ncsvUrl\ttext\tYES\t\tNULL\t\nstatus\tenum('generating','completed','failed')\tYES\t\tgenerating\t\nerrorMessage\ttext\tYES\t\tNULL\t\ncreatedAt\ttimestamp\tYES\t\tCURRENT_TIMESTAMP\t\nsimultaneousUse\tint(11)\tYES\t\t1\t\nhotspotPort\tvarchar(100)\tYES\t\tNULL\t\ntimeFromActivation\ttinyint(1)\tYES\t\t1\t\ninternetTimeValue\tint(11)\tYES\t\t0\t\ninternetTimeUnit\tenum('hours','days')\tYES\t\thours\t\ncardTimeValue\tint(11)\tYES\t\t0\t\ncardTimeUnit\tenum('hours','days')\tYES\t\thours\t\nmacBinding\ttinyint(1)\tYES\t\t0\t\nprefix\tvarchar(10)\tYES\t\tNULL\t\nusernameLength\tint(11)\tYES\t\t6\t\npasswordLength\tint(11)\tYES\t\t4\t\nsubscriberGroup\tvarchar(64)\tYES\t\tDefault group\t\ncardPrice\tdecimal(10,2)\tYES\t\t0\t\n",
+  "stderr": "",
+  "execution_time_ms": 1563
+}

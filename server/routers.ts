@@ -319,10 +319,60 @@ const vouchersRouter = router({
 
   getBatches: resellerProcedure.query(async ({ ctx }) => {
     if (ctx.user.role === 'super_admin') {
-      return cardDb.getAllBatches();
+      return cardDb.getAllBatchesWithStats();
     }
-    return cardDb.getBatchesByReseller(ctx.user.id);
+    return cardDb.getBatchesByResellerWithStats(ctx.user.id);
   }),
+
+  // Get batch with statistics
+  getBatchWithStats: resellerProcedure
+    .input(z.object({ batchId: z.string() }))
+    .query(async ({ input }) => {
+      return cardDb.getBatchWithStats(input.batchId);
+    }),
+
+  // Enable batch - activate all cards for RADIUS
+  enableBatch: superAdminProcedure
+    .input(z.object({ batchId: z.string() }))
+    .mutation(async ({ input }) => {
+      return cardDb.enableBatch(input.batchId);
+    }),
+
+  // Disable batch - deactivate all cards for RADIUS
+  disableBatch: superAdminProcedure
+    .input(z.object({ batchId: z.string() }))
+    .mutation(async ({ input }) => {
+      return cardDb.disableBatch(input.batchId);
+    }),
+
+  // Update batch time settings
+  updateBatchTime: superAdminProcedure
+    .input(z.object({
+      batchId: z.string(),
+      cardTimeValue: z.number().optional(),
+      cardTimeUnit: z.enum(['hours', 'days']).optional(),
+      internetTimeValue: z.number().optional(),
+      internetTimeUnit: z.enum(['hours', 'days']).optional(),
+      timeFromActivation: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { batchId, ...data } = input;
+      return cardDb.updateBatchTime(batchId, data);
+    }),
+
+  // Update batch properties
+  updateBatchProperties: superAdminProcedure
+    .input(z.object({
+      batchId: z.string(),
+      simultaneousUse: z.number().optional(),
+      planId: z.number().optional(),
+      hotspotPort: z.string().optional(),
+      macBinding: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { batchId, ...data } = input;
+      return cardDb.updateBatchProperties(batchId, data);
+    }),
 
   getCardsByBatch: resellerProcedure
     .input(z.object({ batchId: z.string() }))

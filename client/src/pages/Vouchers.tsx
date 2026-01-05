@@ -76,6 +76,28 @@ export default function Vouchers() {
   const [redeemCode, setRedeemCode] = useState("");
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   
+  // Batch management dialogs
+  const [isEditTimeDialogOpen, setIsEditTimeDialogOpen] = useState(false);
+  const [isEditPropertiesDialogOpen, setIsEditPropertiesDialogOpen] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState<any>(null);
+  
+  // Edit time form
+  const [editTimeForm, setEditTimeForm] = useState({
+    cardTimeValue: "0",
+    cardTimeUnit: "hours" as "hours" | "days",
+    internetTimeValue: "0",
+    internetTimeUnit: "hours" as "hours" | "days",
+    timeFromActivation: true,
+  });
+  
+  // Edit properties form
+  const [editPropertiesForm, setEditPropertiesForm] = useState({
+    simultaneousUse: "1",
+    planId: "",
+    hotspotPort: "",
+    macBinding: false,
+  });
+  
   // Form state for generating cards - Updated with all new fields
   const [generateForm, setGenerateForm] = useState({
     planId: "",
@@ -209,6 +231,114 @@ export default function Vouchers() {
       toast.error(error.message);
     },
   });
+
+  // Batch management mutations
+  const enableBatchMutation = trpc.vouchers.enableBatch.useMutation({
+    onSuccess: (data) => {
+      toast.success(language === 'ar' 
+        ? `تم تمكين الدفعة (${data.affectedCards} كرت)` 
+        : `Batch enabled (${data.affectedCards} cards)`);
+      refetchBatches();
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const disableBatchMutation = trpc.vouchers.disableBatch.useMutation({
+    onSuccess: (data) => {
+      toast.success(language === 'ar' 
+        ? `تم تعطيل الدفعة (${data.affectedCards} كرت)` 
+        : `Batch disabled (${data.affectedCards} cards)`);
+      refetchBatches();
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const updateBatchTimeMutation = trpc.vouchers.updateBatchTime.useMutation({
+    onSuccess: (data) => {
+      toast.success(language === 'ar' 
+        ? `تم تحديث الوقت (${data.affectedCards} كرت)` 
+        : `Time updated (${data.affectedCards} cards)`);
+      setIsEditTimeDialogOpen(false);
+      refetchBatches();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const updateBatchPropertiesMutation = trpc.vouchers.updateBatchProperties.useMutation({
+    onSuccess: (data) => {
+      toast.success(language === 'ar' 
+        ? `تم تحديث الخصائص (${data.affectedCards} كرت)` 
+        : `Properties updated (${data.affectedCards} cards)`);
+      setIsEditPropertiesDialogOpen(false);
+      refetchBatches();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Batch action handlers
+  const handleEnableBatch = (batchId: string) => {
+    enableBatchMutation.mutate({ batchId });
+  };
+
+  const handleDisableBatch = (batchId: string) => {
+    disableBatchMutation.mutate({ batchId });
+  };
+
+  const openEditTimeDialog = (batch: any) => {
+    setSelectedBatch(batch);
+    setEditTimeForm({
+      cardTimeValue: String(batch.cardTimeValue || 0),
+      cardTimeUnit: batch.cardTimeUnit || 'hours',
+      internetTimeValue: String(batch.internetTimeValue || 0),
+      internetTimeUnit: batch.internetTimeUnit || 'hours',
+      timeFromActivation: batch.timeFromActivation !== false,
+    });
+    setIsEditTimeDialogOpen(true);
+  };
+
+  const openEditPropertiesDialog = (batch: any) => {
+    setSelectedBatch(batch);
+    setEditPropertiesForm({
+      simultaneousUse: String(batch.simultaneousUse || 1),
+      planId: String(batch.planId || ''),
+      hotspotPort: batch.hotspotPort || '',
+      macBinding: batch.macBinding || false,
+    });
+    setIsEditPropertiesDialogOpen(true);
+  };
+
+  const handleUpdateBatchTime = () => {
+    if (!selectedBatch) return;
+    updateBatchTimeMutation.mutate({
+      batchId: selectedBatch.batchId,
+      cardTimeValue: parseInt(editTimeForm.cardTimeValue) || 0,
+      cardTimeUnit: editTimeForm.cardTimeUnit,
+      internetTimeValue: parseInt(editTimeForm.internetTimeValue) || 0,
+      internetTimeUnit: editTimeForm.internetTimeUnit,
+      timeFromActivation: editTimeForm.timeFromActivation,
+    });
+  };
+
+  const handleUpdateBatchProperties = () => {
+    if (!selectedBatch) return;
+    updateBatchPropertiesMutation.mutate({
+      batchId: selectedBatch.batchId,
+      simultaneousUse: parseInt(editPropertiesForm.simultaneousUse) || 1,
+      planId: editPropertiesForm.planId ? parseInt(editPropertiesForm.planId) : undefined,
+      hotspotPort: editPropertiesForm.hotspotPort || undefined,
+      macBinding: editPropertiesForm.macBinding,
+    });
+  };
 
   const resetGenerateForm = () => {
     setGenerateForm({
@@ -855,7 +985,12 @@ export default function Vouchers() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{language === 'ar' ? 'اسم الدفعة' : 'Batch Name'}</TableHead>
-                    <TableHead>{language === 'ar' ? 'الكمية' : 'Quantity'}</TableHead>
+                    <TableHead>{language === 'ar' ? 'الخدمة' : 'Plan'}</TableHead>
+                    <TableHead className="text-center">{language === 'ar' ? 'إجمالي' : 'Total'}</TableHead>
+                    <TableHead className="text-center">{language === 'ar' ? 'غير مستخدم' : 'Unused'}</TableHead>
+                    <TableHead className="text-center">{language === 'ar' ? 'نشط' : 'Active'}</TableHead>
+                    <TableHead className="text-center">{language === 'ar' ? 'مستخدم' : 'Used'}</TableHead>
+                    <TableHead className="text-center">{language === 'ar' ? 'معلق' : 'Suspended'}</TableHead>
                     <TableHead>{language === 'ar' ? 'الحالة' : 'Status'}</TableHead>
                     <TableHead>{language === 'ar' ? 'تاريخ الإنشاء' : 'Created'}</TableHead>
                     <TableHead className="text-end">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
@@ -864,15 +999,49 @@ export default function Vouchers() {
                 <TableBody>
                   {batches?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                         {language === 'ar' ? 'لا توجد دفعات' : 'No batches found'}
                       </TableCell>
                     </TableRow>
                   ) : (
                     batches?.map((batch: any) => (
-                      <TableRow key={batch.batchId}>
-                        <TableCell className="font-medium">{batch.name}</TableCell>
-                        <TableCell>{batch.quantity}</TableCell>
+                      <TableRow key={batch.batchId} className={!batch.enabled ? 'opacity-60 bg-muted/30' : ''}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {batch.name}
+                            {!batch.enabled && (
+                              <Badge variant="destructive" className="text-xs">
+                                {language === 'ar' ? 'معطل' : 'Disabled'}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{batch.planName || '-'}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center font-semibold">
+                          {batch.stats?.total || batch.quantity}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="text-blue-600 dark:text-blue-400 font-medium">
+                            {batch.stats?.unused || 0}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="text-green-600 dark:text-green-400 font-medium">
+                            {batch.stats?.active || 0}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="text-gray-600 dark:text-gray-400">
+                            {batch.stats?.used || 0}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="text-orange-600 dark:text-orange-400">
+                            {batch.stats?.suspended || 0}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={batch.status === 'completed' ? 'default' : 'secondary'}>
                             {batch.status === 'completed' 
@@ -896,6 +1065,45 @@ export default function Vouchers() {
                               <Printer className="h-4 w-4 me-1" />
                               PDF
                             </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {batch.enabled ? (
+                                  <DropdownMenuItem
+                                    onClick={() => handleDisableBatch(batch.batchId)}
+                                    className="text-destructive"
+                                  >
+                                    <XCircle className="h-4 w-4 me-2" />
+                                    {language === 'ar' ? 'تعطيل الدفعة' : 'Disable Batch'}
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => handleEnableBatch(batch.batchId)}
+                                    className="text-green-600"
+                                  >
+                                    <CheckCircle2 className="h-4 w-4 me-2" />
+                                    {language === 'ar' ? 'تمكين الدفعة' : 'Enable Batch'}
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => openEditTimeDialog(batch)}
+                                >
+                                  <Clock className="h-4 w-4 me-2" />
+                                  {language === 'ar' ? 'تعديل الوقت' : 'Edit Time'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => openEditPropertiesDialog(batch)}
+                                >
+                                  <RefreshCw className="h-4 w-4 me-2" />
+                                  {language === 'ar' ? 'تعديل الخصائص' : 'Edit Properties'}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -907,6 +1115,166 @@ export default function Vouchers() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Time Dialog */}
+      <Dialog open={isEditTimeDialogOpen} onOpenChange={setIsEditTimeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'ar' ? 'تعديل الوقت للدفعة' : 'Edit Batch Time'}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'ar' 
+                ? `تعديل إعدادات الوقت لجميع الكروت في الدفعة: ${selectedBatch?.name}` 
+                : `Edit time settings for all cards in batch: ${selectedBatch?.name}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{language === 'ar' ? 'الوقت المتاح من تفعيل الكرت' : 'Card Activation Time'}</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    value={editTimeForm.cardTimeValue}
+                    onChange={(e) => setEditTimeForm(prev => ({ ...prev, cardTimeValue: e.target.value }))}
+                    min="0"
+                  />
+                  <Select
+                    value={editTimeForm.cardTimeUnit}
+                    onValueChange={(v) => setEditTimeForm(prev => ({ ...prev, cardTimeUnit: v as 'hours' | 'days' }))}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hours">{language === 'ar' ? 'ساعة' : 'Hours'}</SelectItem>
+                      <SelectItem value="days">{language === 'ar' ? 'يوم' : 'Days'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'ar' ? 'الوقت على الانترنت' : 'Internet Time'}</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    value={editTimeForm.internetTimeValue}
+                    onChange={(e) => setEditTimeForm(prev => ({ ...prev, internetTimeValue: e.target.value }))}
+                    min="0"
+                  />
+                  <Select
+                    value={editTimeForm.internetTimeUnit}
+                    onValueChange={(v) => setEditTimeForm(prev => ({ ...prev, internetTimeUnit: v as 'hours' | 'days' }))}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hours">{language === 'ar' ? 'ساعة' : 'Hours'}</SelectItem>
+                      <SelectItem value="days">{language === 'ar' ? 'يوم' : 'Days'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>{language === 'ar' ? 'تحسب من تفعيل الكرت' : 'Count from activation'}</Label>
+              <Switch
+                checked={editTimeForm.timeFromActivation}
+                onCheckedChange={(checked) => setEditTimeForm(prev => ({ ...prev, timeFromActivation: checked }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditTimeDialogOpen(false)}>
+              {language === 'ar' ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button 
+              onClick={handleUpdateBatchTime}
+              disabled={updateBatchTimeMutation.isPending}
+            >
+              {updateBatchTimeMutation.isPending 
+                ? (language === 'ar' ? 'جاري التحديث...' : 'Updating...')
+                : (language === 'ar' ? 'تحديث' : 'Update')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Properties Dialog */}
+      <Dialog open={isEditPropertiesDialogOpen} onOpenChange={setIsEditPropertiesDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'ar' ? 'تعديل خصائص الدفعة' : 'Edit Batch Properties'}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'ar' 
+                ? `تعديل خصائص جميع الكروت في الدفعة: ${selectedBatch?.name}` 
+                : `Edit properties for all cards in batch: ${selectedBatch?.name}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{language === 'ar' ? 'عدد الأجهزة المسموح لها بالاتصال' : 'Simultaneous Use'}</Label>
+              <Input
+                type="number"
+                value={editPropertiesForm.simultaneousUse}
+                onChange={(e) => setEditPropertiesForm(prev => ({ ...prev, simultaneousUse: e.target.value }))}
+                min="1"
+                max="100"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ar' ? 'الخدمة المرتبطة' : 'Linked Plan'}</Label>
+              <Select
+                value={editPropertiesForm.planId}
+                onValueChange={(v) => setEditPropertiesForm(prev => ({ ...prev, planId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={language === 'ar' ? 'اختر الخدمة' : 'Select plan'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {plans?.map((plan: any) => (
+                    <SelectItem key={plan.id} value={String(plan.id)}>
+                      {plan.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ar' ? 'تحديد منفذ هوتسبوت' : 'Hotspot Port'}</Label>
+              <Input
+                value={editPropertiesForm.hotspotPort}
+                onChange={(e) => setEditPropertiesForm(prev => ({ ...prev, hotspotPort: e.target.value }))}
+                placeholder={language === 'ar' ? 'فارغ = السماح للجميع' : 'Empty = Allow all'}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>{language === 'ar' ? 'ربط الماك' : 'MAC Binding'}</Label>
+              <Switch
+                checked={editPropertiesForm.macBinding}
+                onCheckedChange={(checked) => setEditPropertiesForm(prev => ({ ...prev, macBinding: checked }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditPropertiesDialogOpen(false)}>
+              {language === 'ar' ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button 
+              onClick={handleUpdateBatchProperties}
+              disabled={updateBatchPropertiesMutation.isPending}
+            >
+              {updateBatchPropertiesMutation.isPending 
+                ? (language === 'ar' ? 'جاري التحديث...' : 'Updating...')
+                : (language === 'ar' ? 'تحديث' : 'Update')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
