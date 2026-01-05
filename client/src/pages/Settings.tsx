@@ -25,8 +25,11 @@ import {
   Key,
   Palette,
   Save,
+  Server,
+  Network,
 } from "lucide-react";
-import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { useState, useEffect } from "react";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -35,6 +38,45 @@ export default function Settings() {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [invoiceNotifications, setInvoiceNotifications] = useState(true);
   const [supportNotifications, setSupportNotifications] = useState(true);
+  
+  // RADIUS Settings
+  const [radiusPublicIp, setRadiusPublicIp] = useState('');
+  const [radiusVpnIp, setRadiusVpnIp] = useState('10.0.0.1');
+  const [vpnServerAddress, setVpnServerAddress] = useState('');
+  const [radiusSettingsLoading, setRadiusSettingsLoading] = useState(false);
+  
+  // Load RADIUS settings
+  const { data: systemSettings, refetch: refetchSettings } = trpc.settings.getAll.useQuery();
+  
+  // Update local state when settings are loaded
+  useEffect(() => {
+    if (systemSettings) {
+      setRadiusPublicIp(systemSettings.radius_server_public_ip || '');
+      setRadiusVpnIp(systemSettings.radius_server_vpn_ip || '10.0.0.1');
+      setVpnServerAddress(systemSettings.vpn_server_address || '');
+    }
+  }, [systemSettings]);
+  
+  const updateSettingMutation = trpc.settings.update.useMutation({
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم حفظ الإعدادات' : 'Settings saved');
+      refetchSettings();
+    },
+    onError: (error: { message: string }) => {
+      toast.error(error.message);
+    },
+  });
+  
+  const handleSaveRadiusSettings = async () => {
+    setRadiusSettingsLoading(true);
+    try {
+      await updateSettingMutation.mutateAsync({ key: 'radius_server_public_ip', value: radiusPublicIp });
+      await updateSettingMutation.mutateAsync({ key: 'radius_server_vpn_ip', value: radiusVpnIp });
+      await updateSettingMutation.mutateAsync({ key: 'vpn_server_address', value: vpnServerAddress });
+    } finally {
+      setRadiusSettingsLoading(false);
+    }
+  };
 
   const handleSaveProfile = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -57,10 +99,14 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-5 lg:w-[500px]">
           <TabsTrigger value="profile">
             <User className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
             {language === "ar" ? "الملف" : "Profile"}
+          </TabsTrigger>
+          <TabsTrigger value="radius">
+            <Server className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+            {language === "ar" ? "RADIUS" : "RADIUS"}
           </TabsTrigger>
           <TabsTrigger value="notifications">
             <Bell className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
@@ -116,6 +162,130 @@ export default function Settings() {
                   {t("common.save")}
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* RADIUS Tab */}
+        <TabsContent value="radius">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <div className="flex items-center gap-2">
+                  <Server className="h-5 w-5" />
+                  {language === "ar" ? "إعدادات خادم RADIUS" : "RADIUS Server Settings"}
+                </div>
+              </CardTitle>
+              <CardDescription>
+                {language === "ar" 
+                  ? "إعداد عناوين IP الحقيقية لخادم RADIUS لربط أجهزة MikroTik" 
+                  : "Configure real RADIUS server IP addresses for MikroTik device connections"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Public IP Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Network className="h-4 w-4 text-blue-500" />
+                  <Label className="text-base font-semibold">
+                    {language === "ar" ? "اتصال IP العام" : "Public IP Connection"}
+                  </Label>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="radius-public-ip">
+                    {language === "ar" ? "IP العام لخادم RADIUS" : "RADIUS Server Public IP"}
+                  </Label>
+                  <Input 
+                    id="radius-public-ip" 
+                    placeholder={language === "ar" ? "مثال: 203.0.113.50" : "e.g., 203.0.113.50"}
+                    value={radiusPublicIp}
+                    onChange={(e) => setRadiusPublicIp(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {language === "ar" 
+                      ? "هذا العنوان يُستخدم عندما يكون لدى الراوتر IP عام ويتصل مباشرة بخادم RADIUS" 
+                      : "This address is used when the router has a public IP and connects directly to RADIUS server"}
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* VPN Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-green-500" />
+                  <Label className="text-base font-semibold">
+                    {language === "ar" ? "اتصال VPN (PPTP/SSTP)" : "VPN Connection (PPTP/SSTP)"}
+                  </Label>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="vpn-server-address">
+                    {language === "ar" ? "عنوان خادم VPN" : "VPN Server Address"}
+                  </Label>
+                  <Input 
+                    id="vpn-server-address" 
+                    placeholder={language === "ar" ? "مثال: vpn.example.com أو 203.0.113.100" : "e.g., vpn.example.com or 203.0.113.100"}
+                    value={vpnServerAddress}
+                    onChange={(e) => setVpnServerAddress(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {language === "ar" 
+                      ? "عنوان خادم VPN الذي سيتصل به MikroTik لإنشاء نفق VPN" 
+                      : "VPN server address that MikroTik will connect to for creating VPN tunnel"}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="radius-vpn-ip">
+                    {language === "ar" ? "IP خادم RADIUS داخل شبكة VPN" : "RADIUS Server IP inside VPN Network"}
+                  </Label>
+                  <Input 
+                    id="radius-vpn-ip" 
+                    placeholder={language === "ar" ? "مثال: 10.0.0.1" : "e.g., 10.0.0.1"}
+                    value={radiusVpnIp}
+                    onChange={(e) => setRadiusVpnIp(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {language === "ar" 
+                      ? "هذا العنوان يُستخدم بعد إنشاء نفق VPN للوصول إلى خادم RADIUS" 
+                      : "This address is used after VPN tunnel is established to reach RADIUS server"}
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Info Box */}
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+                <h4 className="font-semibold text-blue-800 dark:text-blue-200">
+                  {language === "ar" ? "ملاحظة هامة" : "Important Note"}
+                </h4>
+                <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+                  {language === "ar" 
+                    ? "تأكد من أن عناوين IP المدخلة صحيحة ويمكن الوصول إليها. سيتم استخدام هذه العناوين في أوامر MikroTik المُولدة لربط الراوترات." 
+                    : "Make sure the entered IP addresses are correct and reachable. These addresses will be used in generated MikroTik commands for router connections."}
+                </p>
+              </div>
+
+              <Button 
+                onClick={handleSaveRadiusSettings} 
+                disabled={radiusSettingsLoading}
+                className="w-full sm:w-auto"
+              >
+                {radiusSettingsLoading ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    {language === "ar" ? "جاري الحفظ..." : "Saving..."}
+                  </>
+                ) : (
+                  <>
+                    <Save className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+                    {language === "ar" ? "حفظ إعدادات RADIUS" : "Save RADIUS Settings"}
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

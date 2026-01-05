@@ -204,13 +204,12 @@ const nasRouter = router({
       const nas = await nasDb.getNasById(input.id);
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
       
-      // Get system settings for RADIUS server address
-      const radiusServerAddress = process.env.RADIUS_SERVER_ADDRESS || 'radius.example.com';
-      const radiusPort = '1812';
+      // Get system settings for RADIUS server addresses
+      const settings = await db.getSystemSettings();
+      const radiusPublicIp = settings.radius_server_public_ip || '';
+      const radiusVpnIp = settings.radius_server_vpn_ip || '10.0.0.1';
+      const vpnServerAddress = settings.vpn_server_address || '';
       const coaPort = '1700';
-      
-      // Generate VPN tunnel IP range (10.255.x.x for VPN clients)
-      const vpnTunnelIp = `10.255.${nas.id}.1`;
       
       const scripts: Array<{
         id: string;
@@ -225,31 +224,60 @@ const nasRouter = router({
       
       // VPN Setup Scripts (only for VPN connection types)
       if (nas.connectionType === 'vpn_pptp') {
-        scripts.push({
-          id: 'pptp-client',
-          title: 'Create PPTP Client',
-          titleAr: 'إنشاء اتصال PPTP',
-          description: 'Create PPTP VPN tunnel to RADIUS server',
-          descriptionAr: 'إنشاء نفق VPN PPTP للاتصال بخادم RADIUS',
-          command: `/interface pptp-client add name=radius-vpn connect-to=${radiusServerAddress} user=${nas.vpnUsername || 'nas-user'} password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no add-default-route=no`,
-          category: 'vpn',
-          required: true,
-        });
+        if (!vpnServerAddress) {
+          // Warning: VPN server address not configured
+          scripts.push({
+            id: 'vpn-warning',
+            title: 'VPN Server Not Configured',
+            titleAr: 'خادم VPN غير مهيأ',
+            description: 'Please configure VPN server address in System Settings first',
+            descriptionAr: 'يرجى إعداد عنوان خادم VPN في إعدادات النظام أولاً',
+            command: '# يرجى إعداد عنوان خادم VPN في إعدادات النظام',
+            category: 'vpn',
+            required: true,
+          });
+        } else {
+          scripts.push({
+            id: 'pptp-client',
+            title: 'Create PPTP Client',
+            titleAr: 'إنشاء اتصال PPTP',
+            description: `Create PPTP VPN tunnel to RADIUS server (${vpnServerAddress})`,
+            descriptionAr: `إنشاء نفق VPN PPTP للاتصال بخادم RADIUS (${vpnServerAddress})`,
+            command: `/interface pptp-client add name=radius-vpn connect-to=${vpnServerAddress} user=${nas.vpnUsername || 'nas-user'} password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no add-default-route=no`,
+            category: 'vpn',
+            required: true,
+          });
+        }
       } else if (nas.connectionType === 'vpn_sstp') {
-        scripts.push({
-          id: 'sstp-client',
-          title: 'Create SSTP Client',
-          titleAr: 'إنشاء اتصال SSTP',
-          description: 'Create SSTP VPN tunnel to RADIUS server',
-          descriptionAr: 'إنشاء نفق VPN SSTP للاتصال بخادم RADIUS',
-          command: `/interface sstp-client add name=radius-vpn connect-to=${radiusServerAddress}:443 user=${nas.vpnUsername || 'nas-user'} password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no`,
-          category: 'vpn',
-          required: true,
-        });
+        if (!vpnServerAddress) {
+          scripts.push({
+            id: 'vpn-warning',
+            title: 'VPN Server Not Configured',
+            titleAr: 'خادم VPN غير مهيأ',
+            description: 'Please configure VPN server address in System Settings first',
+            descriptionAr: 'يرجى إعداد عنوان خادم VPN في إعدادات النظام أولاً',
+            command: '# يرجى إعداد عنوان خادم VPN في إعدادات النظام',
+            category: 'vpn',
+            required: true,
+          });
+        } else {
+          scripts.push({
+            id: 'sstp-client',
+            title: 'Create SSTP Client',
+            titleAr: 'إنشاء اتصال SSTP',
+            description: `Create SSTP VPN tunnel to RADIUS server (${vpnServerAddress})`,
+            descriptionAr: `إنشاء نفق VPN SSTP للاتصال بخادم RADIUS (${vpnServerAddress})`,
+            command: `/interface sstp-client add name=radius-vpn connect-to=${vpnServerAddress}:443 user=${nas.vpnUsername || 'nas-user'} password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no`,
+            category: 'vpn',
+            required: true,
+          });
+        }
       }
       
       // RADIUS Server Setup (always required)
-      const radiusAddress = nas.connectionType === 'public_ip' ? radiusServerAddress : vpnTunnelIp;
+      // For public IP: use the configured public RADIUS IP
+      // For VPN: use the VPN tunnel IP that MikroTik can reach after connecting
+      const radiusAddress = nas.connectionType === 'public_ip' ? radiusPublicIp : radiusVpnIp;
       scripts.push({
         id: 'radius-server',
         title: 'Add RADIUS Server',
@@ -321,7 +349,9 @@ const nasRouter = router({
         nas,
         scripts,
         combinedScript: allRequiredCommands,
-        vpnTunnelIp: nas.connectionType !== 'public_ip' ? vpnTunnelIp : null,
+        vpnTunnelIp: nas.connectionType !== 'public_ip' ? radiusVpnIp : null,
+        radiusAddress,
+        vpnServerAddress: nas.connectionType !== 'public_ip' ? vpnServerAddress : null,
       };
     }),
 
@@ -1310,6 +1340,32 @@ const templatesRouter = router({
 });
 
 // ============================================================================
+// SETTINGS ROUTER
+// ============================================================================
+const settingsRouter = router({
+  getAll: superAdminProcedure.query(async () => {
+    return db.getSystemSettings();
+  }),
+  
+  get: superAdminProcedure
+    .input(z.object({ key: z.string() }))
+    .query(async ({ input }) => {
+      return db.getSystemSetting(input.key);
+    }),
+  
+  update: superAdminProcedure
+    .input(z.object({
+      key: z.string(),
+      value: z.string(),
+      description: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      await db.setSystemSetting(input.key, input.value, input.description);
+      return { success: true };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -1327,6 +1383,7 @@ export const appRouter = router({
   dashboard: dashboardRouter,
   sessions: sessionsRouter,
   templates: templatesRouter,
+  settings: settingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

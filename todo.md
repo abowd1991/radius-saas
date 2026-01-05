@@ -352,3 +352,12 @@
   - [x] Auto-enable RADIUS on MikroTik
   - [x] Auto-link PPP/Hotspot profiles
   - [x] System ready to work immediately after setup
+
+
+## Fix RADIUS IP Logic (Jan 6, 2026)
+- [x] Fix invalid IP generation in RADIUS scripts (e.g., 10.255.30001.1)
+- [x] Use real RADIUS server IP instead of dummy IP
+- [x] For Public IP: Use the actual public IP of RADIUS server
+- [x] For VPN: Use the VPN tunnel IP that MikroTik can reach
+- [x] Add RADIUS server configuration in system settings
+- [x] Ensure RADIUS connection is real and testable

@@ -142,3 +142,41 @@ export async function assignReseller(userId: number, resellerId: number) {
   await db.update(users).set({ resellerId }).where(eq(users.id, userId));
   return { success: true };
 }
+
+
+// ============================================================================
+// SYSTEM SETTINGS
+// ============================================================================
+
+import { systemSettings } from "../drizzle/schema";
+
+export async function getSystemSettings(): Promise<Record<string, string>> {
+  const db = await getDb();
+  if (!db) return {};
+  
+  const settings = await db.select().from(systemSettings);
+  const result: Record<string, string> = {};
+  
+  for (const setting of settings) {
+    result[setting.key] = setting.value || '';
+  }
+  
+  return result;
+}
+
+export async function getSystemSetting(key: string): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(systemSettings).where(eq(systemSettings.key, key)).limit(1);
+  return result[0]?.value || null;
+}
+
+export async function setSystemSetting(key: string, value: string, description?: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(systemSettings)
+    .values({ key, value, description })
+    .onDuplicateKeyUpdate({ set: { value, description } });
+}
