@@ -18,6 +18,8 @@ import { generateCardsPDFHTML, generateCardsCSV, saveBatchPDF, saveBatchPDFWithT
 import { storagePut } from "./storage";
 import * as mikrotikApi from "./services/mikrotikApi";
 import * as coaService from "./services/coaService";
+import * as vpnApi from "./services/vpnApiService";
+import * as accountingService from "./services/accountingService";
 
 // ============================================================================
 // AUTH ROUTER
@@ -185,7 +187,9 @@ const nasRouter = router({
       // For VPN connections, generate unique credentials if not provided
       if (input.connectionType !== 'public_ip') {
         if (!input.vpnUsername) {
-          input.vpnUsername = `nas-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+          // Generate unique VPN username based on NAS name
+          const cleanName = input.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+          input.vpnUsername = `${cleanName}-${Date.now().toString(36)}`;
         }
         if (!input.vpnPassword) {
           input.vpnPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -193,6 +197,21 @@ const nasRouter = router({
         // For VPN, IP will be assigned when connection is established
         if (input.ipAddress === 'pending') {
           input.ipAddress = 'pending-vpn';
+        }
+        
+        // Create VPN user in SoftEther automatically (for SSTP connections)
+        if (input.connectionType === 'vpn_sstp') {
+          try {
+            const vpnResult = await vpnApi.createVpnUser(
+              input.vpnUsername,
+              `NAS: ${input.name}`,
+              `Auto-created for NAS device: ${input.name}`
+            );
+            console.log('VPN User creation result:', vpnResult);
+          } catch (error) {
+            console.error('Failed to create VPN user:', error);
+            // Continue with NAS creation even if VPN user creation fails
+          }
         }
       }
       return nasDb.createNas(input);
@@ -512,10 +531,28 @@ const vouchersRouter = router({
       return cardDb.enableBatch(input.batchId);
     }),
 
-  // Disable batch - deactivate all cards for RADIUS
+  // Disable batch - deactivate all cards for RADIUS and disconnect active sessions
   disableBatch: superAdminProcedure
     .input(z.object({ batchId: z.string() }))
     .mutation(async ({ input }) => {
+      // First, get all cards in the batch to disconnect their sessions
+      const cards = await cardDb.getCardsByBatch(input.batchId);
+      
+      // Disconnect all active sessions for these cards
+      const disconnectPromises = cards.map(async (card: { username: string }) => {
+        try {
+          // Disconnect from RADIUS (MikroTik sessions)
+          await coaService.disconnectUserAllSessions(card.username);
+          // Disconnect from VPN (SoftEther sessions)
+          await vpnApi.disconnectVpnSession(card.username);
+        } catch (error) {
+          console.error(`Failed to disconnect session for ${card.username}:`, error);
+        }
+      });
+      
+      await Promise.allSettled(disconnectPromises);
+      
+      // Then disable the batch in database
       return cardDb.disableBatch(input.batchId);
     }),
 
@@ -1166,7 +1203,29 @@ const sessionsRouter = router({
   disconnectUser: superAdminProcedure
     .input(z.object({ username: z.string() }))
     .mutation(async ({ input }) => {
-      return mikrotikApi.disconnectUserSessions(input.username);
+      // Disconnect from RADIUS (MikroTik sessions)
+      const radiusResult = await mikrotikApi.disconnectUserSessions(input.username);
+      
+      // Also disconnect from VPN (SoftEther sessions)
+      try {
+        await vpnApi.disconnectVpnSession(input.username);
+      } catch (error) {
+        console.error('Failed to disconnect VPN session:', error);
+      }
+      
+      return radiusResult;
+    }),
+
+  // Get VPN sessions
+  getVpnSessions: superAdminProcedure.query(async () => {
+    return vpnApi.getVpnSessions();
+  }),
+
+  // Disconnect VPN session
+  disconnectVpnSession: superAdminProcedure
+    .input(z.object({ username: z.string() }))
+    .mutation(async ({ input }) => {
+      return vpnApi.disconnectVpnSession(input.username);
     }),
 
   getStats: superAdminProcedure.query(async () => {
@@ -1257,6 +1316,58 @@ const sessionsRouter = router({
     .input(z.object({ nasIp: z.string() }))
     .query(async ({ input }) => {
       return coaService.testCoAConnection(input.nasIp);
+    }),
+
+  // ============================================
+  // Accounting Endpoints
+  // ============================================
+  
+  // Get usage statistics for a user
+  getUserUsage: superAdminProcedure
+    .input(z.object({ username: z.string() }))
+    .query(async ({ input }) => {
+      return accountingService.getUserUsageStats(input.username);
+    }),
+
+  // Get time balance for a user/card
+  getTimeBalance: superAdminProcedure
+    .input(z.object({ username: z.string() }))
+    .query(async ({ input }) => {
+      const balance = await accountingService.getTimeBalance(input.username);
+      if (!balance) return null;
+      
+      return {
+        ...balance,
+        allocatedTimeFormatted: accountingService.formatTime(balance.allocatedTime),
+        usedTimeFormatted: accountingService.formatTime(balance.usedTime),
+        remainingTimeFormatted: accountingService.formatTime(balance.remainingTime),
+      };
+    }),
+
+  // Get users with low remaining time
+  getLowTimeUsers: superAdminProcedure
+    .input(z.object({ thresholdMinutes: z.number().default(30) }).optional())
+    .query(async ({ input }) => {
+      const threshold = input?.thresholdMinutes || 30;
+      const users = await accountingService.getUsersWithLowTime(threshold);
+      return users.map(u => ({
+        ...u,
+        remainingTimeFormatted: accountingService.formatTime(u.remainingTime),
+      }));
+    }),
+
+  // Check and disconnect expired users
+  checkExpiredUsers: superAdminProcedure
+    .mutation(async () => {
+      return accountingService.checkAndDisconnectExpiredUsers();
+    }),
+
+  // Update session timeout for a user based on remaining time
+  updateUserTimeout: superAdminProcedure
+    .input(z.object({ username: z.string() }))
+    .mutation(async ({ input }) => {
+      const success = await accountingService.updateSessionTimeout(input.username);
+      return { success };
     }),
 });
 

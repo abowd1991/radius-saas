@@ -396,3 +396,93 @@
 - [x] إضافة زر قطع الجلسة في صفحة الجلسات النشطة
 - [x] إضافة زر تحديث السرعة للمستخدمين المتصلين
 - [x] اختبار CoA مع MikroTik
+
+
+## نظام الاتصال المتكامل (Public IP / PPTP / SSTP) - Jan 6, 2026
+- [ ] تفعيل PPTP Server على سيرفر RADIUS (37.60.228.5)
+- [ ] تفعيل SSTP Server (اختياري)
+- [ ] تعديل صفحة إضافة NAS لدعم أنواع الاتصال الثلاثة
+- [ ] إنشاء نظام توليد بيانات VPN تلقائياً
+- [ ] ربط VPN User بـ NAS في قاعدة البيانات
+- [ ] تعديل CoA ليرسل عبر NAS-IP-Address الصحيح
+- [ ] اختبار الاتصال عبر PPTP
+- [ ] اختبار CoA عبر VPN tunnel
+
+
+## نظام Generic للشبكات (Jan 6, 2026)
+- [ ] تفعيل مصادقة PPTP عبر RADIUS (بدلاً من chap-secrets)
+- [ ] تعديل API لإنشاء VPN Users في radcheck تلقائياً عند إنشاء NAS
+- [ ] إنشاء نظام تحديث vpnTunnelIp تلقائياً عند اتصال VPN
+- [ ] تصحيح CoA ليستخدم vpnTunnelIp للـ VPN و Public IP للاتصال المباشر
+- [ ] اختبار النظام الكامل مع شبكة جديدة
+
+
+## VPN + RADIUS Integration - Generic & Automatic System (Jan 7, 2026)
+
+### 1️⃣ ربط إنشاء NAS مع VPN تلقائياً
+- [ ] عند إنشاء NAS بنوع PPTP/SSTP يتم توليد بيانات VPN تلقائياً
+- [ ] إنشاء User في SoftEther تلقائياً عند إنشاء NAS
+- [ ] إنشاء سكربت vpn_create_user.py على السيرفر
+- [ ] ربط API النظام مع سكربت إنشاء VPN User
+- [ ] لا يوجد إنشاء يدوي - كل شيء تلقائي
+
+### 2️⃣ ربط تعطيل الكرت مع قطع الجلسة فوراً
+- [ ] عند تعطيل كرت من لوحة التحكم يتم إرسال CoA
+- [ ] قطع الجلسة فوراً من MikroTik عبر RADIUS CoA
+- [ ] قطع جلسة VPN من SoftEther إذا كان متصلاً
+- [ ] منع إعادة الاتصال للمستخدم المعطّل
+
+### 3️⃣ ربط Accounting مع خصم الوقت
+- [ ] استخدام بيانات radacct لحساب الوقت المستخدم
+- [ ] خصم الوقت من رصيد الكرت تلقائياً
+- [ ] عدم فقدان الوقت عند إعادة الاتصال
+- [ ] تحديث الرصيد المتبقي في الوقت الفعلي
+
+### 4️⃣ API Endpoints للتحكم الكامل
+- [ ] Endpoint لقطع جلسة مستخدم
+- [ ] Endpoint لتعطيل/تفعيل كرت
+- [ ] Endpoint لقراءة الجلسات النشطة
+- [ ] Endpoint لتحديث حالة VPN User
+- [ ] Endpoint لعرض الوقت المتبقي للكرت
+
+### معيار القبول
+- [ ] أي شبكة جديدة تعمل تلقائياً بدون إعدادات يدوية
+- [ ] الكروت تُدار بالكامل عبر RADIUS
+- [ ] الفصل والطرد يعملان فوراً
+- [ ] الوقت يُحسب ويُخصم تلقائياً
+
+
+## VPN + RADIUS Integration (Jan 7, 2026)
+- [x] Setup SSTP VPN Server (SoftEther) with RADIUS authentication
+- [x] Create VPN API service for managing VPN users and sessions
+- [x] Auto-create VPN user when creating NAS with vpn_sstp connection type
+- [x] Disconnect all sessions (RADIUS + VPN) when disabling batch
+- [x] Add VPN sessions endpoints to sessions router
+- [x] Create Accounting service for time tracking
+  - [x] getUserUsageStats - Get usage statistics from radacct
+  - [x] getTimeBalance - Get remaining time for card
+  - [x] checkAndDisconnectExpiredUsers - Auto-disconnect expired users
+  - [x] updateSessionTimeout - Update Session-Timeout attribute
+  - [x] getUsersWithLowTime - Get users near time expiry
+- [x] Add Accounting endpoints to sessions router
+  - [x] sessions.getUserUsage
+  - [x] sessions.getTimeBalance
+  - [x] sessions.getLowTimeUsers
+  - [x] sessions.checkExpiredUsers
+  - [x] sessions.updateUserTimeout
+- [x] Setup Cron Job for auto-disconnecting expired users (every minute)
+- [x] VPN API HTTP service on RADIUS server (port 8080)
+  - [x] /api/health - Health check
+  - [x] /api/vpn/users - List/Create VPN users
+  - [x] /api/vpn/users/<username> - Delete VPN user
+  - [x] /api/vpn/sessions - List active VPN sessions
+  - [x] /api/vpn/sessions/<username>/disconnect - Disconnect VPN session
+  - [x] /api/radius/disconnect - Send CoA Disconnect
+  - [x] /api/radius/clients - Add RADIUS client
+
+## System Integration Status
+- [x] RADIUS authentication via FreeRADIUS + TiDB Cloud
+- [x] VPN (SSTP) via SoftEther with RADIUS auth
+- [x] CoA (Change of Authorization) for session disconnect
+- [x] Accounting with time tracking and auto-disconnect
+- [x] Generic system - works with any new NAS automatically
