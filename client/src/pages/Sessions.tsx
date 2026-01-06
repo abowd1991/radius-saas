@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -30,6 +31,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
@@ -44,6 +52,9 @@ import {
   User,
   Globe,
   Activity,
+  MoreHorizontal,
+  Zap,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -53,6 +64,9 @@ export default function Sessions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [isDisconnectDialogOpen, setIsDisconnectDialogOpen] = useState(false);
+  const [isSpeedDialogOpen, setIsSpeedDialogOpen] = useState(false);
+  const [newDownloadSpeed, setNewDownloadSpeed] = useState("");
+  const [newUploadSpeed, setNewUploadSpeed] = useState("");
 
   // Fetch active sessions
   const { data: sessions, isLoading, refetch } = trpc.sessions.list.useQuery(undefined, {
@@ -64,7 +78,42 @@ export default function Sessions() {
     refetchInterval: 30000,
   });
 
-  // Disconnect mutation
+  // CoA Disconnect mutation
+  const coaDisconnect = trpc.sessions.coaDisconnect.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(language === "ar" ? "تم قطع الاتصال بنجاح (CoA)" : "Session disconnected via CoA");
+      } else {
+        toast.warning(result.message);
+      }
+      setIsDisconnectDialogOpen(false);
+      setSelectedSession(null);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // CoA Update Speed mutation
+  const coaUpdateSession = trpc.sessions.coaUpdateSession.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(language === "ar" ? "تم تحديث السرعة بنجاح" : "Speed updated successfully");
+      } else {
+        toast.warning(result.message);
+      }
+      setIsSpeedDialogOpen(false);
+      setSelectedSession(null);
+      setNewDownloadSpeed("");
+      setNewUploadSpeed("");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Legacy disconnect mutation (fallback)
   const disconnectSession = trpc.sessions.disconnect.useMutation({
     onSuccess: () => {
       toast.success(language === "ar" ? "تم قطع الاتصال بنجاح" : "Session disconnected successfully");
@@ -110,11 +159,31 @@ export default function Sessions() {
     setIsDisconnectDialogOpen(true);
   };
 
+  const handleChangeSpeed = (session: any) => {
+    setSelectedSession(session);
+    setIsSpeedDialogOpen(true);
+  };
+
   const confirmDisconnect = () => {
     if (selectedSession) {
-      disconnectSession.mutate({
-        sessionId: selectedSession.id,
+      // Use CoA disconnect
+      coaDisconnect.mutate({
+        username: selectedSession.username,
         nasIp: selectedSession.nasIpAddress,
+        sessionId: selectedSession.id,
+        framedIp: selectedSession.framedIpAddress,
+      });
+    }
+  };
+
+  const confirmSpeedChange = () => {
+    if (selectedSession && newDownloadSpeed && newUploadSpeed) {
+      coaUpdateSession.mutate({
+        username: selectedSession.username,
+        nasIp: selectedSession.nasIpAddress,
+        sessionId: selectedSession.id,
+        downloadSpeed: parseInt(newDownloadSpeed),
+        uploadSpeed: parseInt(newUploadSpeed),
       });
     }
   };
@@ -129,8 +198,8 @@ export default function Sessions() {
           </h1>
           <p className="text-muted-foreground">
             {language === "ar" 
-              ? "مراقبة وإدارة جلسات RADIUS النشطة"
-              : "Monitor and manage active RADIUS sessions"}
+              ? "مراقبة وإدارة جلسات RADIUS النشطة مع دعم CoA"
+              : "Monitor and manage active RADIUS sessions with CoA support"}
           </p>
         </div>
         <Button onClick={() => refetch()} variant="outline">
@@ -206,6 +275,27 @@ export default function Sessions() {
         </Card>
       </div>
 
+      {/* CoA Info Banner */}
+      <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-500/20 rounded-lg">
+              <Zap className="h-6 w-6 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="font-semibold">
+                {language === "ar" ? "دعم CoA (Change of Authorization)" : "CoA Support Enabled"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {language === "ar" 
+                  ? "يمكنك الآن قطع الجلسات وتغيير السرعة فوراً للمستخدمين المتصلين"
+                  : "You can now disconnect sessions and change speed instantly for connected users"}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Search */}
       <Card>
         <CardContent className="pt-6">
@@ -234,7 +324,7 @@ export default function Sessions() {
                 <TableHead>{language === "ar" ? "التنزيل" : "Download"}</TableHead>
                 <TableHead>{language === "ar" ? "الرفع" : "Upload"}</TableHead>
                 <TableHead>{language === "ar" ? "النوع" : "Type"}</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
+                <TableHead className="w-[100px]">{language === "ar" ? "إجراءات" : "Actions"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -293,14 +383,27 @@ export default function Sessions() {
                       <Badge variant="outline">{session.serviceType}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDisconnect(session)}
-                      >
-                        <WifiOff className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleChangeSpeed(session)}>
+                            <Settings className="h-4 w-4 me-2" />
+                            {language === "ar" ? "تغيير السرعة" : "Change Speed"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDisconnect(session)}
+                            className="text-destructive"
+                          >
+                            <WifiOff className="h-4 w-4 me-2" />
+                            {language === "ar" ? "قطع الاتصال" : "Disconnect"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -315,12 +418,12 @@ export default function Sessions() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {language === "ar" ? "قطع الاتصال" : "Disconnect Session"}
+              {language === "ar" ? "قطع الاتصال (CoA)" : "Disconnect Session (CoA)"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {language === "ar" 
-                ? `هل أنت متأكد من قطع اتصال المستخدم "${selectedSession?.username}"؟`
-                : `Are you sure you want to disconnect user "${selectedSession?.username}"?`}
+                ? `هل أنت متأكد من قطع اتصال المستخدم "${selectedSession?.username}"؟ سيتم إرسال طلب CoA Disconnect إلى جهاز NAS.`
+                : `Are you sure you want to disconnect user "${selectedSession?.username}"? A CoA Disconnect request will be sent to the NAS device.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -330,12 +433,74 @@ export default function Sessions() {
             <AlertDialogAction 
               onClick={confirmDisconnect}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={coaDisconnect.isPending}
             >
+              {coaDisconnect.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin me-2" />
+              ) : (
+                <WifiOff className="h-4 w-4 me-2" />
+              )}
               {language === "ar" ? "قطع الاتصال" : "Disconnect"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Change Speed Dialog */}
+      <Dialog open={isSpeedDialogOpen} onOpenChange={setIsSpeedDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {language === "ar" ? "تغيير السرعة (CoA)" : "Change Speed (CoA)"}
+            </DialogTitle>
+            <DialogDescription>
+              {language === "ar" 
+                ? `تغيير سرعة المستخدم "${selectedSession?.username}" فوراً`
+                : `Change speed for user "${selectedSession?.username}" instantly`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>
+                {language === "ar" ? "سرعة التنزيل (Mbps)" : "Download Speed (Mbps)"}
+              </Label>
+              <Input
+                type="number"
+                placeholder="10"
+                value={newDownloadSpeed}
+                onChange={(e) => setNewDownloadSpeed(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>
+                {language === "ar" ? "سرعة الرفع (Mbps)" : "Upload Speed (Mbps)"}
+              </Label>
+              <Input
+                type="number"
+                placeholder="5"
+                value={newUploadSpeed}
+                onChange={(e) => setNewUploadSpeed(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSpeedDialogOpen(false)}>
+              {language === "ar" ? "إلغاء" : "Cancel"}
+            </Button>
+            <Button 
+              onClick={confirmSpeedChange}
+              disabled={!newDownloadSpeed || !newUploadSpeed || coaUpdateSession.isPending}
+            >
+              {coaUpdateSession.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin me-2" />
+              ) : (
+                <Zap className="h-4 w-4 me-2" />
+              )}
+              {language === "ar" ? "تطبيق" : "Apply"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

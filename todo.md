@@ -388,3 +388,11 @@
   - [x] MikroTik connection steps
   - [x] Testing procedures
   - [x] Common errors and solutions
+
+
+## CoA (Change of Authorization) Support (Jan 6, 2026)
+- [x] إعداد CoA على FreeRADIUS Server (المنفذ 3799)
+- [x] إضافة CoA API في منصة Manus (disconnect/update)
+- [x] إضافة زر قطع الجلسة في صفحة الجلسات النشطة
+- [x] إضافة زر تحديث السرعة للمستخدمين المتصلين
+- [x] اختبار CoA مع MikroTik

@@ -17,6 +17,7 @@ import * as templateDb from "./db/cardTemplates";
 import { generateCardsPDFHTML, generateCardsCSV, saveBatchPDF, saveBatchPDFWithTemplate, generateCardsPDFHTMLWithTemplate } from "./services/pdfGenerator";
 import { storagePut } from "./storage";
 import * as mikrotikApi from "./services/mikrotikApi";
+import * as coaService from "./services/coaService";
 
 // ============================================================================
 // AUTH ROUTER
@@ -1198,6 +1199,64 @@ const sessionsRouter = router({
     .query(async ({ input }) => {
       const config = mikrotikApi.generateFreeRadiusClientConfig(input);
       return { config };
+    }),
+
+  // ============================================
+  // CoA (Change of Authorization) Endpoints
+  // ============================================
+  
+  // Disconnect a specific session using CoA
+  coaDisconnect: superAdminProcedure
+    .input(z.object({
+      username: z.string(),
+      nasIp: z.string(),
+      sessionId: z.string().optional(),
+      framedIp: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return coaService.disconnectSession(
+        input.username,
+        input.nasIp,
+        input.sessionId,
+        input.framedIp
+      );
+    }),
+
+  // Disconnect all sessions for a user using CoA
+  coaDisconnectUser: superAdminProcedure
+    .input(z.object({ username: z.string() }))
+    .mutation(async ({ input }) => {
+      return coaService.disconnectUserAllSessions(input.username);
+    }),
+
+  // Update session attributes (speed, timeout) using CoA
+  coaUpdateSession: superAdminProcedure
+    .input(z.object({
+      username: z.string(),
+      nasIp: z.string(),
+      sessionId: z.string(),
+      downloadSpeed: z.number().optional(),
+      uploadSpeed: z.number().optional(),
+      sessionTimeout: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return coaService.updateSessionAttributes(
+        input.username,
+        input.nasIp,
+        input.sessionId,
+        {
+          downloadSpeed: input.downloadSpeed,
+          uploadSpeed: input.uploadSpeed,
+          sessionTimeout: input.sessionTimeout,
+        }
+      );
+    }),
+
+  // Test CoA connectivity to a NAS
+  coaTest: superAdminProcedure
+    .input(z.object({ nasIp: z.string() }))
+    .query(async ({ input }) => {
+      return coaService.testCoAConnection(input.nasIp);
     }),
 });
 
