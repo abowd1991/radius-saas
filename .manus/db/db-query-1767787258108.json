@@ -1,0 +1,37 @@
+{
+  "query": "SELECT * FROM nas;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT * FROM nas;",
+  "rows": [
+    {
+      "id": "180010",
+      "nasname": "vpn-abd-alrhman-alomrani-mk3y0sbg",
+      "shortname": "abd alrhman alomrani",
+      "type": "mikrotik",
+      "ports": "NULL",
+      "secret": "25552552",
+      "server": "NULL",
+      "community": "NULL",
+      "description": "NULL",
+      "connectionType": "vpn_sstp",
+      "location": "NULL",
+      "model": "NULL",
+      "apiPort": "8728",
+      "apiUsername": "NULL",
+      "apiPassword": "NULL",
+      "status": "active",
+      "createdAt": "2026-01-07 11:36:45",
+      "updatedAt": "2026-01-07 11:36:45",
+      "mikrotikApiPort": "8728",
+      "mikrotikApiUser": "NULL",
+      "mikrotikApiPassword": "NULL",
+      "lastSeen": "NULL",
+      "vpnUsername": "abd-alrhman-alomrani-mk3y0sbg",
+      "vpnPassword": "qe3s1p3a50g1znpath44b1h",
+      "vpnTunnelIp": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\ttype\tports\tsecret\tserver\tcommunity\tdescription\tconnectionType\tlocation\tmodel\tapiPort\tapiUsername\tapiPassword\tstatus\tcreatedAt\tupdatedAt\tmikrotikApiPort\tmikrotikApiUser\tmikrotikApiPassword\tlastSeen\tvpnUsername\tvpnPassword\tvpnTunnelIp\n180010\tvpn-abd-alrhman-alomrani-mk3y0sbg\tabd alrhman alomrani\tmikrotik\tNULL\t25552552\tNULL\tNULL\tNULL\tvpn_sstp\tNULL\tNULL\t8728\tNULL\tNULL\tactive\t2026-01-07 11:36:45\t2026-01-07 11:36:45\t8728\tNULL\tNULL\tNULL\tabd-alrhman-alomrani-mk3y0sbg\tqe3s1p3a50g1znpath44b1h\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

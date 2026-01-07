@@ -5,15 +5,13 @@
  * - Disconnecting active sessions
  * - Updating session attributes (speed, limits)
  * - Real-time user management
+ * 
+ * CoA requests are sent via the remote RADIUS API server
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { getDb } from "../db";
-import { radacct, nasDevices, systemSettings } from "../../drizzle/schema";
+import { radacct, nasDevices, systemSettings, radreply } from "../../drizzle/schema";
 import { eq, and, isNull } from "drizzle-orm";
-
-const execAsync = promisify(exec);
 
 // CoA Response interface
 interface CoAResponse {
@@ -23,23 +21,9 @@ interface CoAResponse {
   error?: string;
 }
 
-// Get RADIUS server settings
-async function getRadiusSettings() {
-  const db = await getDb();
-  if (!db) return null;
-  
-  const settings = await db.select()
-    .from(systemSettings)
-    .where(eq(systemSettings.key, 'radius_server_public_ip'));
-  
-  const radiusIp = settings[0]?.value || '127.0.0.1';
-  
-  return {
-    radiusIp,
-    coaPort: 3799,
-    secret: 'radius_secret_2024', // Default secret
-  };
-}
+// Remote API configuration
+const RADIUS_API_URL = 'http://37.60.228.5:8080';
+const RADIUS_API_KEY = 'radius_api_key_2024_secure';
 
 // Get NAS device by IP
 async function getNasByIp(nasIp: string) {
@@ -54,9 +38,20 @@ async function getNasByIp(nasIp: string) {
   return nas;
 }
 
+// Get RADIUS VPN IP from settings
+async function getRadiusVpnIp(): Promise<string> {
+  const db = await getDb();
+  if (!db) return '192.168.30.1';
+  
+  const settings = await db.select()
+    .from(systemSettings)
+    .where(eq(systemSettings.key, 'radius_server_vpn_ip'));
+  
+  return settings[0]?.value || '192.168.30.1';
+}
+
 /**
- * Send CoA Disconnect-Request to terminate a user session
- * Uses radclient command to send RADIUS CoA packet
+ * Send CoA Disconnect-Request via remote API
  */
 export async function disconnectSession(
   username: string,
@@ -68,34 +63,27 @@ export async function disconnectSession(
     const nas = await getNasByIp(nasIp);
     const secret = nas?.secret || 'radius_secret_2024';
     
-    // Build the radclient command for Disconnect-Request
-    // Disconnect-Request uses port 3799 (CoA port) on the NAS
-    let attributes = `User-Name="${username}"`;
-    if (sessionId) {
-      attributes += `\nAcct-Session-Id="${sessionId}"`;
-    }
-    if (framedIp) {
-      attributes += `\nFramed-IP-Address=${framedIp}`;
-    }
+    console.log(`Sending CoA Disconnect to ${nasIp}:3799 for user ${username} via remote API`);
     
-    // Create temp file with attributes
-    const tempFile = `/tmp/coa_${Date.now()}.txt`;
-    await execAsync(`echo '${attributes}' > ${tempFile}`);
+    // Send CoA via remote API
+    const response = await fetch(`${RADIUS_API_URL}/api/radius/disconnect`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': RADIUS_API_KEY,
+      },
+      body: JSON.stringify({
+        username,
+        nas_ip: nasIp,
+        secret,
+        session_id: sessionId,
+        framed_ip: framedIp,
+      }),
+    });
     
-    // Send Disconnect-Request to NAS
-    // Note: CoA is sent TO the NAS, not to RADIUS server
-    const coaPort = 3799; // Standard CoA port
-    const command = `echo "${attributes}" | radclient -x ${nasIp}:${coaPort} disconnect ${secret}`;
+    const result = await response.json();
     
-    console.log(`Sending CoA Disconnect to ${nasIp}:${coaPort} for user ${username}`);
-    
-    const { stdout, stderr } = await execAsync(command, { timeout: 10000 });
-    
-    // Clean up temp file
-    await execAsync(`rm -f ${tempFile}`).catch(() => {});
-    
-    // Check if disconnect was successful
-    if (stdout.includes('Disconnect-ACK') || stdout.includes('received')) {
+    if (result.success) {
       // Update radacct to mark session as stopped
       const db = await getDb();
       if (db && sessionId) {
@@ -110,16 +98,10 @@ export async function disconnectSession(
       return {
         success: true,
         message: `Session disconnected successfully for user ${username}`,
-        data: { username, nasIp, sessionId, output: stdout }
-      };
-    } else if (stdout.includes('Disconnect-NAK')) {
-      return {
-        success: false,
-        message: 'Disconnect request was rejected by NAS',
-        error: stdout
+        data: { username, nasIp, sessionId, output: result.output }
       };
     } else {
-      // Even if radclient fails, update database
+      // Still update database even if CoA fails
       const db = await getDb();
       if (db && sessionId) {
         await db.update(radacct)
@@ -131,9 +113,9 @@ export async function disconnectSession(
       }
       
       return {
-        success: true,
-        message: 'Session marked as disconnected in database',
-        data: { username, nasIp, sessionId, note: 'CoA packet may not have reached NAS' }
+        success: false,
+        message: result.message || 'Disconnect request failed',
+        error: result.output || result.error
       };
     }
   } catch (error: any) {
@@ -177,6 +159,27 @@ export async function disconnectUserAllSessions(username: string): Promise<CoARe
       ));
     
     if (sessions.length === 0) {
+      // Try to disconnect anyway using VPN IP as NAS
+      const radiusVpnIp = await getRadiusVpnIp();
+      
+      // Get all NAS devices to try disconnecting from each
+      const allNas = await db.select().from(nasDevices);
+      
+      if (allNas.length > 0) {
+        // Try to disconnect from each NAS
+        const results = await Promise.all(
+          allNas.map(nas => 
+            disconnectSession(username, nas.nasname, undefined, undefined)
+          )
+        );
+        
+        return {
+          success: true,
+          message: 'Disconnect requests sent to all NAS devices',
+          data: { results }
+        };
+      }
+      
       return {
         success: true,
         message: 'No active sessions found for this user',
@@ -190,7 +193,7 @@ export async function disconnectUserAllSessions(username: string): Promise<CoARe
         disconnectSession(
           username,
           session.nasipaddress,
-          session.acctuniqueid,
+          session.acctsessionid || undefined,
           session.framedipaddress || undefined
         )
       )
@@ -223,7 +226,8 @@ export async function updateSessionAttributes(
   username: string,
   nasIp: string,
   sessionId: string,
-  attributes: {
+  framedIp?: string,
+  attributes?: {
     downloadSpeed?: number;
     uploadSpeed?: number;
     sessionTimeout?: number;
@@ -233,39 +237,45 @@ export async function updateSessionAttributes(
     const nas = await getNasByIp(nasIp);
     const secret = nas?.secret || 'radius_secret_2024';
     
-    // Build CoA attributes
-    let coaAttrs = `User-Name="${username}"\nAcct-Session-Id="${sessionId}"`;
+    console.log(`Sending CoA Update to ${nasIp}:3799 for user ${username}`);
     
-    // Add rate limit if speeds are specified
-    if (attributes.downloadSpeed && attributes.uploadSpeed) {
-      // MikroTik rate limit format: rx/tx (download/upload in bits)
-      const rateLimit = `${attributes.uploadSpeed}M/${attributes.downloadSpeed}M`;
-      coaAttrs += `\nMikrotik-Rate-Limit="${rateLimit}"`;
+    // Build rate limit string (upload/download in kbps)
+    let rateLimit: string | undefined;
+    if (attributes?.downloadSpeed && attributes?.uploadSpeed) {
+      rateLimit = `${attributes.uploadSpeed * 1000}k/${attributes.downloadSpeed * 1000}k`;
     }
     
-    if (attributes.sessionTimeout) {
-      coaAttrs += `\nSession-Timeout=${attributes.sessionTimeout}`;
-    }
+    // Send CoA via remote API
+    const response = await fetch(`${RADIUS_API_URL}/api/radius/coa`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': RADIUS_API_KEY,
+      },
+      body: JSON.stringify({
+        username,
+        nas_ip: nasIp,
+        secret,
+        session_id: sessionId,
+        framed_ip: framedIp,
+        rate_limit: rateLimit,
+        session_timeout: attributes?.sessionTimeout,
+      }),
+    });
     
-    // Send CoA request
-    const coaPort = 3799;
-    const command = `echo "${coaAttrs}" | radclient -x ${nasIp}:${coaPort} coa ${secret}`;
+    const result = await response.json();
     
-    console.log(`Sending CoA Update to ${nasIp}:${coaPort} for user ${username}`);
-    
-    const { stdout, stderr } = await execAsync(command, { timeout: 10000 });
-    
-    if (stdout.includes('CoA-ACK') || stdout.includes('received')) {
+    if (result.success) {
       return {
         success: true,
         message: `Session attributes updated for user ${username}`,
-        data: { username, nasIp, sessionId, attributes, output: stdout }
+        data: { username, nasIp, sessionId, attributes, output: result.output }
       };
     } else {
       return {
         success: false,
-        message: 'CoA request was rejected or failed',
-        error: stdout || stderr
+        message: result.message || 'CoA update failed',
+        error: result.output || result.error
       };
     }
   } catch (error: any) {
@@ -279,27 +289,157 @@ export async function updateSessionAttributes(
 }
 
 /**
+ * Change user speed with fallback to disconnect
+ * 1. Try CoA to change speed instantly
+ * 2. If CoA fails, update radreply and disconnect (user reconnects with new speed)
+ */
+export async function changeUserSpeed(
+  username: string,
+  uploadSpeedMbps: number,
+  downloadSpeedMbps: number
+): Promise<CoAResponse> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, message: 'Database not available', error: 'DB_ERROR' };
+  }
+  
+  // Build rate limit string (Mikrotik format: upload/download in kbps)
+  const rateLimit = `${uploadSpeedMbps * 1000}k/${downloadSpeedMbps * 1000}k`;
+  
+  try {
+    // First, update radreply with new speed (so future connections use it)
+    
+    // Check if Mikrotik-Rate-Limit exists for this user
+    const existingRate = await db.select()
+      .from(radreply)
+      .where(and(
+        eq(radreply.username, username),
+        eq(radreply.attribute, 'Mikrotik-Rate-Limit')
+      ))
+      .limit(1);
+    
+    if (existingRate.length > 0) {
+      // Update existing
+      await db.update(radreply)
+        .set({ value: rateLimit })
+        .where(and(
+          eq(radreply.username, username),
+          eq(radreply.attribute, 'Mikrotik-Rate-Limit')
+        ));
+    } else {
+      // Insert new
+      await db.insert(radreply).values({
+        username,
+        attribute: 'Mikrotik-Rate-Limit',
+        op: ':=',
+        value: rateLimit,
+      });
+    }
+    
+    console.log(`[CoA] Updated radreply for ${username} with rate limit: ${rateLimit}`);
+    
+    // Get active sessions for this user
+    const sessions = await db.select()
+      .from(radacct)
+      .where(and(
+        eq(radacct.username, username),
+        isNull(radacct.acctstoptime)
+      ));
+    
+    if (sessions.length === 0) {
+      return {
+        success: true,
+        message: `Speed updated for ${username}. No active session - new speed will apply on next login.`,
+        data: { rateLimit, activeSession: false }
+      };
+    }
+    
+    // Try CoA for each active session
+    let coaSuccess = false;
+    for (const session of sessions) {
+      const coaResult = await updateSessionAttributes(
+        username,
+        session.nasipaddress,
+        session.acctsessionid || '',
+        session.framedipaddress || undefined,
+        {
+          downloadSpeed: downloadSpeedMbps,
+          uploadSpeed: uploadSpeedMbps,
+        }
+      );
+      
+      if (coaResult.success) {
+        coaSuccess = true;
+        console.log(`[CoA] Speed changed instantly for ${username} via CoA`);
+      }
+    }
+    
+    if (coaSuccess) {
+      return {
+        success: true,
+        message: `Speed changed instantly for ${username} to ${rateLimit}`,
+        data: { rateLimit, method: 'coa' }
+      };
+    }
+    
+    // CoA failed - disconnect user so they reconnect with new speed
+    console.log(`[CoA] CoA failed for ${username}, falling back to disconnect`);
+    
+    for (const session of sessions) {
+      await disconnectSession(
+        username,
+        session.nasipaddress,
+        session.acctsessionid || undefined,
+        session.framedipaddress || undefined
+      );
+    }
+    
+    return {
+      success: true,
+      message: `Speed updated for ${username}. User disconnected - new speed (${rateLimit}) will apply on reconnect.`,
+      data: { rateLimit, method: 'disconnect-reconnect' }
+    };
+    
+  } catch (error: any) {
+    console.error('[CoA] Error changing speed:', error);
+    return {
+      success: false,
+      message: 'Failed to change speed',
+      error: error.message
+    };
+  }
+}
+
+/**
  * Check if CoA is supported/reachable on a NAS
  */
 export async function testCoAConnection(nasIp: string): Promise<CoAResponse> {
   try {
-    const nas = await getNasByIp(nasIp);
-    const secret = nas?.secret || 'radius_secret_2024';
+    // Test via remote API
+    const response = await fetch(`${RADIUS_API_URL}/api/health`, {
+      method: 'GET',
+      headers: {
+        'X-API-Key': RADIUS_API_KEY,
+      },
+    });
     
-    // Send a simple status-server request to test connectivity
-    const command = `echo "Message-Authenticator = 0x00" | radclient -x ${nasIp}:3799 status ${secret} 2>&1`;
-    
-    const { stdout, stderr } = await execAsync(command, { timeout: 5000 });
-    
-    return {
-      success: true,
-      message: 'CoA port is reachable',
-      data: { nasIp, port: 3799, response: stdout }
-    };
+    if (response.ok) {
+      return {
+        success: true,
+        message: 'Remote API is reachable, CoA should work',
+        data: { nasIp, port: 3799 }
+      };
+    } else {
+      return {
+        success: false,
+        message: 'Remote API is not responding',
+        error: `HTTP ${response.status}`
+      };
+    }
   } catch (error: any) {
     return {
       success: false,
-      message: 'CoA port is not reachable',
+      message: 'CoA test failed',
       error: error.message
     };
   }

@@ -1,0 +1,45 @@
+{
+  "query": "SELECT username, attribute, value FROM radcheck WHERE username LIKE '%mk3%' OR username LIKE '%vpn%' OR username LIKE '%abd%' LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT username, attribute, value FROM radcheck WHERE username LIKE '%mk3%' OR username LIKE '%vpn%' OR username LIKE '%abd%' LIMIT 20;",
+  "rows": [
+    {
+      "username": "80174-mk3w8iyc",
+      "attribute": "Cleartext-Password",
+      "value": "ssf4a5v3k9hw6elcse6"
+    },
+    {
+      "username": "old-mk3wvtv0",
+      "attribute": "Cleartext-Password",
+      "value": "6jy4s7ked3vei748ezxphp"
+    },
+    {
+      "username": "abd-alrhman-alomrani-mk3x7097",
+      "attribute": "Cleartext-Password",
+      "value": "74v8k0g795e4libu9y9nsb"
+    },
+    {
+      "username": "456456-mk3x7sf4",
+      "attribute": "Cleartext-Password",
+      "value": "r66nele2mp82dl3aibsfyb"
+    },
+    {
+      "username": "25852-mk3xc4sn",
+      "attribute": "Cleartext-Password",
+      "value": "6ghw4xluyq3v0eeanbzqn"
+    },
+    {
+      "username": "876657657-mk3xj09x",
+      "attribute": "Cleartext-Password",
+      "value": "msxvc3g049g9er27mo993e"
+    },
+    {
+      "username": "abd-alrhman-alomrani-mk3y0sbg",
+      "attribute": "Cleartext-Password",
+      "value": "qe3s1p3a50g1znpath44b1h"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tattribute\tvalue\n80174-mk3w8iyc\tCleartext-Password\tssf4a5v3k9hw6elcse6\nold-mk3wvtv0\tCleartext-Password\t6jy4s7ked3vei748ezxphp\nabd-alrhman-alomrani-mk3x7097\tCleartext-Password\t74v8k0g795e4libu9y9nsb\n456456-mk3x7sf4\tCleartext-Password\tr66nele2mp82dl3aibsfyb\n25852-mk3xc4sn\tCleartext-Password\t6ghw4xluyq3v0eeanbzqn\n876657657-mk3xj09x\tCleartext-Password\tmsxvc3g049g9er27mo993e\nabd-alrhman-alomrani-mk3y0sbg\tCleartext-Password\tqe3s1p3a50g1znpath44b1h\n",
+  "stderr": "",
+  "execution_time_ms": 152
+}

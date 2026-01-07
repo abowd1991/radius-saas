@@ -1,0 +1,60 @@
+{
+  "query": "SELECT username, attribute, value FROM radcheck LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT username, attribute, value FROM radcheck LIMIT 10;",
+  "rows": [
+    {
+      "username": "155163",
+      "attribute": "Cleartext-Password",
+      "value": "6647"
+    },
+    {
+      "username": "155163",
+      "attribute": "Simultaneous-Use",
+      "value": "1"
+    },
+    {
+      "username": "155163",
+      "attribute": "Auth-Type",
+      "value": "Accept"
+    },
+    {
+      "username": "155163",
+      "attribute": "Expiration",
+      "value": "Jan 01 2099 00:00:00"
+    },
+    {
+      "username": "152127",
+      "attribute": "Cleartext-Password",
+      "value": "3935"
+    },
+    {
+      "username": "152127",
+      "attribute": "Simultaneous-Use",
+      "value": "1"
+    },
+    {
+      "username": "152127",
+      "attribute": "Auth-Type",
+      "value": "Accept"
+    },
+    {
+      "username": "152127",
+      "attribute": "Expiration",
+      "value": "Jan 01 2099 00:00:00"
+    },
+    {
+      "username": "123616",
+      "attribute": "Cleartext-Password",
+      "value": "2049"
+    },
+    {
+      "username": "123616",
+      "attribute": "Simultaneous-Use",
+      "value": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tattribute\tvalue\n155163\tCleartext-Password\t6647\n155163\tSimultaneous-Use\t1\n155163\tAuth-Type\tAccept\n155163\tExpiration\tJan 01 2099 00:00:00\n152127\tCleartext-Password\t3935\n152127\tSimultaneous-Use\t1\n152127\tAuth-Type\tAccept\n152127\tExpiration\tJan 01 2099 00:00:00\n123616\tCleartext-Password\t2049\n123616\tSimultaneous-Use\t1\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

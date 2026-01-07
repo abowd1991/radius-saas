@@ -21,6 +21,7 @@ import * as coaService from "./services/coaService";
 import * as vpnApi from "./services/vpnApiService";
 import * as sshVpn from "./services/sshVpnService";
 import * as accountingService from "./services/accountingService";
+import * as sessionMonitor from "./services/sessionMonitor";
 import { getDb } from "./db";
 import { radcheck } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -207,35 +208,20 @@ const nasRouter = router({
         
         // Create VPN user in SoftEther automatically via SSH (for SSTP/PPTP connections)
         // Using SSH ensures reliable user creation directly on the server
+        // Now using Password Authentication instead of RADIUS Authentication
         try {
-          console.log(`[SSH] Creating VPN user: ${input.vpnUsername} for connection type: ${input.connectionType}`);
-          const vpnResult = await sshVpn.createVpnUser(input.vpnUsername);
+          console.log(`[SSH] Creating VPN user: ${input.vpnUsername} with password auth for connection type: ${input.connectionType}`);
+          const vpnResult = await sshVpn.createVpnUser(input.vpnUsername, input.vpnPassword!);
           console.log('[SSH] VPN User creation result:', vpnResult);
           
           if (!vpnResult.success) {
             console.error('[SSH] VPN User creation failed:', vpnResult.error);
-            // Try HTTP API as fallback
-            console.log('[HTTP] Trying HTTP API as fallback...');
-            const httpResult = await vpnApi.createVpnUser(
-              input.vpnUsername,
-              `NAS: ${input.name}`,
-              `Auto-created for NAS device: ${input.name} - Type: ${input.connectionType}`
-            );
-            console.log('[HTTP] VPN User creation result:', httpResult);
+            // Log the error but continue - VPN user might already exist
+            console.log('[SSH] Continuing with NAS creation despite VPN user creation failure');
           }
         } catch (error) {
           console.error('[SSH] Failed to create VPN user:', error);
-          // Try HTTP API as fallback
-          try {
-            console.log('[HTTP] Trying HTTP API as fallback...');
-            await vpnApi.createVpnUser(
-              input.vpnUsername,
-              `NAS: ${input.name}`,
-              `Auto-created for NAS device: ${input.name} - Type: ${input.connectionType}`
-            );
-          } catch (httpError) {
-            console.error('[HTTP] Fallback also failed:', httpError);
-          }
+          // Continue with NAS creation - VPN user might already exist or will be created manually
         }
         
         // Create RADIUS entry for VPN user authentication in database directly
@@ -279,7 +265,7 @@ const nasRouter = router({
       // Get system settings for RADIUS server addresses
       const settings = await db.getSystemSettings();
       const radiusPublicIp = settings.radius_server_public_ip || '';
-      const radiusVpnIp = settings.radius_server_vpn_ip || '10.0.0.1';
+      const radiusVpnIp = settings.radius_server_vpn_ip || '192.168.30.1';
       const vpnServerAddress = settings.vpn_server_address || '';
       const coaPort = '1700';
       
@@ -319,6 +305,18 @@ const nasRouter = router({
             category: 'vpn',
             required: true,
           });
+          
+          // Add route for RADIUS network (automatically included in VPN setup)
+          scripts.push({
+            id: 'vpn-route',
+            title: 'Add RADIUS Network Route',
+            titleAr: 'إضافة مسار شبكة RADIUS',
+            description: 'Add route to reach RADIUS server through VPN tunnel',
+            descriptionAr: 'إضافة مسار للوصول إلى خادم RADIUS عبر نفق VPN',
+            command: `/ip route add dst-address=192.168.30.0/24 gateway=radius-vpn comment="RADIUS Network via VPN"`,
+            category: 'vpn',
+            required: true,
+          });
         }
       } else if (nas.connectionType === 'vpn_sstp') {
         if (!vpnServerAddress) {
@@ -340,6 +338,18 @@ const nasRouter = router({
             description: `Create SSTP VPN tunnel to RADIUS server (${vpnServerAddress})`,
             descriptionAr: `إنشاء نفق VPN SSTP للاتصال بخادم RADIUS (${vpnServerAddress})`,
             command: `/interface sstp-client add name=radius-vpn connect-to=${vpnServerAddress}:443 user=${nas.vpnUsername || 'nas-user'}@VPN password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no verify-server-certificate=no`,
+            category: 'vpn',
+            required: true,
+          });
+          
+          // Add route for RADIUS network (automatically included in VPN setup)
+          scripts.push({
+            id: 'vpn-route',
+            title: 'Add RADIUS Network Route',
+            titleAr: 'إضافة مسار شبكة RADIUS',
+            description: 'Add route to reach RADIUS server through VPN tunnel',
+            descriptionAr: 'إضافة مسار للوصول إلى خادم RADIUS عبر نفق VPN',
+            command: `/ip route add dst-address=192.168.30.0/24 gateway=radius-vpn comment="RADIUS Network via VPN"`,
             category: 'vpn',
             required: true,
           });
@@ -402,13 +412,13 @@ const nasRouter = router({
         id: 'hotspot-radius',
         title: 'Enable Hotspot RADIUS',
         titleAr: 'تفعيل RADIUS لـ Hotspot',
-        description: 'Enable RADIUS for all Hotspot profiles',
-        descriptionAr: 'تفعيل RADIUS لجميع بروفايلات Hotspot',
+        description: 'Enable RADIUS for all Hotspot profiles with 30-second interim updates',
+        descriptionAr: 'تفعيل RADIUS لجميع بروفايلات Hotspot مع تحديث كل 30 ثانية',
         command: `:foreach profile in=[/ip hotspot profile find] do={
   /ip hotspot profile set \$profile login-by=cookie,http-pap,mac-cookie use-radius=yes radius-accounting=yes radius-interim-update=30s
 }`,
         category: 'hotspot',
-        required: false,
+        required: true,
       });
       
       // Combined script for one-click setup
@@ -1385,6 +1395,7 @@ const sessionsRouter = router({
       username: z.string(),
       nasIp: z.string(),
       sessionId: z.string(),
+      framedIp: z.string().optional(),
       downloadSpeed: z.number().optional(),
       uploadSpeed: z.number().optional(),
       sessionTimeout: z.number().optional(),
@@ -1394,11 +1405,27 @@ const sessionsRouter = router({
         input.username,
         input.nasIp,
         input.sessionId,
+        input.framedIp,
         {
           downloadSpeed: input.downloadSpeed,
           uploadSpeed: input.uploadSpeed,
           sessionTimeout: input.sessionTimeout,
         }
+      );
+    }),
+
+  // Change user speed with fallback to disconnect
+  changeUserSpeed: superAdminProcedure
+    .input(z.object({
+      username: z.string(),
+      uploadSpeedMbps: z.number(),
+      downloadSpeedMbps: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      return coaService.changeUserSpeed(
+        input.username,
+        input.uploadSpeedMbps,
+        input.downloadSpeedMbps
       );
     }),
 
@@ -1459,6 +1486,37 @@ const sessionsRouter = router({
     .mutation(async ({ input }) => {
       const success = await accountingService.updateSessionTimeout(input.username);
       return { success };
+    }),
+
+  // ============================================
+  // Session Monitor Endpoints
+  // ============================================
+  
+  // Get session monitor status
+  monitorStatus: superAdminProcedure
+    .query(async () => {
+      return sessionMonitor.getMonitorStatus();
+    }),
+
+  // Manually trigger a session check
+  triggerMonitorCheck: superAdminProcedure
+    .mutation(async () => {
+      return sessionMonitor.triggerCheck();
+    }),
+
+  // Start session monitor
+  startMonitor: superAdminProcedure
+    .input(z.object({ intervalMs: z.number().default(30000) }).optional())
+    .mutation(async ({ input }) => {
+      sessionMonitor.startMonitor(input?.intervalMs || 30000);
+      return { success: true, message: 'Session monitor started' };
+    }),
+
+  // Stop session monitor
+  stopMonitor: superAdminProcedure
+    .mutation(async () => {
+      sessionMonitor.stopMonitor();
+      return { success: true, message: 'Session monitor stopped' };
     }),
 });
 

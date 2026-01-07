@@ -496,3 +496,51 @@
 - [ ] Verify MikroTik script works without manual intervention
 
 - [x] حذف VPN User و RADIUS User تلقائياً عند حذف NAS
+
+
+## إصلاح تضارب عناوين IP (Jan 7, 2026)
+- [x] توحيد عناوين IP بين VPN و RADIUS و NAS
+- [x] تصحيح إعدادات SoftEther VPN لتوزيع IP موحد
+- [x] تحديث FreeRADIUS clients.conf ليقبل الاتصالات من الشبكة الموحدة
+- [x] تحديث سكربتات MikroTik في لوحة التحكم
+- [ ] اختبار الاتصال الكامل (VPN + RADIUS + Hotspot)
+
+
+## تحويل VPN إلى Password Authentication (Jan 7, 2026)
+- [x] تحديث API على السيرفر لإنشاء VPN Users بـ Password Authentication
+- [x] تحديث جميع المستخدمين الحاليين في SoftEther
+- [ ] اختبار الاتصال الكامل من MikroTik
+
+## إصلاح تصميم شبكة VPN/RADIUS - Bridge Mode (يناير 8, 2026)
+- [ ] تعطيل SecureNAT نهائياً
+- [ ] إعداد TAP Bridge بشكل صحيح (Layer 2)
+- [ ] تكوين DHCP Server على السيرفر
+- [ ] التأكد من عدم وجود PPP Remote Address 1.0.0.1
+- [ ] اختبار ping بين MikroTik و RADIUS
+- [ ] اختبار Hotspot Login
+- [ ] اختبار Accounting
+- [ ] اختبار CoA (قطع الجلسة)
+
+## إصلاح CoA و Accounting (يناير 8, 2026)
+- [ ] إصلاح CoA (قطع الجلسة من لوحة التحكم)
+- [ ] إصلاح Accounting (خصم الوقت من الكرت)
+- [ ] اختبار شامل
+- [ ] تحديث API لإرسال Session-Id و Framed-IP تلقائياً في CoA
+- [ ] إصلاح Accounting (خصم الوقت من الكرت)
+- [ ] إضافة CoA لتغيير السرعة
+
+
+## Advanced RADIUS Features (Jan 8, 2026)
+- [x] Auto-disconnect sessions when time expires (Cron Job every 30 seconds)
+  - [x] Check active sessions in radacct
+  - [x] Calculate remaining time for each session
+  - [x] Send CoA/Disconnect when time <= 0
+  - [x] Update radacct with termination cause
+- [x] Interim-Update support for real-time accounting
+  - [x] Configure MikroTik to send Interim-Update every 30 seconds (Hotspot) / 1 minute (PPP)
+  - [x] Process Interim-Update in FreeRADIUS
+  - [x] Update radacct with live session data
+- [x] CoA for speed change without disconnection
+  - [x] Send CoA with new Mikrotik-Rate-Limit
+  - [x] Apply speed change instantly from control panel
+  - [x] Fallback to Disconnect + Reconnect if needed

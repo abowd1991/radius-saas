@@ -95,7 +95,33 @@ export default function Sessions() {
     },
   });
 
-  // CoA Update Speed mutation
+  // CoA Update Speed mutation (with fallback to disconnect)
+  const changeUserSpeed = trpc.sessions.changeUserSpeed.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        const method = result.data?.method;
+        if (method === 'coa') {
+          toast.success(language === "ar" ? "تم تغيير السرعة فوراً" : "Speed changed instantly via CoA");
+        } else if (method === 'disconnect-reconnect') {
+          toast.success(language === "ar" ? "تم تحديث السرعة - سيتم تطبيقها عند إعادة الاتصال" : "Speed updated - will apply on reconnect");
+        } else {
+          toast.success(result.message);
+        }
+      } else {
+        toast.warning(result.message);
+      }
+      setIsSpeedDialogOpen(false);
+      setSelectedSession(null);
+      setNewDownloadSpeed("");
+      setNewUploadSpeed("");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Legacy CoA Update (kept for compatibility)
   const coaUpdateSession = trpc.sessions.coaUpdateSession.useMutation({
     onSuccess: (result) => {
       if (result.success) {
@@ -178,12 +204,11 @@ export default function Sessions() {
 
   const confirmSpeedChange = () => {
     if (selectedSession && newDownloadSpeed && newUploadSpeed) {
-      coaUpdateSession.mutate({
+      // Use new changeUserSpeed API with fallback
+      changeUserSpeed.mutate({
         username: selectedSession.username,
-        nasIp: selectedSession.nasIpAddress,
-        sessionId: selectedSession.id,
-        downloadSpeed: parseInt(newDownloadSpeed),
-        uploadSpeed: parseInt(newUploadSpeed),
+        uploadSpeedMbps: parseInt(newUploadSpeed),
+        downloadSpeedMbps: parseInt(newDownloadSpeed),
       });
     }
   };

@@ -1,0 +1,59 @@
+{
+  "query": "SELECT * FROM radcheck WHERE username LIKE '%mk3%' OR username LIKE '%vpn%' OR username LIKE '%abd%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT * FROM radcheck WHERE username LIKE '%mk3%' OR username LIKE '%vpn%' OR username LIKE '%abd%';",
+  "rows": [
+    {
+      "id": "210001",
+      "username": "80174-mk3w8iyc",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "ssf4a5v3k9hw6elcse6"
+    },
+    {
+      "id": "210002",
+      "username": "old-mk3wvtv0",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "6jy4s7ked3vei748ezxphp"
+    },
+    {
+      "id": "210003",
+      "username": "abd-alrhman-alomrani-mk3x7097",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "74v8k0g795e4libu9y9nsb"
+    },
+    {
+      "id": "210004",
+      "username": "456456-mk3x7sf4",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "r66nele2mp82dl3aibsfyb"
+    },
+    {
+      "id": "210005",
+      "username": "25852-mk3xc4sn",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "6ghw4xluyq3v0eeanbzqn"
+    },
+    {
+      "id": "210006",
+      "username": "876657657-mk3xj09x",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "msxvc3g049g9er27mo993e"
+    },
+    {
+      "id": "210007",
+      "username": "abd-alrhman-alomrani-mk3y0sbg",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "qe3s1p3a50g1znpath44b1h"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tattribute\top\tvalue\n210001\t80174-mk3w8iyc\tCleartext-Password\t:=\tssf4a5v3k9hw6elcse6\n210002\told-mk3wvtv0\tCleartext-Password\t:=\t6jy4s7ked3vei748ezxphp\n210003\tabd-alrhman-alomrani-mk3x7097\tCleartext-Password\t:=\t74v8k0g795e4libu9y9nsb\n210004\t456456-mk3x7sf4\tCleartext-Password\t:=\tr66nele2mp82dl3aibsfyb\n210005\t25852-mk3xc4sn\tCleartext-Password\t:=\t6ghw4xluyq3v0eeanbzqn\n210006\t876657657-mk3xj09x\tCleartext-Password\t:=\tmsxvc3g049g9er27mo993e\n210007\tabd-alrhman-alomrani-mk3y0sbg\tCleartext-Password\t:=\tqe3s1p3a50g1znpath44b1h\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

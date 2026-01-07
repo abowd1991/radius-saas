@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, shortname, vpnUsername, vpnPassword FROM nas WHERE vpnUsername LIKE '%abd%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, shortname, vpnUsername, vpnPassword FROM nas WHERE vpnUsername LIKE '%abd%';",
+  "rows": [
+    {
+      "id": "180010",
+      "shortname": "abd alrhman alomrani",
+      "vpnUsername": "abd-alrhman-alomrani-mk3y0sbg",
+      "vpnPassword": "qe3s1p3a50g1znpath44b1h"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tshortname\tvpnUsername\tvpnPassword\n180010\tabd alrhman alomrani\tabd-alrhman-alomrani-mk3y0sbg\tqe3s1p3a50g1znpath44b1h\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

@@ -41,7 +41,7 @@ export default function Settings() {
   
   // RADIUS Settings
   const [radiusPublicIp, setRadiusPublicIp] = useState('');
-  const [radiusVpnIp, setRadiusVpnIp] = useState('10.0.0.1');
+  const [radiusVpnIp, setRadiusVpnIp] = useState('192.168.30.1');
   const [vpnServerAddress, setVpnServerAddress] = useState('');
   const [radiusSettingsLoading, setRadiusSettingsLoading] = useState(false);
   
@@ -52,7 +52,7 @@ export default function Settings() {
   useEffect(() => {
     if (systemSettings) {
       setRadiusPublicIp(systemSettings.radius_server_public_ip || '');
-      setRadiusVpnIp(systemSettings.radius_server_vpn_ip || '10.0.0.1');
+      setRadiusVpnIp(systemSettings.radius_server_vpn_ip || '192.168.30.1');
       setVpnServerAddress(systemSettings.vpn_server_address || '');
     }
   }, [systemSettings]);
@@ -243,7 +243,7 @@ export default function Settings() {
                   </Label>
                   <Input 
                     id="radius-vpn-ip" 
-                    placeholder={language === "ar" ? "مثال: 10.0.0.1" : "e.g., 10.0.0.1"}
+                    placeholder={language === "ar" ? "مثال: 192.168.30.1" : "e.g., 192.168.30.1"}
                     value={radiusVpnIp}
                     onChange={(e) => setRadiusVpnIp(e.target.value)}
                   />

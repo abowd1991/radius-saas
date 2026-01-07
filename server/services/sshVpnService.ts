@@ -44,18 +44,20 @@ async function executeSSH(command: string, timeout: number = 30000): Promise<{ s
 }
 
 /**
- * Create a VPN user in SoftEther with RADIUS authentication
+ * Create a VPN user in SoftEther with Password authentication
  * Uses curl to localhost API on the server for reliable creation
  */
-export async function createVpnUser(username: string): Promise<VPNResult> {
+export async function createVpnUser(username: string, password: string): Promise<VPNResult> {
   try {
     console.log(`[SSH VPN] Creating VPN user: ${username}`);
     
-    // Escape username for JSON
+    // Escape username and password for JSON
     const safeUsername = username.replace(/['"\\]/g, '');
+    const safePassword = password.replace(/['"\\]/g, '');
     
     // Use curl to call the API from localhost on the server
-    const createCommand = `curl -s -X POST -H 'Content-Type: application/json' -H 'X-API-Key: ${API_KEY}' -d '{"username":"${safeUsername}","realname":"NAS User","note":"Auto-created"}' http://localhost:8080/api/vpn/users`;
+    // API now requires password for Password Authentication
+    const createCommand = `curl -s -X POST -H 'Content-Type: application/json' -H 'X-API-Key: ${API_KEY}' -d '{"username":"${safeUsername}","password":"${safePassword}","realname":"NAS","note":"Auto-created"}' http://localhost:8080/api/vpn/users`;
     
     console.log('[SSH VPN] Running create command via SSH...');
     const { stdout, stderr } = await executeSSH(createCommand, 60000);

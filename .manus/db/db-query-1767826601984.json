@@ -1,0 +1,26 @@
+{
+  "query": "SELECT username, acctsessionid, nasipaddress, framedipaddress, acctstarttime, acctstoptime FROM radacct WHERE username = '13211' ORDER BY acctstarttime DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT username, acctsessionid, nasipaddress, framedipaddress, acctstarttime, acctstoptime FROM radacct WHERE username = '13211' ORDER BY acctstarttime DESC LIMIT 5;",
+  "rows": [
+    {
+      "username": "13211",
+      "acctsessionid": "80e00025",
+      "nasipaddress": "192.168.30.10",
+      "framedipaddress": "192.168.20.254",
+      "acctstarttime": "2026-01-07 14:56:12",
+      "acctstoptime": "2026-01-07 22:51:51"
+    },
+    {
+      "username": "13211",
+      "acctsessionid": "80e00024",
+      "nasipaddress": "192.168.30.10",
+      "framedipaddress": "192.168.20.254",
+      "acctstarttime": "2026-01-07 14:55:06",
+      "acctstoptime": "2026-01-07 14:56:10"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tacctsessionid\tnasipaddress\tframedipaddress\tacctstarttime\tacctstoptime\n13211\t80e00025\t192.168.30.10\t192.168.20.254\t2026-01-07 14:56:12\t2026-01-07 22:51:51\n13211\t80e00024\t192.168.30.10\t192.168.20.254\t2026-01-07 14:55:06\t2026-01-07 14:56:10\n",
+  "stderr": "",
+  "execution_time_ms": 68
+}
