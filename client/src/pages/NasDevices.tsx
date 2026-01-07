@@ -77,9 +77,7 @@ export default function NasDevices() {
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("create");
   const [autoIpAddress, setAutoIpAddress] = useState("");
-  const [vpnUsername, setVpnUsername] = useState("");
-  const [vpnPassword, setVpnPassword] = useState("");
-  const [showVpnPassword, setShowVpnPassword] = useState(false);
+  // VPN credentials are auto-generated on the server, no need for state
 
   // Fetch NAS devices
   const { data: devices, isLoading, refetch } = trpc.nas.list.useQuery();
@@ -168,8 +166,9 @@ export default function NasDevices() {
       type: formData.get("type") as "mikrotik" | "cisco" | "other",
       connectionType: connectionType as "public_ip" | "vpn_pptp" | "vpn_sstp",
       description: formData.get("description") as string || undefined,
-      vpnUsername: connectionType !== "public_ip" ? vpnUsername : undefined,
-      vpnPassword: connectionType !== "public_ip" ? vpnPassword : undefined,
+      // VPN credentials will be auto-generated on the server
+      vpnUsername: undefined,
+      vpnPassword: undefined,
     };
 
     if (editingDevice) {
@@ -286,45 +285,31 @@ export default function NasDevices() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="vpnUsername">
-                {language === "ar" ? "اسم مستخدم VPN" : "VPN Username"}
+                {language === "ar" ? "اسم مستخدم VPN (تلقائي)" : "VPN Username (Auto)"}
               </Label>
               <Input 
                 id="vpnUsername" 
-                value={vpnUsername}
-                onChange={(e) => setVpnUsername(e.target.value)}
-                placeholder={language === "ar" ? "اسم المستخدم للاتصال" : "Connection username"}
-                className="bg-background"
-                required
+                value={language === "ar" ? "سيتم توليده تلقائياً" : "Will be auto-generated"}
+                readOnly
+                className="bg-muted text-muted-foreground cursor-not-allowed"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vpnPassword">
-                {language === "ar" ? "كلمة مرور VPN" : "VPN Password"}
+                {language === "ar" ? "كلمة مرور VPN (تلقائي)" : "VPN Password (Auto)"}
               </Label>
-              <div className="relative">
-                <Input 
-                  id="vpnPassword" 
-                  type={showVpnPassword ? "text" : "password"}
-                  value={vpnPassword}
-                  onChange={(e) => setVpnPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="bg-background pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowVpnPassword(!showVpnPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showVpnPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
+              <Input 
+                id="vpnPassword" 
+                value={language === "ar" ? "سيتم توليدها تلقائياً" : "Will be auto-generated"}
+                readOnly
+                className="bg-muted text-muted-foreground cursor-not-allowed"
+              />
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
             {language === "ar" 
-              ? "هذه البيانات ستُستخدم لإنشاء نفق VPN بين النظام والراوتر"
-              : "These credentials will be used to establish VPN tunnel between the system and router"
+              ? "سيتم توليد بيانات VPN تلقائياً وإنشاء مستخدم VPN في السيرفر عند حفظ الشبكة."
+              : "VPN credentials will be auto-generated and VPN user will be created on the server when saving."
             }
           </p>
         </div>

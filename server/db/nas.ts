@@ -1,6 +1,6 @@
 import { eq, desc } from "drizzle-orm";
 import { getDb } from "../db";
-import { nasDevices, InsertNasDevice } from "../../drizzle/schema";
+import { nasDevices, InsertNasDevice, radcheck, radreply } from "../../drizzle/schema";
 
 export async function getAllNasDevices() {
   const db = await getDb();
@@ -106,8 +106,22 @@ export async function deleteNas(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
+  // First, get the NAS device to retrieve VPN username
+  const nasDevice = await db.select().from(nasDevices).where(eq(nasDevices.id, id)).limit(1);
+  const nas = nasDevice[0];
+  
+  if (!nas) {
+    throw new Error("NAS device not found");
+  }
+  
+  // Store VPN username for cleanup
+  const vpnUsername = nas.vpnUsername;
+  
+  // Delete the NAS device from database
   await db.delete(nasDevices).where(eq(nasDevices.id, id));
-  return { success: true };
+  
+  // Return with VPN username for cleanup in router
+  return { success: true, vpnUsername };
 }
 
 export async function updateLastSeen(id: number) {

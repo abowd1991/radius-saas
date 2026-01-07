@@ -19,7 +19,11 @@ import { storagePut } from "./storage";
 import * as mikrotikApi from "./services/mikrotikApi";
 import * as coaService from "./services/coaService";
 import * as vpnApi from "./services/vpnApiService";
+import * as sshVpn from "./services/sshVpnService";
 import * as accountingService from "./services/accountingService";
+import { getDb } from "./db";
+import { radcheck } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 // ============================================================================
 // AUTH ROUTER
@@ -186,32 +190,80 @@ const nasRouter = router({
     .mutation(async ({ input }) => {
       // For VPN connections, generate unique credentials if not provided
       if (input.connectionType !== 'public_ip') {
-        if (!input.vpnUsername) {
-          // Generate unique VPN username based on NAS name
+        // Generate VPN username if not provided
+        if (!input.vpnUsername || input.vpnUsername.trim() === '') {
           const cleanName = input.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
           input.vpnUsername = `${cleanName}-${Date.now().toString(36)}`;
         }
-        if (!input.vpnPassword) {
+        // Generate VPN password if not provided
+        if (!input.vpnPassword || input.vpnPassword.trim() === '') {
           input.vpnPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         }
         // For VPN, IP will be assigned when connection is established
-        if (input.ipAddress === 'pending') {
-          input.ipAddress = 'pending-vpn';
+        // Use unique identifier based on vpnUsername to avoid duplicate nasname
+        if (input.ipAddress === 'pending' || input.ipAddress === 'سيتم تعيينه تلقائي' || !input.ipAddress) {
+          input.ipAddress = `vpn-${input.vpnUsername}`;
         }
         
-        // Create VPN user in SoftEther automatically (for SSTP connections)
-        if (input.connectionType === 'vpn_sstp') {
-          try {
-            const vpnResult = await vpnApi.createVpnUser(
+        // Create VPN user in SoftEther automatically via SSH (for SSTP/PPTP connections)
+        // Using SSH ensures reliable user creation directly on the server
+        try {
+          console.log(`[SSH] Creating VPN user: ${input.vpnUsername} for connection type: ${input.connectionType}`);
+          const vpnResult = await sshVpn.createVpnUser(input.vpnUsername);
+          console.log('[SSH] VPN User creation result:', vpnResult);
+          
+          if (!vpnResult.success) {
+            console.error('[SSH] VPN User creation failed:', vpnResult.error);
+            // Try HTTP API as fallback
+            console.log('[HTTP] Trying HTTP API as fallback...');
+            const httpResult = await vpnApi.createVpnUser(
               input.vpnUsername,
               `NAS: ${input.name}`,
-              `Auto-created for NAS device: ${input.name}`
+              `Auto-created for NAS device: ${input.name} - Type: ${input.connectionType}`
             );
-            console.log('VPN User creation result:', vpnResult);
-          } catch (error) {
-            console.error('Failed to create VPN user:', error);
-            // Continue with NAS creation even if VPN user creation fails
+            console.log('[HTTP] VPN User creation result:', httpResult);
           }
+        } catch (error) {
+          console.error('[SSH] Failed to create VPN user:', error);
+          // Try HTTP API as fallback
+          try {
+            console.log('[HTTP] Trying HTTP API as fallback...');
+            await vpnApi.createVpnUser(
+              input.vpnUsername,
+              `NAS: ${input.name}`,
+              `Auto-created for NAS device: ${input.name} - Type: ${input.connectionType}`
+            );
+          } catch (httpError) {
+            console.error('[HTTP] Fallback also failed:', httpError);
+          }
+        }
+        
+        // Create RADIUS entry for VPN user authentication in database directly
+        try {
+          console.log(`Creating RADIUS entry in database for VPN user: ${input.vpnUsername}`);
+          const database = await getDb();
+          if (database) {
+            // Check if user already exists
+            const existingUser = await database.select()
+              .from(radcheck)
+              .where(eq(radcheck.username, input.vpnUsername))
+              .limit(1);
+            
+            if (existingUser.length === 0) {
+              // Create RADIUS user with password
+              await database.insert(radcheck).values({
+                username: input.vpnUsername,
+                attribute: 'Cleartext-Password',
+                op: ':=',
+                value: input.vpnPassword,
+              });
+              console.log(`RADIUS user created in database: ${input.vpnUsername}`);
+            } else {
+              console.log(`RADIUS user already exists: ${input.vpnUsername}`);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to create RADIUS entry in database:', error);
         }
       }
       return nasDb.createNas(input);
@@ -263,7 +315,7 @@ const nasRouter = router({
             titleAr: 'إنشاء اتصال PPTP',
             description: `Create PPTP VPN tunnel to RADIUS server (${vpnServerAddress})`,
             descriptionAr: `إنشاء نفق VPN PPTP للاتصال بخادم RADIUS (${vpnServerAddress})`,
-            command: `/interface pptp-client add name=radius-vpn connect-to=${vpnServerAddress} user=${nas.vpnUsername || 'nas-user'} password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no add-default-route=no`,
+            command: `/interface pptp-client add name=radius-vpn connect-to=${vpnServerAddress} user=${nas.vpnUsername || 'nas-user'}@VPN password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no add-default-route=no`,
             category: 'vpn',
             required: true,
           });
@@ -287,7 +339,7 @@ const nasRouter = router({
             titleAr: 'إنشاء اتصال SSTP',
             description: `Create SSTP VPN tunnel to RADIUS server (${vpnServerAddress})`,
             descriptionAr: `إنشاء نفق VPN SSTP للاتصال بخادم RADIUS (${vpnServerAddress})`,
-            command: `/interface sstp-client add name=radius-vpn connect-to=${vpnServerAddress}:443 user=${nas.vpnUsername || 'nas-user'} password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no`,
+            command: `/interface sstp-client add name=radius-vpn connect-to=${vpnServerAddress}:443 user=${nas.vpnUsername || 'nas-user'}@VPN password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no verify-server-certificate=no`,
             category: 'vpn',
             required: true,
           });
@@ -393,7 +445,46 @@ const nasRouter = router({
   delete: superAdminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return nasDb.deleteNas(input.id);
+      // Delete NAS and get VPN username for cleanup
+      const result = await nasDb.deleteNas(input.id);
+      
+      // If NAS had a VPN user, clean up VPN and RADIUS entries
+      if (result.vpnUsername) {
+        const vpnUsername = result.vpnUsername;
+        console.log(`[NAS Delete] Cleaning up VPN user: ${vpnUsername}`);
+        
+        // 1. Delete VPN user from SoftEther
+        try {
+          console.log(`[NAS Delete] Deleting VPN user from SoftEther: ${vpnUsername}`);
+          const vpnResult = await sshVpn.deleteVpnUser(vpnUsername);
+          console.log('[NAS Delete] VPN user deletion result:', vpnResult);
+        } catch (error) {
+          console.error('[NAS Delete] Failed to delete VPN user:', error);
+        }
+        
+        // 2. Delete RADIUS entries from database
+        try {
+          console.log(`[NAS Delete] Deleting RADIUS entries for: ${vpnUsername}`);
+          const database = await getDb();
+          if (database) {
+            // Delete from radcheck
+            await database.delete(radcheck).where(eq(radcheck.username, vpnUsername));
+            console.log(`[NAS Delete] Deleted radcheck entries for: ${vpnUsername}`);
+          }
+        } catch (error) {
+          console.error('[NAS Delete] Failed to delete RADIUS entries:', error);
+        }
+        
+        // 3. Disconnect any active VPN sessions
+        try {
+          console.log(`[NAS Delete] Disconnecting VPN sessions for: ${vpnUsername}`);
+          await sshVpn.disconnectVpnSession(vpnUsername);
+        } catch (error) {
+          console.error('[NAS Delete] Failed to disconnect VPN session:', error);
+        }
+      }
+      
+      return { success: true };
     }),
 });
 

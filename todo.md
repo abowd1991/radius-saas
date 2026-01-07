@@ -486,3 +486,13 @@
 - [x] CoA (Change of Authorization) for session disconnect
 - [x] Accounting with time tracking and auto-disconnect
 - [x] Generic system - works with any new NAS automatically
+
+
+## Bug Fix - VPN User Creation (Jan 7, 2026)
+- [ ] Fix VPN User not being created when adding NAS with SSTP/PPTP type
+- [ ] Ensure VPN credentials are registered in SoftEther
+- [ ] Link VPN User with RADIUS authentication
+- [ ] Test full connection flow from MikroTik
+- [ ] Verify MikroTik script works without manual intervention
+
+- [x] حذف VPN User و RADIUS User تلقائياً عند حذف NAS
