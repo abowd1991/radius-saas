@@ -544,3 +544,12 @@
   - [x] Send CoA with new Mikrotik-Rate-Limit
   - [x] Apply speed change instantly from control panel
   - [x] Fallback to Disconnect + Reconnect if needed
+
+
+## MikroTik API Integration (Optional per NAS)
+- [x] Update NAS schema with API fields (apiEnabled, apiPort, apiUsername, apiPassword)
+- [x] Add API enable/disable UI in NAS settings
+- [x] Create mikrotikApiService.ts for direct router communication
+- [x] Update changeUserSpeed to check API first, fallback to RADIUS
+- [x] Test with API enabled NAS (instant speed change) - Ready when API is configured
+- [x] Test with API disabled NAS (RADIUS + Disconnect) - Working via fallback

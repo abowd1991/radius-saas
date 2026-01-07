@@ -159,6 +159,12 @@ export default function NasDevices() {
       ? formData.get("ipAddress") as string
       : "pending"; // Will be updated when VPN connects
     
+    // MikroTik API settings
+    const apiEnabled = formData.get("apiEnabled") === "on";
+    const mikrotikApiPort = formData.get("mikrotikApiPort") ? parseInt(formData.get("mikrotikApiPort") as string) : 8728;
+    const mikrotikApiUser = formData.get("mikrotikApiUser") as string || undefined;
+    const mikrotikApiPassword = formData.get("mikrotikApiPassword") as string || undefined;
+    
     const data = {
       name: formData.get("name") as string,
       ipAddress: ipAddress,
@@ -169,6 +175,11 @@ export default function NasDevices() {
       // VPN credentials will be auto-generated on the server
       vpnUsername: undefined,
       vpnPassword: undefined,
+      // MikroTik API settings (optional)
+      apiEnabled: apiEnabled,
+      mikrotikApiPort: mikrotikApiPort,
+      mikrotikApiUser: mikrotikApiUser,
+      mikrotikApiPassword: mikrotikApiPassword,
     };
 
     if (editingDevice) {
@@ -362,6 +373,72 @@ export default function NasDevices() {
           className="bg-background"
           placeholder={language === "ar" ? "وصف اختياري للشبكة" : "Optional network description"}
         />
+      </div>
+
+      {/* MikroTik API Settings - Optional */}
+      <div className="p-4 rounded-lg border border-dashed border-blue-500/30 bg-blue-500/5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-blue-600">
+            <Settings className="h-4 w-4" />
+            <span className="font-medium text-sm">
+              {language === "ar" ? "إعدادات MikroTik API (اختياري)" : "MikroTik API Settings (Optional)"}
+            </span>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name="apiEnabled"
+              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-muted-foreground">
+              {language === "ar" ? "تفعيل" : "Enable"}
+            </span>
+          </label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {language === "ar" 
+            ? "تفعيل API يسمح بتغيير السرعة فوراً بدون انقطاع المستخدم. إذا لم يُفعّل، سيتم استخدام RADIUS (CoA + Disconnect)."
+            : "Enabling API allows instant speed changes without disconnecting the user. If disabled, RADIUS (CoA + Disconnect) will be used."
+          }
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="mikrotikApiPort">
+              {language === "ar" ? "منفذ API" : "API Port"}
+            </Label>
+            <Input 
+              id="mikrotikApiPort" 
+              name="mikrotikApiPort" 
+              type="number"
+              defaultValue="8728"
+              className="bg-background"
+              placeholder="8728"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="mikrotikApiUser">
+              {language === "ar" ? "اسم مستخدم API" : "API Username"}
+            </Label>
+            <Input 
+              id="mikrotikApiUser" 
+              name="mikrotikApiUser" 
+              className="bg-background"
+              placeholder="admin"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="mikrotikApiPassword">
+              {language === "ar" ? "كلمة مرور API" : "API Password"}
+            </Label>
+            <Input 
+              id="mikrotikApiPassword" 
+              name="mikrotikApiPassword" 
+              type="password"
+              className="bg-background"
+              placeholder="••••••••"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-center pt-4">

@@ -182,7 +182,9 @@ const nasRouter = router({
       description: z.string().optional(),
       location: z.string().optional(),
       ports: z.number().optional(),
-      mikrotikApiPort: z.number().optional(),
+      // MikroTik API settings (optional - for instant speed changes)
+      apiEnabled: z.boolean().optional().default(false),
+      mikrotikApiPort: z.number().optional().default(8728),
       mikrotikApiUser: z.string().optional(),
       mikrotikApiPassword: z.string().optional(),
       vpnUsername: z.string().optional(),
@@ -447,6 +449,11 @@ const nasRouter = router({
       location: z.string().optional(),
       status: z.enum(['active', 'inactive']).optional(),
       connectionType: z.enum(['public_ip', 'vpn_pptp', 'vpn_sstp']).optional(),
+      // MikroTik API settings (optional - for instant speed changes)
+      apiEnabled: z.boolean().optional(),
+      mikrotikApiPort: z.number().optional(),
+      mikrotikApiUser: z.string().optional(),
+      mikrotikApiPassword: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       return nasDb.updateNas(input.id, input);

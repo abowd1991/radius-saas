@@ -105,6 +105,8 @@ export const nasDevices = mysqlTable("nas", {
   vpnTunnelIp: varchar("vpnTunnelIp", { length: 45 }), // Assigned IP after VPN connects
   // Extended fields for our system
   location: varchar("location", { length: 255 }),
+  // MikroTik API settings (optional - for instant speed changes)
+  apiEnabled: boolean("apiEnabled").default(false), // Enable/disable API access
   mikrotikApiPort: int("mikrotikApiPort").default(8728),
   mikrotikApiUser: varchar("mikrotikApiUser", { length: 64 }),
   mikrotikApiPassword: varchar("mikrotikApiPassword", { length: 128 }),

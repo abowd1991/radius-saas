@@ -289,9 +289,10 @@ export async function updateSessionAttributes(
 }
 
 /**
- * Change user speed with fallback to disconnect
- * 1. Try CoA to change speed instantly
- * 2. If CoA fails, update radreply and disconnect (user reconnects with new speed)
+ * Change user speed with fallback chain:
+ * 1. Try MikroTik API if enabled (instant, no disconnect)
+ * 2. Try RADIUS CoA (may or may not work depending on MikroTik support)
+ * 3. Fallback to Disconnect + Reconnect (always works)
  */
 export async function changeUserSpeed(
   username: string,
@@ -304,7 +305,9 @@ export async function changeUserSpeed(
   }
   
   // Build rate limit string (Mikrotik format: upload/download in kbps)
-  const rateLimit = `${uploadSpeedMbps * 1000}k/${downloadSpeedMbps * 1000}k`;
+  const uploadSpeedKbps = uploadSpeedMbps * 1000;
+  const downloadSpeedKbps = downloadSpeedMbps * 1000;
+  const rateLimit = `${uploadSpeedKbps}k/${downloadSpeedKbps}k`;
   
   try {
     // First, update radreply with new speed (so future connections use it)
@@ -336,7 +339,7 @@ export async function changeUserSpeed(
       });
     }
     
-    console.log(`[CoA] Updated radreply for ${username} with rate limit: ${rateLimit}`);
+    console.log(`[Speed Change] Updated radreply for ${username} with rate limit: ${rateLimit}`);
     
     // Get active sessions for this user
     const sessions = await db.select()
@@ -354,12 +357,44 @@ export async function changeUserSpeed(
       };
     }
     
-    // Try CoA for each active session
-    let coaSuccess = false;
+    // Import MikroTik API service
+    const mikrotikApi = await import('./mikrotikApiService');
+    
+    // Try each active session
     for (const session of sessions) {
+      const nasIp = session.nasipaddress;
+      
+      // Step 1: Try MikroTik API if enabled for this NAS
+      const apiEnabled = await mikrotikApi.isApiEnabled(nasIp);
+      
+      if (apiEnabled) {
+        console.log(`[Speed Change] Trying MikroTik API for ${username} on NAS ${nasIp}`);
+        
+        const apiResult = await mikrotikApi.changeSpeedViaApi(
+          nasIp,
+          username,
+          uploadSpeedKbps,
+          downloadSpeedKbps
+        );
+        
+        if (apiResult.success) {
+          console.log(`[Speed Change] ✅ API success for ${username}`);
+          return {
+            success: true,
+            message: `Speed changed instantly for ${username} to ${rateLimit} via MikroTik API`,
+            data: { rateLimit, method: 'mikrotik-api', ...apiResult.data }
+          };
+        } else {
+          console.log(`[Speed Change] API failed: ${apiResult.message}, trying CoA...`);
+        }
+      }
+      
+      // Step 2: Try RADIUS CoA
+      console.log(`[Speed Change] Trying RADIUS CoA for ${username} on NAS ${nasIp}`);
+      
       const coaResult = await updateSessionAttributes(
         username,
-        session.nasipaddress,
+        nasIp,
         session.acctsessionid || '',
         session.framedipaddress || undefined,
         {
@@ -369,26 +404,20 @@ export async function changeUserSpeed(
       );
       
       if (coaResult.success) {
-        coaSuccess = true;
-        console.log(`[CoA] Speed changed instantly for ${username} via CoA`);
+        console.log(`[Speed Change] ✅ CoA success for ${username}`);
+        return {
+          success: true,
+          message: `Speed changed for ${username} to ${rateLimit} via RADIUS CoA`,
+          data: { rateLimit, method: 'radius-coa' }
+        };
       }
-    }
-    
-    if (coaSuccess) {
-      return {
-        success: true,
-        message: `Speed changed instantly for ${username} to ${rateLimit}`,
-        data: { rateLimit, method: 'coa' }
-      };
-    }
-    
-    // CoA failed - disconnect user so they reconnect with new speed
-    console.log(`[CoA] CoA failed for ${username}, falling back to disconnect`);
-    
-    for (const session of sessions) {
+      
+      // Step 3: Fallback to Disconnect + Reconnect
+      console.log(`[Speed Change] CoA failed, disconnecting ${username} for reconnect...`);
+      
       await disconnectSession(
         username,
-        session.nasipaddress,
+        nasIp,
         session.acctsessionid || undefined,
         session.framedipaddress || undefined
       );
