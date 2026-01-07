@@ -58,7 +58,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 // Connection type options
 const connectionTypes = [
@@ -77,6 +77,8 @@ export default function NasDevices() {
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("create");
   const [autoIpAddress, setAutoIpAddress] = useState("");
+  const [apiTestResult, setApiTestResult] = useState<{success: boolean; message: string} | null>(null);
+  const [isTestingApi, setIsTestingApi] = useState(false);
   // VPN credentials are auto-generated on the server, no need for state
 
   // Fetch NAS devices
@@ -114,6 +116,52 @@ export default function NasDevices() {
       toast.error(error.message);
     },
   });
+
+  const testApiConnection = trpc.nas.testApiConnection.useMutation({
+    onSuccess: (result: any) => {
+      setApiTestResult(result);
+      setIsTestingApi(false);
+      if (result.success) {
+        toast.success(language === "ar" ? "✅ اتصال API ناجح!" : "✅ API connection successful!");
+      } else {
+        toast.error(result.message);
+      }
+    },
+    onError: (error: any) => {
+      setApiTestResult({ success: false, message: error.message });
+      setIsTestingApi(false);
+      toast.error(error.message);
+    },
+  });
+
+  const handleTestApi = () => {
+    // Get form values
+    const form = document.querySelector('form') as HTMLFormElement;
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    const nasIp = formData.get('ipAddress') as string;
+    const apiPort = parseInt(formData.get('mikrotikApiPort') as string) || 8728;
+    const apiUser = formData.get('mikrotikApiUser') as string;
+    const apiPassword = formData.get('mikrotikApiPassword') as string;
+    
+    if (!nasIp || nasIp === 'pending') {
+      toast.error(language === "ar" ? "يرجى إدخال عنوان IP" : "Please enter IP address");
+      return;
+    }
+    if (!apiUser) {
+      toast.error(language === "ar" ? "يرجى إدخال اسم مستخدم API" : "Please enter API username");
+      return;
+    }
+    if (!apiPassword) {
+      toast.error(language === "ar" ? "يرجى إدخال كلمة مرور API" : "Please enter API password");
+      return;
+    }
+    
+    setIsTestingApi(true);
+    setApiTestResult(null);
+    testApiConnection.mutate({ nasIp, apiPort, apiUser, apiPassword });
+  };
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return "-";
@@ -438,6 +486,43 @@ export default function NasDevices() {
               placeholder="••••••••"
             />
           </div>
+        </div>
+        
+        {/* Test API Connection Button */}
+        <div className="flex items-center gap-3 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleTestApi}
+            disabled={isTestingApi}
+            className="gap-2"
+          >
+            {isTestingApi ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                {language === "ar" ? "جاري الاختبار..." : "Testing..."}
+              </>
+            ) : (
+              <>
+                <Wifi className="h-4 w-4" />
+                {language === "ar" ? "اختبار اتصال API" : "Test API Connection"}
+              </>
+            )}
+          </Button>
+          
+          {apiTestResult && (
+            <div className={`flex items-center gap-2 text-sm ${
+              apiTestResult.success ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {apiTestResult.success ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
+              <span>{apiTestResult.message}</span>
+            </div>
+          )}
         </div>
       </div>
 

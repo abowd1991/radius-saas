@@ -553,3 +553,8 @@
 - [x] Update changeUserSpeed to check API first, fallback to RADIUS
 - [x] Test with API enabled NAS (instant speed change) - Ready when API is configured
 - [x] Test with API disabled NAS (RADIUS + Disconnect) - Working via fallback
+
+## API Connection Test Button
+- [x] Add testApiConnection endpoint in routers.ts
+- [x] Add test button in NAS settings UI
+- [x] Show test result to user (success/failure with message)
