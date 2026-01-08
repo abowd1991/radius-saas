@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, superAdminProcedure, resellerProcedure, clientProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, superAdminProcedure, resellerProcedure, clientProcedure, activeSubscriptionProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
@@ -182,7 +182,8 @@ const nasRouter = router({
     }),
 
   // Create NAS - any authenticated user can create, ownerId is set automatically
-  create: protectedProcedure
+  // Requires active subscription to create new NAS
+  create: activeSubscriptionProcedure
     .input(z.object({
       name: z.string().min(1),
       ipAddress: z.string().min(1),
@@ -455,8 +456,8 @@ const nasRouter = router({
       };
     }),
 
-  // Update NAS - check ownership
-  update: protectedProcedure
+  // Update NAS - check ownership (requires active subscription)
+  update: activeSubscriptionProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
@@ -482,8 +483,8 @@ const nasRouter = router({
       return nasDb.updateNas(input.id, input);
     }),
 
-  // Delete NAS - check ownership
-  delete: protectedProcedure
+  // Delete NAS - check ownership (requires active subscription)
+  delete: activeSubscriptionProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       // Check ownership for non-super_admin
@@ -734,7 +735,8 @@ const vouchersRouter = router({
       return card;
     }),
 
-  generate: resellerProcedure
+  // Requires active subscription to generate new cards
+  generate: activeSubscriptionProcedure
     .input(z.object({
       planId: z.number(),
       quantity: z.number().min(1).max(1000),
@@ -775,8 +777,8 @@ const vouchersRouter = router({
       return cardDb.activateCard(input.serialNumber, ctx.user.id);
     }),
 
-  // Suspend card - check ownership
-  suspend: resellerProcedure
+  // Suspend card - check ownership (requires active subscription)
+  suspend: activeSubscriptionProcedure
     .input(z.object({ cardId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const card = await cardDb.getCardById(input.cardId);
@@ -787,8 +789,8 @@ const vouchersRouter = router({
       return cardDb.suspendCard(input.cardId);
     }),
 
-  // Unsuspend card - check ownership
-  unsuspend: resellerProcedure
+  // Unsuspend card - check ownership (requires active subscription)
+  unsuspend: activeSubscriptionProcedure
     .input(z.object({ cardId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const card = await cardDb.getCardById(input.cardId);
@@ -819,8 +821,8 @@ const vouchersRouter = router({
       return batch;
     }),
 
-  // Enable batch - activate all cards for RADIUS - check ownership
-  enableBatch: resellerProcedure
+  // Enable batch - activate all cards for RADIUS - check ownership (requires active subscription)
+  enableBatch: activeSubscriptionProcedure
     .input(z.object({ batchId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const batch = await cardDb.getBatchWithStats(input.batchId);
@@ -831,8 +833,8 @@ const vouchersRouter = router({
       return cardDb.enableBatch(input.batchId);
     }),
 
-  // Disable batch - deactivate all cards for RADIUS and disconnect active sessions - check ownership
-  disableBatch: resellerProcedure
+  // Disable batch - deactivate all cards for RADIUS and disconnect active sessions - check ownership (requires active subscription)
+  disableBatch: activeSubscriptionProcedure
     .input(z.object({ batchId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       // Check ownership first
@@ -862,8 +864,8 @@ const vouchersRouter = router({
       return cardDb.disableBatch(input.batchId);
     }),
 
-  // Update batch time settings - check ownership
-  updateBatchTime: resellerProcedure
+  // Update batch time settings - check ownership (requires active subscription)
+  updateBatchTime: activeSubscriptionProcedure
     .input(z.object({
       batchId: z.string(),
       cardTimeValue: z.number().optional(),
@@ -1957,6 +1959,133 @@ const settingsRouter = router({
 });
 
 // ============================================================================
+// TENANT SUBSCRIPTIONS ROUTER (Admin only)
+// ============================================================================
+import * as tenantSubDb from "./_core/tenantSubscriptions";
+
+const tenantSubscriptionsRouter = router({
+  // Get all tenant subscriptions (Super Admin only)
+  list: superAdminProcedure.query(async () => {
+    const subscriptions = await tenantSubDb.getAllTenantSubscriptions();
+    // Get user info for each subscription
+    const enriched = await Promise.all(
+      subscriptions.map(async (sub) => {
+        const user = await db.getUserById(sub.tenantId);
+        return {
+          ...sub,
+          tenantName: user?.name || 'Unknown',
+          tenantEmail: user?.email || 'Unknown',
+        };
+      })
+    );
+    return enriched;
+  }),
+
+  // Get subscription by tenant ID
+  getByTenantId: superAdminProcedure
+    .input(z.object({ tenantId: z.number() }))
+    .query(async ({ input }) => {
+      return tenantSubDb.getSubscriptionByTenantId(input.tenantId);
+    }),
+
+  // Get current user's subscription status
+  myStatus: protectedProcedure.query(async ({ ctx }) => {
+    return tenantSubDb.getSubscriptionStatus(ctx.user.id);
+  }),
+
+  // Create subscription for a tenant (Super Admin only)
+  create: superAdminProcedure
+    .input(z.object({
+      tenantId: z.number(),
+      months: z.number().min(1).default(1),
+      pricePerMonth: z.string().default("10.00"),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Check if subscription already exists
+      const existing = await tenantSubDb.getSubscriptionByTenantId(input.tenantId);
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Subscription already exists for this tenant. Use extend or activate instead.",
+        });
+      }
+      return tenantSubDb.createTenantSubscription({
+        ...input,
+        createdBy: ctx.user.id,
+      });
+    }),
+
+  // Extend subscription (Super Admin only)
+  extend: superAdminProcedure
+    .input(z.object({
+      tenantId: z.number(),
+      months: z.number().min(1),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await tenantSubDb.extendTenantSubscription(
+        input.tenantId,
+        input.months,
+        ctx.user.id,
+        input.notes
+      );
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Subscription not found for this tenant.",
+        });
+      }
+      return result;
+    }),
+
+  // Suspend subscription (Super Admin only)
+  suspend: superAdminProcedure
+    .input(z.object({
+      tenantId: z.number(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return tenantSubDb.suspendTenantSubscription(input.tenantId, input.notes);
+    }),
+
+  // Activate subscription (Super Admin only)
+  activate: superAdminProcedure
+    .input(z.object({
+      tenantId: z.number(),
+      months: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await tenantSubDb.activateTenantSubscription(
+        input.tenantId,
+        input.months,
+        ctx.user.id
+      );
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Subscription not found for this tenant.",
+        });
+      }
+      return result;
+    }),
+
+  // Get expiring subscriptions (Super Admin only)
+  getExpiring: superAdminProcedure
+    .input(z.object({ withinDays: z.number().default(7) }))
+    .query(async ({ input }) => {
+      return tenantSubDb.getExpiringSubscriptions(input.withinDays);
+    }),
+
+  // Delete subscription (Super Admin only)
+  delete: superAdminProcedure
+    .input(z.object({ tenantId: z.number() }))
+    .mutation(async ({ input }) => {
+      return tenantSubDb.deleteTenantSubscription(input.tenantId);
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -1969,6 +2098,7 @@ export const appRouter = router({
   vouchers: vouchersRouter,
   invoices: invoicesRouter,
   subscriptions: subscriptionsRouter,
+  tenantSubscriptions: tenantSubscriptionsRouter,
   tickets: ticketsRouter,
   notifications: notificationsRouter,
   dashboard: dashboardRouter,

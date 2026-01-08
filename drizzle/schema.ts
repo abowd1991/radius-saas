@@ -47,6 +47,27 @@ export type ResellerProfile = typeof resellerProfiles.$inferSelect;
 export type InsertResellerProfile = typeof resellerProfiles.$inferInsert;
 
 // ============================================================================
+// TENANT SUBSCRIPTIONS
+// ============================================================================
+
+export const tenantSubscriptions = mysqlTable("tenant_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenantId").notNull().unique(), // User ID of the tenant
+  status: mysqlEnum("status", ["active", "expired", "suspended", "cancelled"]).default("active").notNull(),
+  pricePerMonth: decimal("pricePerMonth", { precision: 10, scale: 2 }).default("10.00").notNull(),
+  startDate: timestamp("startDate").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  lastRenewalDate: timestamp("lastRenewalDate"),
+  renewedBy: int("renewedBy"), // Admin who renewed
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TenantSubscription = typeof tenantSubscriptions.$inferSelect;
+export type InsertTenantSubscription = typeof tenantSubscriptions.$inferInsert;
+
+// ============================================================================
 // INTERNET PLANS / PACKAGES
 // ============================================================================
 

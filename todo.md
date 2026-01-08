@@ -567,3 +567,15 @@
 - [x] Update all UI components to respect data isolation (API-driven)
 - [x] Test complete data isolation between clients (7 tests passed)
 - [x] Ensure Super Admin can see all data (verified in tests)
+
+
+## Subscription System ($10/month)
+- [x] Add subscriptions table to schema (tenantId, status, expiresAt, price)
+- [x] Create subscription service for status checking
+- [x] Add activeSubscriptionProcedure middleware for write operations
+- [x] Block NAS creation when subscription expired
+- [x] Block card creation/import when subscription expired
+- [x] Add subscription management UI for Super Admin
+- [x] Add frozen banner for expired subscriptions
+- [x] Ensure read-only access when frozen (read operations still work)
+- [x] Test subscription enforcement (14 tests passed)

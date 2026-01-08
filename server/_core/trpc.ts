@@ -68,3 +68,43 @@ export const clientProcedure = t.procedure.use(requireUser);
 
 // Legacy admin procedure (maps to super_admin)
 export const adminProcedure = superAdminProcedure;
+
+// Active subscription procedure - blocks write operations when subscription is expired
+// Import this dynamically to avoid circular dependencies
+export const activeSubscriptionProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+
+    // Super admin bypasses subscription check
+    if (ctx.user.role === 'super_admin') {
+      return next({
+        ctx: {
+          ...ctx,
+          user: ctx.user,
+        },
+      });
+    }
+
+    // Check subscription status
+    const { isSubscriptionActive } = await import('./tenantSubscriptions');
+    const isActive = await isSubscriptionActive(ctx.user.id);
+
+    if (!isActive) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Your subscription has expired or is inactive. Please contact support to renew your subscription.",
+      });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  }),
+);

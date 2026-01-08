@@ -49,6 +49,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { SubscriptionBanner } from "./SubscriptionBanner";
 
 // Menu items based on user role
 const getMenuItems = (role: string, t: (key: string) => string) => {
@@ -65,6 +66,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
     { icon: MessageSquare, label: t("nav.support"), path: "/support" },
     { icon: Settings, label: t("nav.settings"), path: "/settings" },
+    { icon: CreditCard, label: "إدارة الاشتراكات", path: "/tenant-subscriptions" },
   ];
 
   const resellerItems = [
@@ -410,6 +412,7 @@ function DashboardLayoutContent({
             </Button>
           </div>
         )}
+        <SubscriptionBanner />
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
     </div>

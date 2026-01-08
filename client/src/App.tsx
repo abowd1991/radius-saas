@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import Sessions from "./pages/Sessions";
 import MikrotikSetup from "./pages/MikrotikSetup";
 import PrintCards from "./pages/PrintCards";
+import TenantSubscriptions from "./pages/TenantSubscriptions";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -80,6 +81,9 @@ function Router() {
         <DashboardLayout>
           <Sessions />
         </DashboardLayout>
+      </Route>
+      <Route path="/tenant-subscriptions">
+        <TenantSubscriptions />
       </Route>
       <Route path="/card-templates">
         <Redirect to="/print-cards" />
