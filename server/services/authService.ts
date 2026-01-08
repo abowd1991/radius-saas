@@ -1,10 +1,17 @@
 import bcrypt from "bcryptjs";
-import { eq, or } from "drizzle-orm";
+import { eq, or, and, gt } from "drizzle-orm";
 import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 import { createTenantSubscription } from "../_core/tenantSubscriptions";
+import { 
+  generateVerificationCode, 
+  sendVerificationEmail, 
+  sendPasswordResetEmail,
+  sendWelcomeEmail 
+} from "./emailService";
 
 const SALT_ROUNDS = 10;
+const CODE_EXPIRY_MINUTES = 15;
 
 export interface RegisterInput {
   username: string;
@@ -77,6 +84,11 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   // Hash password
   const passwordHash = await hashPassword(input.password);
 
+  // Generate email verification code
+  const verificationCode = generateVerificationCode();
+  const verificationExpires = new Date();
+  verificationExpires.setMinutes(verificationExpires.getMinutes() + CODE_EXPIRY_MINUTES);
+
   // Create user
   const [newUser] = await db
     .insert(users)
@@ -89,6 +101,9 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
       loginMethod: "traditional",
       role: "reseller", // New users are resellers (can create NAS and cards)
       status: "active",
+      emailVerified: false,
+      emailVerificationCode: verificationCode,
+      emailVerificationExpires: verificationExpires,
     })
     .$returningId();
 
@@ -116,6 +131,15 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
     expiresAt: trialExpiresAt,
     notes: "7-day free trial",
   });
+
+  // Send verification email (async, don't wait)
+  sendVerificationEmail(input.email, input.name || input.username, verificationCode)
+    .then(sent => {
+      if (sent) {
+        console.log(`[Auth] Verification email sent to ${input.email}`);
+      }
+    })
+    .catch(err => console.error(`[Auth] Failed to send verification email:`, err));
 
   return { success: true, user: createdUser };
 }
@@ -180,4 +204,213 @@ export async function getUserById(id: number): Promise<typeof users.$inferSelect
     .limit(1);
 
   return user || null;
+}
+
+// ============================================================================
+// EMAIL VERIFICATION
+// ============================================================================
+
+// Verify email with code
+export async function verifyEmail(email: string, code: string): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database connection failed" };
+  }
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        eq(users.email, email),
+        eq(users.emailVerificationCode, code),
+        gt(users.emailVerificationExpires, new Date())
+      )
+    )
+    .limit(1);
+
+  if (!user) {
+    return { success: false, error: "Invalid or expired verification code" };
+  }
+
+  // Update user as verified
+  await db
+    .update(users)
+    .set({
+      emailVerified: true,
+      emailVerificationCode: null,
+      emailVerificationExpires: null,
+    })
+    .where(eq(users.id, user.id));
+
+  // Send welcome email
+  sendWelcomeEmail(email, user.name || user.username || "User")
+    .catch(err => console.error(`[Auth] Failed to send welcome email:`, err));
+
+  return { success: true };
+}
+
+// Resend verification code
+export async function resendVerificationCode(email: string): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database connection failed" };
+  }
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (!user) {
+    return { success: false, error: "Email not found" };
+  }
+
+  if (user.emailVerified) {
+    return { success: false, error: "Email already verified" };
+  }
+
+  // Generate new code
+  const newCode = generateVerificationCode();
+  const newExpires = new Date();
+  newExpires.setMinutes(newExpires.getMinutes() + CODE_EXPIRY_MINUTES);
+
+  await db
+    .update(users)
+    .set({
+      emailVerificationCode: newCode,
+      emailVerificationExpires: newExpires,
+    })
+    .where(eq(users.id, user.id));
+
+  // Send verification email
+  const sent = await sendVerificationEmail(email, user.name || user.username || "User", newCode);
+  if (!sent) {
+    return { success: false, error: "Failed to send verification email" };
+  }
+
+  return { success: true };
+}
+
+// ============================================================================
+// PASSWORD RESET
+// ============================================================================
+
+// Request password reset
+export async function requestPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database connection failed" };
+  }
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (!user) {
+    // Don't reveal if email exists or not for security
+    return { success: true };
+  }
+
+  // Only allow password reset for traditional auth users
+  if (!user.passwordHash) {
+    return { success: true }; // Silent success for OAuth users
+  }
+
+  // Generate reset code
+  const resetCode = generateVerificationCode();
+  const resetExpires = new Date();
+  resetExpires.setMinutes(resetExpires.getMinutes() + CODE_EXPIRY_MINUTES);
+
+  await db
+    .update(users)
+    .set({
+      passwordResetCode: resetCode,
+      passwordResetExpires: resetExpires,
+    })
+    .where(eq(users.id, user.id));
+
+  // Send reset email
+  sendPasswordResetEmail(email, user.name || user.username || "User", resetCode)
+    .then(sent => {
+      if (sent) {
+        console.log(`[Auth] Password reset email sent to ${email}`);
+      }
+    })
+    .catch(err => console.error(`[Auth] Failed to send reset email:`, err));
+
+  return { success: true };
+}
+
+// Verify reset code (check if valid)
+export async function verifyResetCode(email: string, code: string): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database connection failed" };
+  }
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        eq(users.email, email),
+        eq(users.passwordResetCode, code),
+        gt(users.passwordResetExpires, new Date())
+      )
+    )
+    .limit(1);
+
+  if (!user) {
+    return { success: false, error: "Invalid or expired reset code" };
+  }
+
+  return { success: true };
+}
+
+// Reset password with code
+export async function resetPassword(email: string, code: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database connection failed" };
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return { success: false, error: "Password must be at least 6 characters" };
+  }
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        eq(users.email, email),
+        eq(users.passwordResetCode, code),
+        gt(users.passwordResetExpires, new Date())
+      )
+    )
+    .limit(1);
+
+  if (!user) {
+    return { success: false, error: "Invalid or expired reset code" };
+  }
+
+  // Hash new password
+  const passwordHash = await hashPassword(newPassword);
+
+  // Update password and clear reset code
+  await db
+    .update(users)
+    .set({
+      passwordHash,
+      passwordResetCode: null,
+      passwordResetExpires: null,
+    })
+    .where(eq(users.id, user.id));
+
+  console.log(`[Auth] Password reset successful for ${email}`);
+  return { success: true };
 }

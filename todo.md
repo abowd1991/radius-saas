@@ -590,3 +590,45 @@
 - [x] Auto-create 7-day trial subscription on registration
 - [x] Fix "feature disabled" issue for new clients (simplified subscription creation)
 - [x] Ensure all features work immediately after registration (7-day trial auto-created)
+
+
+## Email System Integration (Jan 8, 2026)
+- [ ] Setup SMTP email service (Namecheap Private Email)
+- [ ] Password reset via email
+- [ ] Email verification on registration
+- [ ] Trial expiration notifications (2 days before)
+
+
+## Email System (Jan 8, 2026)
+- [x] Configure SMTP with Namecheap Private Email (noreply@radius-pro.com)
+- [x] Create email service with nodemailer
+- [x] Email templates (Arabic RTL design)
+  - [x] Email verification template
+  - [x] Password reset template
+  - [x] Welcome email template
+  - [x] Trial expiration warning template
+- [x] Password recovery system
+  - [x] Forgot password endpoint (send reset code)
+  - [x] Verify reset code endpoint
+  - [x] Reset password endpoint
+  - [x] Frontend forgot password form
+  - [x] Frontend reset password form
+- [x] Email verification on registration
+  - [x] Generate verification code on registration
+  - [x] Send verification email
+  - [x] Verify email endpoint
+  - [x] Resend verification code endpoint
+  - [x] Frontend email verification form
+- [x] Trial expiration notifications
+  - [x] Subscription notifier cron job (every 6 hours)
+  - [x] Check subscriptions expiring in 2 days
+  - [x] Send expiration warning email
+  - [x] Mark user as notified to avoid duplicate emails
+- [x] Database schema updates
+  - [x] emailVerified field
+  - [x] emailVerificationCode field
+  - [x] emailVerificationExpires field
+  - [x] passwordResetCode field
+  - [x] passwordResetExpires field
+  - [x] trialExpirationNotified field
+- [x] Unit tests for email system (14 tests passing)

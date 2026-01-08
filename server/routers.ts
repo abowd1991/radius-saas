@@ -78,6 +78,73 @@ const authRouter = router({
     ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
     return { success: true } as const;
   }),
+
+  // Email verification
+  verifyEmail: publicProcedure
+    .input(z.object({
+      email: z.string().email("Invalid email address"),
+      code: z.string().length(6, "Verification code must be 6 digits"),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await authService.verifyEmail(input.email, input.code);
+      if (!result.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+      }
+      return { success: true, message: "Email verified successfully!" };
+    }),
+
+  // Resend verification code
+  resendVerificationCode: publicProcedure
+    .input(z.object({
+      email: z.string().email("Invalid email address"),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await authService.resendVerificationCode(input.email);
+      if (!result.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+      }
+      return { success: true, message: "Verification code sent!" };
+    }),
+
+  // Request password reset
+  forgotPassword: publicProcedure
+    .input(z.object({
+      email: z.string().email("Invalid email address"),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await authService.requestPasswordReset(input.email);
+      // Always return success to prevent email enumeration
+      return { success: true, message: "If this email exists, a reset code has been sent." };
+    }),
+
+  // Verify reset code
+  verifyResetCode: publicProcedure
+    .input(z.object({
+      email: z.string().email("Invalid email address"),
+      code: z.string().length(6, "Reset code must be 6 digits"),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await authService.verifyResetCode(input.email, input.code);
+      if (!result.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+      }
+      return { success: true };
+    }),
+
+  // Reset password with code
+  resetPassword: publicProcedure
+    .input(z.object({
+      email: z.string().email("Invalid email address"),
+      code: z.string().length(6, "Reset code must be 6 digits"),
+      newPassword: z.string().min(6, "Password must be at least 6 characters"),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await authService.resetPassword(input.email, input.code, input.newPassword);
+      if (!result.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+      }
+      return { success: true, message: "Password reset successful! You can now login." };
+    }),
 });
 
 // ============================================================================
