@@ -99,7 +99,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
       name: input.name || input.username,
       phone: input.phone,
       loginMethod: "traditional",
-      role: "reseller", // New users are resellers (can create NAS and cards)
+      role: "client", // New users are clients (SaaS customers who manage their own network)
       status: "active",
       emailVerified: false,
       emailVerificationCode: verificationCode,

@@ -743,3 +743,9 @@
 - [x] Verify Templates filter by ownerId
 - [x] Verify CSV export checks batch ownership
 - [x] Each client can only see their own data
+
+## Client Menu Fix (Jan 9, 2026) - COMPLETED
+- [x] Change default role for new users to 'client'
+- [x] Update client menu to show: NAS, Plans, Cards, PDF, Sessions
+- [x] Remove reseller-specific items from client menu
+- [x] Updated existing user abowd to client role

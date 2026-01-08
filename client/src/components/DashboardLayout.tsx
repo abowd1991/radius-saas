@@ -111,10 +111,14 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
 
   const clientItems = [
     { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
-    { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },
+    { icon: Server, label: t("nav.nas"), path: "/nas" },
+    { icon: Link2, label: t("nav.mikrotikSetup"), path: "/mikrotik-setup" },
+    { icon: Package, label: t("nav.plans"), path: "/plans" },
     { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
+    { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
+    { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
     { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
-    { icon: Activity, label: t("nav.subscriptions"), path: "/subscriptions" },
+    { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },
     { icon: MessageSquare, label: t("nav.support"), path: "/support" },
   ];
 
