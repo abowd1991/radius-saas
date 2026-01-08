@@ -213,19 +213,29 @@ const usersRouter = router({
 // PLANS ROUTER
 // ============================================================================
 const plansRouter = router({
-  list: publicProcedure.query(async () => {
-    return planDb.getAllPlans();
+  // List plans - super_admin sees all, others see only their own
+  list: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role === 'super_admin') {
+      return planDb.getAllPlans();
+    }
+    return planDb.getPlansByOwner(ctx.user.id);
   }),
 
-  getById: publicProcedure
+  // Get plan by ID - check ownership for non-super_admin
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const plan = await planDb.getPlanById(input.id);
       if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "Plan not found" });
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && plan.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return plan;
     }),
 
-  create: superAdminProcedure
+  // Create plan - any authenticated user with active subscription can create
+  create: activeSubscriptionProcedure
     .input(z.object({
       name: z.string().min(1),
       nameAr: z.string().optional(),
@@ -247,11 +257,12 @@ const plansRouter = router({
       mikrotikAddressPool: z.string().optional(),
       serviceType: z.enum(['pppoe', 'hotspot', 'vpn', 'all']).default('all'),
     }))
-    .mutation(async ({ input }) => {
-      return planDb.createPlan(input);
+    .mutation(async ({ ctx, input }) => {
+      return planDb.createPlan({ ...input, ownerId: ctx.user.id });
     }),
 
-  update: superAdminProcedure
+  // Update plan - check ownership
+  update: activeSubscriptionProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
@@ -267,13 +278,26 @@ const plansRouter = router({
       resellerPrice: z.string().optional(),
       status: z.enum(['active', 'inactive']).optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Check ownership for non-super_admin
+      const plan = await planDb.getPlanById(input.id);
+      if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "Plan not found" });
+      if (ctx.user.role !== 'super_admin' && plan.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return planDb.updatePlan(input.id, input);
     }),
 
-  delete: superAdminProcedure
+  // Delete plan - check ownership
+  delete: activeSubscriptionProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Check ownership for non-super_admin
+      const plan = await planDb.getPlanById(input.id);
+      if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "Plan not found" });
+      if (ctx.user.role !== 'super_admin' && plan.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return planDb.deletePlan(input.id);
     }),
 });
@@ -1033,7 +1057,13 @@ const vouchersRouter = router({
 
   getCardsByBatch: resellerProcedure
     .input(z.object({ batchId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      // Check ownership for non-super_admin
+      const batches = await cardDb.getAllBatches();
+      const batch = batches.find(b => b.batchId === input.batchId);
+      if (batch && ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return cardDb.getCardsByBatch(input.batchId);
     }),
 
@@ -1052,11 +1082,15 @@ const vouchersRouter = router({
       hotspotUrl: z.string().optional(),
       cardsPerPage: z.number().default(8),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Get batch and cards
       const batches = await cardDb.getAllBatches();
       const batch = batches.find(b => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
 
       const cards = await cardDb.getCardsByBatch(input.batchId);
       if (!cards || cards.length === 0) {
@@ -1107,10 +1141,14 @@ const vouchersRouter = router({
       hotspotUrl: z.string().optional(),
       cardsPerPage: z.number().default(8),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const batches = await cardDb.getAllBatches();
       const batch = batches.find(b => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
 
       const cards = await cardDb.getCardsByBatch(input.batchId);
       if (!cards || cards.length === 0) {
@@ -1188,11 +1226,15 @@ const vouchersRouter = router({
         }),
       }).optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Get batch and cards
       const batches = await cardDb.getAllBatches();
       const batch = batches.find(b => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
 
       const cards = await cardDb.getCardsByBatch(input.batchId);
       if (!cards || cards.length === 0) {
@@ -1292,7 +1334,15 @@ const vouchersRouter = router({
   // Export batch as CSV
   exportBatchCSV: resellerProcedure
     .input(z.object({ batchId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      // Check ownership for non-super_admin
+      const batches = await cardDb.getAllBatches();
+      const batch = batches.find(b => b.batchId === input.batchId);
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      
       const cards = await cardDb.getCardsByBatch(input.batchId);
       if (!cards || cards.length === 0) {
         throw new TRPCError({ code: "NOT_FOUND", message: "No cards found in batch" });

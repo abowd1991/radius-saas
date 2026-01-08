@@ -724,3 +724,22 @@
 - [x] Fix: Dashboard accessible without login - should redirect to /auth
 - [x] Fix: After Manus login, redirects to landing page instead of dashboard
 - [x] Fix: New user abowd redirects back to login page after registration (local auth users now work)
+
+## Multi-Tenant SaaS Verification (Jan 9, 2026)
+- [ ] Verify NAS endpoints filter by userId (Client sees only their NAS)
+- [ ] Verify Speed Profiles endpoints filter by userId
+- [ ] Verify Cards endpoints filter by userId
+- [ ] Verify PDF generation filters by userId
+- [ ] Super Admin sees all data
+- [ ] Client sees only their own data
+- [ ] New client can independently: add NAS, create speeds, create cards, print PDF
+
+
+## Multi-Tenant SaaS Verification (Jan 9, 2026) - COMPLETED
+- [x] Verify NAS endpoints filter by ownerId
+- [x] Verify Plans endpoints filter by ownerId (added ownerId field)
+- [x] Verify Cards endpoints filter by ownerId
+- [x] Verify PDF generation checks batch ownership
+- [x] Verify Templates filter by ownerId
+- [x] Verify CSV export checks batch ownership
+- [x] Each client can only see their own data

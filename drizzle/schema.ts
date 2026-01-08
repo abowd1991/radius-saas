@@ -81,6 +81,7 @@ export type InsertTenantSubscription = typeof tenantSubscriptions.$inferInsert;
 
 export const plans = mysqlTable("plans", {
   id: int("id").autoincrement().primaryKey(),
+  ownerId: int("ownerId").notNull(), // Owner (client/reseller) who created this plan
   name: varchar("name", { length: 100 }).notNull(),
   nameAr: varchar("nameAr", { length: 100 }),
   description: text("description"),
