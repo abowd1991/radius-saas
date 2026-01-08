@@ -2073,6 +2073,7 @@ const settingsRouter = router({
 import * as tenantSubDb from "./_core/tenantSubscriptions";
 import * as reportsService from "./services/reportsService";
 import * as reportExporter from "./services/reportExporter";
+import * as backupService from "./services/backupService";
 
 const tenantSubscriptionsRouter = router({
   // Get all tenant subscriptions (Super Admin only)
@@ -2384,6 +2385,69 @@ const reportsRouter = router({
 });
 
 // ============================================================================
+// BACKUPS ROUTER (Super Admin only)
+// ============================================================================
+const backupsRouter = router({
+  // List all backups
+  list: superAdminProcedure
+    .input(z.object({
+      type: z.enum(["daily", "weekly", "manual"]).optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      return backupService.listBackups(input?.type);
+    }),
+
+  // Get backup statistics
+  stats: superAdminProcedure.query(async () => {
+    return backupService.getBackupStats();
+  }),
+
+  // Create manual backup
+  create: superAdminProcedure.mutation(async () => {
+    return backupService.createDatabaseBackup("manual");
+  }),
+
+  // Download backup
+  download: superAdminProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      const content = await backupService.getBackupContent(input.id);
+      if (!content) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "النسخة الاحتياطية غير موجودة" });
+      }
+      const backup = await backupService.getBackup(input.id);
+      return {
+        data: content.toString("base64"),
+        filename: backup?.filename || "backup.sql",
+      };
+    }),
+
+  // Delete backup
+  delete: superAdminProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      const success = await backupService.deleteBackup(input.id);
+      if (!success) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "النسخة الاحتياطية غير موجودة" });
+      }
+      return { success: true };
+    }),
+
+  // Cleanup old backups
+  cleanup: superAdminProcedure.mutation(async () => {
+    return backupService.cleanupOldBackups();
+  }),
+
+  // Run scheduled backup manually
+  runScheduled: superAdminProcedure
+    .input(z.object({ type: z.enum(["daily", "weekly"]) }))
+    .mutation(async ({ input }) => {
+      await backupService.runScheduledBackup(input.type);
+      return { success: true };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -2404,6 +2468,7 @@ export const appRouter = router({
   templates: templatesRouter,
   settings: settingsRouter,
   reports: reportsRouter,
+  backups: backupsRouter,
 });
 
 export type AppRouter = typeof appRouter;

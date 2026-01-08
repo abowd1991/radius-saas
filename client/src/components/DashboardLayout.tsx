@@ -46,6 +46,7 @@ import {
   BarChart3,
   Moon,
   Sun,
+  Database,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -95,6 +96,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: Settings, label: t("nav.settings"), path: "/settings" },
     { icon: CreditCard, label: "إدارة الاشتراكات", path: "/tenant-subscriptions" },
     { icon: BarChart3, label: "التقارير", path: "/reports" },
+    { icon: Database, label: "النسخ الاحتياطي", path: "/backups" },
   ];
 
   const resellerItems = [

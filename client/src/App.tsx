@@ -22,6 +22,7 @@ import PrintCards from "./pages/PrintCards";
 import TenantSubscriptions from "./pages/TenantSubscriptions";
 import Auth from "./pages/Auth";
 import Reports from "./pages/Reports";
+import Backups from "./pages/Backups";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -90,6 +91,11 @@ function Router() {
       <Route path="/reports">
         <DashboardLayout>
           <Reports />
+        </DashboardLayout>
+      </Route>
+      <Route path="/backups">
+        <DashboardLayout>
+          <Backups />
         </DashboardLayout>
       </Route>
       <Route path="/tenant-subscriptions">
