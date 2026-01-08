@@ -632,3 +632,41 @@
   - [x] passwordResetExpires field
   - [x] trialExpirationNotified field
 - [x] Unit tests for email system (14 tests passing)
+
+
+## Advanced Reports & Analytics (Jan 8, 2026)
+- [ ] Revenue Reports
+  - [ ] Daily/Weekly/Monthly revenue
+  - [ ] Revenue by client/reseller
+  - [ ] Revenue charts and graphs
+- [ ] Subscribers Reports
+  - [ ] Active/Expired/Suspended count
+  - [ ] Subscriber growth over time
+- [ ] Plans & Cards Reports
+  - [ ] Best selling plans
+  - [ ] Most used cards
+  - [ ] Time consumption per card
+- [ ] Sessions Reports
+  - [ ] Active/Completed sessions
+  - [ ] Average session duration
+- [ ] Export functionality
+  - [ ] PDF export with professional design
+  - [ ] Excel export for management
+- [ ] Reports page UI with charts
+
+
+## Advanced Reports & Analytics (Jan 8, 2026) - COMPLETED
+- [x] Revenue reports (daily/weekly/monthly)
+- [x] Revenue by client report
+- [x] Subscribers report (active/expired/suspended)
+- [x] Subscriber growth chart
+- [x] Best selling plans report
+- [x] Time consumption per card
+- [x] Active/completed sessions report
+- [x] Sessions by NAS report
+- [x] Export to PDF (HTML with print)
+- [x] Export to Excel (XLSX)
+- [x] Date range selector with presets
+- [x] Group by (day/week/month) option
+- [x] Interactive charts with Recharts
+- [x] Reports page with tabs navigation

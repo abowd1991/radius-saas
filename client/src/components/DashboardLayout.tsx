@@ -43,6 +43,7 @@ import {
   ChevronDown,
   Link2,
   Printer,
+  BarChart3,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -67,6 +68,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: MessageSquare, label: t("nav.support"), path: "/support" },
     { icon: Settings, label: t("nav.settings"), path: "/settings" },
     { icon: CreditCard, label: "إدارة الاشتراكات", path: "/tenant-subscriptions" },
+    { icon: BarChart3, label: "التقارير", path: "/reports" },
   ];
 
   const resellerItems = [

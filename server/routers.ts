@@ -2071,6 +2071,8 @@ const settingsRouter = router({
 // TENANT SUBSCRIPTIONS ROUTER (Admin only)
 // ============================================================================
 import * as tenantSubDb from "./_core/tenantSubscriptions";
+import * as reportsService from "./services/reportsService";
+import * as reportExporter from "./services/reportExporter";
 
 const tenantSubscriptionsRouter = router({
   // Get all tenant subscriptions (Super Admin only)
@@ -2195,6 +2197,193 @@ const tenantSubscriptionsRouter = router({
 });
 
 // ============================================================================
+// REPORTS ROUTER
+// ============================================================================
+const reportsRouter = router({
+  // Get dashboard summary
+  dashboardSummary: protectedProcedure.query(async ({ ctx }) => {
+    return reportsService.getDashboardSummary(ctx.user.id);
+  }),
+
+  // Get revenue report
+  revenue: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      groupBy: z.enum(["day", "week", "month"]).default("day"),
+    }))
+    .query(async ({ ctx, input }) => {
+      return reportsService.getRevenueReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate),
+        input.groupBy
+      );
+    }),
+
+  // Get subscribers report
+  subscribers: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      return reportsService.getSubscribersReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+    }),
+
+  // Get cards report
+  cards: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      return reportsService.getCardsReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+    }),
+
+  // Get sessions report
+  sessions: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      return reportsService.getSessionsReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+    }),
+
+  // Export revenue to Excel
+  exportRevenueExcel: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      groupBy: z.enum(["day", "week", "month"]).default("day"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const data = await reportsService.getRevenueReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate),
+        input.groupBy
+      );
+      const buffer = reportExporter.generateRevenueExcel(data);
+      return { data: buffer.toString("base64"), filename: `revenue-report-${input.startDate}-${input.endDate}.xlsx` };
+    }),
+
+  // Export cards to Excel
+  exportCardsExcel: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const data = await reportsService.getCardsReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+      const buffer = reportExporter.generateCardsExcel(data);
+      return { data: buffer.toString("base64"), filename: `cards-report-${input.startDate}-${input.endDate}.xlsx` };
+    }),
+
+  // Export sessions to Excel
+  exportSessionsExcel: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const data = await reportsService.getSessionsReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+      const buffer = reportExporter.generateSessionsExcel(data);
+      return { data: buffer.toString("base64"), filename: `sessions-report-${input.startDate}-${input.endDate}.xlsx` };
+    }),
+
+  // Export subscribers to Excel
+  exportSubscribersExcel: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const data = await reportsService.getSubscribersReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+      const buffer = reportExporter.generateSubscribersExcel(data);
+      return { data: buffer.toString("base64"), filename: `subscribers-report-${input.startDate}-${input.endDate}.xlsx` };
+    }),
+
+  // Export revenue to PDF (HTML)
+  exportRevenuePDF: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      groupBy: z.enum(["day", "week", "month"]).default("day"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const data = await reportsService.getRevenueReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate),
+        input.groupBy
+      );
+      const dateRange = `${input.startDate} - ${input.endDate}`;
+      const html = reportExporter.generateRevenuePDFHTML(data, dateRange);
+      return { html, filename: `revenue-report-${input.startDate}-${input.endDate}.html` };
+    }),
+
+  // Export cards to PDF (HTML)
+  exportCardsPDF: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const data = await reportsService.getCardsReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+      const dateRange = `${input.startDate} - ${input.endDate}`;
+      const html = reportExporter.generateCardsPDFHTML(data, dateRange);
+      return { html, filename: `cards-report-${input.startDate}-${input.endDate}.html` };
+    }),
+
+  // Export sessions to PDF (HTML)
+  exportSessionsPDF: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const data = await reportsService.getSessionsReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+      const dateRange = `${input.startDate} - ${input.endDate}`;
+      const html = reportExporter.generateSessionsPDFHTML(data, dateRange);
+      return { html, filename: `sessions-report-${input.startDate}-${input.endDate}.html` };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -2214,6 +2403,7 @@ export const appRouter = router({
   sessions: sessionsRouter,
   templates: templatesRouter,
   settings: settingsRouter,
+  reports: reportsRouter,
 });
 
 export type AppRouter = typeof appRouter;
