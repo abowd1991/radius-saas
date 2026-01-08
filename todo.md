@@ -749,3 +749,14 @@
 - [x] Update client menu to show: NAS, Plans, Cards, PDF, Sessions
 - [x] Remove reseller-specific items from client menu
 - [x] Updated existing user abowd to client role
+
+## Client Pages Fix (Jan 9, 2026)
+- [ ] Fix Plans page: empty page, no add button for client
+- [ ] Fix Vouchers page: no create cards button for client
+- [ ] Fix Templates page: uploaded templates not showing for client
+
+
+## Client Pages Fix (Jan 9, 2026)
+- [x] Fix Plans page: empty page, no add button for client - Updated canManagePlans to include client role
+- [x] Fix Vouchers page: no create cards button for client - Updated isReseller to include client role
+- [x] Fix Templates page: uploaded templates not showing for client - Updated resellerProcedure to include client role

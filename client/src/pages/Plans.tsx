@@ -135,7 +135,8 @@ export default function Plans() {
     }
   };
 
-  const isSuperAdmin = user?.role === "super_admin";
+  // Allow super_admin, client, and reseller to manage their own plans
+  const canManagePlans = user?.role === "super_admin" || user?.role === "client" || user?.role === "reseller";
 
   return (
     <div className="space-y-6">
@@ -147,7 +148,7 @@ export default function Plans() {
             {language === "ar" ? "إدارة خطط الإنترنت والأسعار" : "Manage internet plans and pricing"}
           </p>
         </div>
-        {isSuperAdmin && (
+        {canManagePlans && (
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -244,8 +245,8 @@ export default function Plans() {
         )}
       </div>
 
-      {/* Plans Grid for Clients/Resellers */}
-      {!isSuperAdmin && (
+      {/* Plans Table for all users who can manage plans */}
+      {canManagePlans && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {plans?.map((plan) => (
             <Card key={plan.id} className="relative overflow-hidden">
@@ -297,8 +298,8 @@ export default function Plans() {
         </div>
       )}
 
-      {/* Plans Table for Super Admin */}
-      {isSuperAdmin && (
+      {/* REMOVED - Merged with above */}
+      {false && (
         <Card>
           <CardContent className="p-0">
             <Table>

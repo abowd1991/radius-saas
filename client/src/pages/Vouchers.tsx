@@ -478,7 +478,9 @@ export default function Vouchers() {
   });
 
   const isAdmin = user?.role === 'super_admin';
-  const isReseller = user?.role === 'reseller' || isAdmin;
+  // Allow client, reseller, and admin to create cards
+  const canCreateCards = user?.role === 'client' || user?.role === 'reseller' || isAdmin;
+  const isReseller = canCreateCards; // Keep for backward compatibility
   const isClient = user?.role === 'client';
 
   return (

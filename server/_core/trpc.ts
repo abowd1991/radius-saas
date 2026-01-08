@@ -45,13 +45,14 @@ export const superAdminProcedure = t.procedure.use(
   }),
 );
 
-// Reseller or Super Admin procedure
+// Reseller, Client, or Super Admin procedure (for managing own resources)
 export const resellerProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || (ctx.user.role !== 'super_admin' && ctx.user.role !== 'reseller')) {
-      throw new TRPCError({ code: "FORBIDDEN", message: "Access denied. Reseller or Admin access required." });
+    // Allow super_admin, reseller, and client to manage their own resources
+    if (!ctx.user || (ctx.user.role !== 'super_admin' && ctx.user.role !== 'reseller' && ctx.user.role !== 'client')) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Access denied. Client, Reseller or Admin access required." });
     }
 
     return next({
