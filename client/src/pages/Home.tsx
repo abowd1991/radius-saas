@@ -171,10 +171,10 @@ export default function Home() {
           </nav>
           <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
-              <a href={getLoginUrl()}>تسجيل الدخول</a>
+              <a href="/auth">تسجيل الدخول</a>
             </Button>
             <Button asChild>
-              <a href={getLoginUrl()}>ابدأ الآن</a>
+              <a href="/auth">ابدأ الآن</a>
             </Button>
           </div>
         </div>
@@ -194,7 +194,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild>
-                <a href={getLoginUrl()}>
+                <a href="/auth">
                   ابدأ تجربتك المجانية
                   <ArrowRight className="mr-2 h-5 w-5" />
                 </a>

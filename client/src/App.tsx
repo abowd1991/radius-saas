@@ -20,6 +20,7 @@ import Sessions from "./pages/Sessions";
 import MikrotikSetup from "./pages/MikrotikSetup";
 import PrintCards from "./pages/PrintCards";
 import TenantSubscriptions from "./pages/TenantSubscriptions";
+import Auth from "./pages/Auth";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -27,6 +28,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/auth" component={Auth} />
+      <Route path="/login" component={Auth} />
+      <Route path="/register" component={Auth} />
       <Route path="/dashboard">
         <DashboardLayout>
           <Dashboard />

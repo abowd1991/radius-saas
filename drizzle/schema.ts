@@ -6,9 +6,11 @@ import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean,
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+  openId: varchar("openId", { length: 64 }).unique(), // Optional for traditional auth
+  username: varchar("username", { length: 64 }).unique(), // For traditional auth
+  passwordHash: varchar("passwordHash", { length: 255 }), // For traditional auth
   name: text("name"),
-  email: varchar("email", { length: 320 }),
+  email: varchar("email", { length: 320 }).unique(),
   phone: varchar("phone", { length: 20 }),
   address: text("address"),
   loginMethod: varchar("loginMethod", { length: 64 }),

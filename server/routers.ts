@@ -22,6 +22,7 @@ import * as vpnApi from "./services/vpnApiService";
 import * as sshVpn from "./services/sshVpnService";
 import * as accountingService from "./services/accountingService";
 import * as sessionMonitor from "./services/sessionMonitor";
+import * as authService from "./services/authService";
 import { getDb } from "./db";
 import { radcheck } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -31,6 +32,47 @@ import { eq } from "drizzle-orm";
 // ============================================================================
 const authRouter = router({
   me: publicProcedure.query(opts => opts.ctx.user),
+  
+  // Traditional registration
+  register: publicProcedure
+    .input(z.object({
+      username: z.string().min(3, "Username must be at least 3 characters"),
+      email: z.string().email("Invalid email address"),
+      password: z.string().min(6, "Password must be at least 6 characters"),
+      name: z.string().optional(),
+      phone: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await authService.registerUser(input);
+      if (!result.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+      }
+      return { success: true, message: "Registration successful! You can now login." };
+    }),
+  
+  // Traditional login
+  login: publicProcedure
+    .input(z.object({
+      usernameOrEmail: z.string().min(1, "Username or email is required"),
+      password: z.string().min(1, "Password is required"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await authService.loginUser(input);
+      if (!result.success || !result.user) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: result.error || "Login failed" });
+      }
+      
+      // Create session token using SDK and set cookie
+      const { sdk } = await import("./_core/sdk");
+      // Use a unique identifier for traditional auth users
+      const sessionOpenId = `local_${result.user.id}`;
+      const token = await sdk.createSessionToken(sessionOpenId, { name: result.user.name || result.user.username || "" });
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 365 * 24 * 60 * 60 * 1000 });
+      
+      return { success: true, user: result.user };
+    }),
+  
   logout: publicProcedure.mutation(({ ctx }) => {
     const cookieOptions = getSessionCookieOptions(ctx.req);
     ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

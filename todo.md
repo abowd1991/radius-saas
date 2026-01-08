@@ -579,3 +579,14 @@
 - [x] Add frozen banner for expired subscriptions
 - [x] Ensure read-only access when frozen (read operations still work)
 - [x] Test subscription enforcement (14 tests passed)
+
+
+## Traditional Registration System
+- [x] Add password and email fields to users table
+- [x] Create registration API endpoint
+- [x] Create login API endpoint (username/password)
+- [x] Create registration page UI
+- [x] Create login page UI
+- [x] Auto-create 7-day trial subscription on registration
+- [x] Fix "feature disabled" issue for new clients (simplified subscription creation)
+- [x] Ensure all features work immediately after registration (7-day trial auto-created)
