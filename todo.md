@@ -718,3 +718,7 @@
 - [x] Support role: view only (users, sessions, cards, NAS)
 - [x] Support role: no financial access
 - [x] Client isolation (see only own data)
+
+
+## Bug Fixes (Jan 8, 2026)
+- [x] Fix: Dashboard accessible without login - should redirect to /auth

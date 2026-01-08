@@ -163,6 +163,13 @@ export default function DashboardLayout({
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
+  // Redirect to auth page if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      window.location.href = '/auth';
+    }
+  }, [loading, user]);
+
   if (loading) {
     return <DashboardLayoutSkeleton />;
   }
