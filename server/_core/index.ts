@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startMonitor } from "../services/sessionMonitor";
 import { startSubscriptionNotifier } from "../services/subscriptionNotifier";
+import { startAlertMonitor } from "../services/alertMonitor";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -69,6 +70,10 @@ async function startServer() {
     // Start subscription expiration notifier (check every 6 hours)
     startSubscriptionNotifier();
     console.log('[SubscriptionNotifier] Started - checking for expiring subscriptions every 6 hours');
+    
+    // Start alert monitor for card expiration and NAS connection
+    startAlertMonitor();
+    console.log('[AlertMonitor] Started - checking for alerts every 5 minutes');
   });
 }
 

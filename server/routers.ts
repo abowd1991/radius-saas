@@ -2074,6 +2074,7 @@ import * as tenantSubDb from "./_core/tenantSubscriptions";
 import * as reportsService from "./services/reportsService";
 import * as reportExporter from "./services/reportExporter";
 import * as backupService from "./services/backupService";
+import * as internalNotificationService from "./services/internalNotificationService";
 
 const tenantSubscriptionsRouter = router({
   // Get all tenant subscriptions (Super Admin only)
@@ -2385,6 +2386,51 @@ const reportsRouter = router({
 });
 
 // ============================================================================
+// INTERNAL NOTIFICATIONS ROUTER
+// ============================================================================
+const internalNotificationsRouter = router({
+  // Get notifications for current user
+  list: protectedProcedure
+    .input(z.object({
+      limit: z.number().optional(),
+      unreadOnly: z.boolean().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      return internalNotificationService.getNotifications(ctx.user.id, {
+        limit: input?.limit,
+        unreadOnly: input?.unreadOnly,
+      });
+    }),
+
+  // Get unread count
+  unreadCount: protectedProcedure.query(async ({ ctx }) => {
+    return internalNotificationService.getUnreadCount(ctx.user.id);
+  }),
+
+  // Mark notification as read
+  markAsRead: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const success = await internalNotificationService.markAsRead(input.id, ctx.user.id);
+      return { success };
+    }),
+
+  // Mark all as read
+  markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
+    const success = await internalNotificationService.markAllAsRead(ctx.user.id);
+    return { success };
+  }),
+
+  // Delete notification
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const success = await internalNotificationService.deleteNotification(input.id, ctx.user.id);
+      return { success };
+    }),
+});
+
+// ============================================================================
 // BACKUPS ROUTER (Super Admin only)
 // ============================================================================
 const backupsRouter = router({
@@ -2469,6 +2515,7 @@ export const appRouter = router({
   settings: settingsRouter,
   reports: reportsRouter,
   backups: backupsRouter,
+  internalNotifications: internalNotificationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

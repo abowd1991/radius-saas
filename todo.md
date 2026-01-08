@@ -687,3 +687,12 @@
 - [x] Download backup files
 - [ ] Restore from backup (planned for future)
 - [x] Auto-cleanup old backups (keep last 7 daily, 4 weekly)
+
+
+## Internal Notifications System (Jan 8, 2026) - COMPLETED
+- [x] Notifications table in database
+- [x] Notification bell in header with unread count
+- [x] Alert when client balance/time expires
+- [x] Alert when MikroTik/NAS connection is lost
+- [x] Mark notifications as read
+- [x] Notifications dropdown with list

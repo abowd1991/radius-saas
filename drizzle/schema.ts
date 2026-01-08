@@ -624,3 +624,32 @@ export const onlineSessions = mysqlTable("online_sessions", {
 
 export type OnlineSession = typeof onlineSessions.$inferSelect;
 export type InsertOnlineSession = typeof onlineSessions.$inferInsert;
+
+
+// ============================================================================
+// INTERNAL NOTIFICATIONS
+// ============================================================================
+
+export const internalNotifications = mysqlTable("internal_notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // Target user (super_admin or reseller)
+  type: mysqlEnum("type", [
+    "card_expired",      // كرت انتهى وقته
+    "card_expiring",     // كرت على وشك الانتهاء
+    "nas_disconnected",  // NAS انقطع اتصاله
+    "nas_reconnected",   // NAS عاد للاتصال
+    "low_balance",       // رصيد منخفض
+    "new_subscription",  // اشتراك جديد
+    "subscription_expired", // اشتراك انتهى
+    "system"             // إشعار نظام عام
+  ]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  entityType: varchar("entityType", { length: 50 }), // card, nas, user, etc.
+  entityId: int("entityId"),
+  isRead: boolean("isRead").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type InternalNotification = typeof internalNotifications.$inferSelect;
+export type InsertInternalNotification = typeof internalNotifications.$inferInsert;

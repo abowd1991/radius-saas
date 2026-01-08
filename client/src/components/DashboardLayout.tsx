@@ -52,6 +52,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
+import { NotificationBell } from "./NotificationBell";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { SubscriptionBanner } from "./SubscriptionBanner";
@@ -443,9 +444,7 @@ function DashboardLayoutContent({
               </div>
             </div>
             <ThemeToggleButton />
-            <Button variant="ghost" size="icon" onClick={() => setLocation("/notifications")}>
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationBell />
           </div>
         )}
         <SubscriptionBanner />
