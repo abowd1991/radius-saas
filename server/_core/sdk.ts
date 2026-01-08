@@ -268,10 +268,22 @@ class SDKServer {
 
     const sessionUserId = session.openId;
     const signedInAt = new Date();
-    let user = await db.getUserByOpenId(sessionUserId);
+    let user: User | undefined | null = null;
 
-    // If user not in DB, sync from OAuth server automatically
-    if (!user) {
+    // Check if this is a local (traditional auth) user
+    if (sessionUserId.startsWith('local_')) {
+      // Extract user ID from local_<id> format
+      const userId = parseInt(sessionUserId.replace('local_', ''), 10);
+      if (!isNaN(userId)) {
+        user = await db.getUserById(userId);
+      }
+    } else {
+      // OAuth user - lookup by openId
+      user = await db.getUserByOpenId(sessionUserId);
+    }
+
+    // If user not in DB and not a local user, sync from OAuth server automatically
+    if (!user && !sessionUserId.startsWith('local_')) {
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
         await db.upsertUser({
@@ -292,10 +304,13 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
-    await db.upsertUser({
-      openId: user.openId,
-      lastSignedIn: signedInAt,
-    });
+    // Update last signed in (only for OAuth users with openId)
+    if (user.openId && !sessionUserId.startsWith('local_')) {
+      await db.upsertUser({
+        openId: user.openId,
+        lastSignedIn: signedInAt,
+      });
+    }
 
     return user;
   }

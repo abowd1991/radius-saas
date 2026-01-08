@@ -723,3 +723,4 @@
 ## Bug Fixes (Jan 8, 2026)
 - [x] Fix: Dashboard accessible without login - should redirect to /auth
 - [x] Fix: After Manus login, redirects to landing page instead of dashboard
+- [x] Fix: New user abowd redirects back to login page after registration (local auth users now work)

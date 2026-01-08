@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, name, email, role FROM users ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, name, email, role FROM users ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "570684",
+      "name": "عبد الرحمن العمراني ",
+      "email": "abowd1991@gmail.com",
+      "role": "reseller"
+    },
+    {
+      "id": "1",
+      "name": "داعية للإسلام",
+      "email": "abowd19911@gmail.com",
+      "role": "super_admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\n570684\tعبد الرحمن العمراني \tabowd1991@gmail.com\treseller\n1\tداعية للإسلام\tabowd19911@gmail.com\tsuper_admin\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}
