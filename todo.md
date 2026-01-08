@@ -696,3 +696,25 @@
 - [x] Alert when MikroTik/NAS connection is lost
 - [x] Mark notifications as read
 - [x] Notifications dropdown with list
+
+
+## Landing Page (Jan 8, 2026) - COMPLETED
+- [x] Hero section with CTA
+- [x] Features section (8 features)
+- [x] How it works (Steps)
+- [x] Pricing plans
+- [x] FAQ section
+- [x] Contact section
+- [x] Footer with links
+- [x] Dark SaaS design (Blue/Purple theme)
+- [x] Arabic only (expandable for English)
+
+## Advanced Permissions System (Jan 8, 2026) - COMPLETED
+- [x] Add Support role to database
+- [x] Create permissions service
+- [x] Define page-level permissions (View/Create/Edit/Delete)
+- [x] Apply permissions to API endpoints
+- [x] Update UI to hide unauthorized elements
+- [x] Support role: view only (users, sessions, cards, NAS)
+- [x] Support role: no financial access
+- [x] Client isolation (see only own data)

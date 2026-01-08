@@ -118,11 +118,24 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: MessageSquare, label: t("nav.support"), path: "/support" },
   ];
 
+  // Support role - view only, no financial access
+  const supportItems = [
+    { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
+    { icon: Users, label: t("nav.clients"), path: "/clients" },
+    { icon: Building2, label: t("nav.resellers"), path: "/resellers" },
+    { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
+    { icon: Server, label: t("nav.nas"), path: "/nas" },
+    { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
+    { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+  ];
+
   switch (role) {
     case "super_admin":
       return superAdminItems;
     case "reseller":
       return resellerItems;
+    case "support":
+      return supportItems;
     case "client":
     default:
       return clientItems;
@@ -241,6 +254,8 @@ function DashboardLayoutContent({
         return { label: language === "ar" ? "مدير النظام" : "Super Admin", variant: "destructive" as const };
       case "reseller":
         return { label: language === "ar" ? "موزع" : "Reseller", variant: "default" as const };
+      case "support":
+        return { label: language === "ar" ? "دعم فني" : "Support", variant: "outline" as const };
       case "client":
       default:
         return { label: language === "ar" ? "عميل" : "Client", variant: "secondary" as const };

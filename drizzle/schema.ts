@@ -14,7 +14,7 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 20 }),
   address: text("address"),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["super_admin", "reseller", "client"]).default("client").notNull(),
+  role: mysqlEnum("role", ["super_admin", "reseller", "client", "support"]).default("client").notNull(),
   resellerId: int("resellerId"), // For clients: their reseller ID
   status: mysqlEnum("status", ["active", "suspended", "inactive"]).default("active").notNull(),
   language: mysqlEnum("language", ["ar", "en"]).default("ar").notNull(),

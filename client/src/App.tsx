@@ -23,13 +23,15 @@ import TenantSubscriptions from "./pages/TenantSubscriptions";
 import Auth from "./pages/Auth";
 import Reports from "./pages/Reports";
 import Backups from "./pages/Backups";
+import Landing from "./pages/Landing";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={Landing} />
+      <Route path="/home" component={Home} />
       <Route path="/auth" component={Auth} />
       <Route path="/login" component={Auth} />
       <Route path="/register" component={Auth} />

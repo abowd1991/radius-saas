@@ -69,6 +69,61 @@ export const clientProcedure = t.procedure.use(requireUser);
 // Legacy admin procedure (maps to super_admin)
 export const adminProcedure = superAdminProcedure;
 
+// Support procedure - view only access
+export const supportProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+
+    // Support can access, but also allow higher roles
+    const allowedRoles = ['super_admin', 'support'];
+    if (!allowedRoles.includes(ctx.user.role)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Access denied. Support access required." });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  }),
+);
+
+// Permission-based procedure factory
+export const createPermissionProcedure = (resource: string, action: string) => {
+  return t.procedure.use(
+    t.middleware(async opts => {
+      const { ctx, next } = opts;
+
+      if (!ctx.user) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+      }
+
+      // Import permissions service
+      const { hasPermission } = await import('../services/permissionsService');
+      const allowed = hasPermission(ctx.user.role as any, resource as any, action as any);
+
+      if (!allowed) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: `ليس لديك صلاحية ${action} في ${resource}`,
+        });
+      }
+
+      return next({
+        ctx: {
+          ...ctx,
+          user: ctx.user,
+        },
+      });
+    }),
+  );
+};
+
 // Active subscription procedure - blocks write operations when subscription is expired
 // Import this dynamically to avoid circular dependencies
 export const activeSubscriptionProcedure = t.procedure.use(

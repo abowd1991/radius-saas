@@ -30,8 +30,21 @@ import { eq } from "drizzle-orm";
 // ============================================================================
 // AUTH ROUTER
 // ============================================================================
+import * as permissionsService from "./services/permissionsService";
+
 const authRouter = router({
-  me: publicProcedure.query(opts => opts.ctx.user),
+  me: publicProcedure.query(opts => {
+    if (!opts.ctx.user) return null;
+    const permissions = permissionsService.getRolePermissions(opts.ctx.user.role as any);
+    const canSeeFinancials = permissionsService.canSeeFinancials(opts.ctx.user.role as any);
+    const isAdmin = permissionsService.isAdmin(opts.ctx.user.role as any);
+    return {
+      ...opts.ctx.user,
+      permissions,
+      canSeeFinancials,
+      isAdmin,
+    };
+  }),
   
   // Traditional registration
   register: publicProcedure
