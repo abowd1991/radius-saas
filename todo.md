@@ -670,3 +670,10 @@
 - [x] Group by (day/week/month) option
 - [x] Interactive charts with Recharts
 - [x] Reports page with tabs navigation
+
+
+## Light/Dark Theme Toggle (Jan 8, 2026) - COMPLETED
+- [x] Add theme toggle button in header
+- [x] Save user preference in localStorage
+- [x] Apply theme across all pages
+- [x] Smooth transition animation

@@ -44,13 +44,39 @@ import {
   Link2,
   Printer,
   BarChart3,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { SubscriptionBanner } from "./SubscriptionBanner";
+
+// Theme Toggle Button Component
+function ThemeToggleButton() {
+  const { theme, toggleTheme, switchable } = useTheme();
+  
+  if (!switchable || !toggleTheme) return null;
+  
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      className="transition-all duration-300"
+      title={theme === "dark" ? "تفعيل الوضع النهاري" : "تفعيل الوضع الليلي"}
+    >
+      {theme === "dark" ? (
+        <Sun className="h-5 w-5 text-yellow-500 transition-transform duration-300 rotate-0" />
+      ) : (
+        <Moon className="h-5 w-5 text-slate-700 transition-transform duration-300 rotate-0" />
+      )}
+    </Button>
+  );
+}
 
 // Menu items based on user role
 const getMenuItems = (role: string, t: (key: string) => string) => {
@@ -283,13 +309,18 @@ function DashboardLayoutContent({
                 <PanelLeft className={`h-4 w-4 text-muted-foreground ${direction === "rtl" ? "rotate-180" : ""}`} />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
-                  <Globe className="h-5 w-5 text-primary shrink-0" />
-                  <span className="font-semibold tracking-tight truncate">
-                    {t("app.name")}
-                  </span>
+                <div className="flex items-center justify-between w-full min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Globe className="h-5 w-5 text-primary shrink-0" />
+                    <span className="font-semibold tracking-tight truncate">
+                      {t("app.name")}
+                    </span>
+                  </div>
+                  <ThemeToggleButton />
                 </div>
-              ) : null}
+              ) : (
+                <ThemeToggleButton />
+              )}
             </div>
           </SidebarHeader>
 
@@ -409,6 +440,7 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            <ThemeToggleButton />
             <Button variant="ghost" size="icon" onClick={() => setLocation("/notifications")}>
               <Bell className="h-5 w-5" />
             </Button>
