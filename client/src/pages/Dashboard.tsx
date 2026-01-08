@@ -408,7 +408,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber((stats?.totalDataUsed || 0) / 1024)} GB
+              {formatNumber(((stats as any)?.totalDataUsed || 0) / 1024)} GB
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {language === "ar" ? "هذا الشهر" : "This month"}

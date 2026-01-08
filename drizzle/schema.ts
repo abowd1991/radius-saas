@@ -104,6 +104,7 @@ export const nasDevices = mysqlTable("nas", {
   vpnPassword: varchar("vpnPassword", { length: 128 }),
   vpnTunnelIp: varchar("vpnTunnelIp", { length: 45 }), // Assigned IP after VPN connects
   // Extended fields for our system
+  ownerId: int("ownerId").notNull(), // Owner user ID for multi-tenancy
   location: varchar("location", { length: 255 }),
   // MikroTik API settings (optional - for instant speed changes)
   apiEnabled: boolean("apiEnabled").default(false), // Enable/disable API access

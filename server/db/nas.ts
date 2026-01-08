@@ -2,10 +2,20 @@ import { eq, desc } from "drizzle-orm";
 import { getDb } from "../db";
 import { nasDevices, InsertNasDevice, radcheck, radreply } from "../../drizzle/schema";
 
+// Get all NAS devices (for super_admin only)
 export async function getAllNasDevices() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(nasDevices).orderBy(desc(nasDevices.createdAt));
+}
+
+// Get NAS devices by owner (for multi-tenancy)
+export async function getNasDevicesByOwner(ownerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(nasDevices)
+    .where(eq(nasDevices.ownerId, ownerId))
+    .orderBy(desc(nasDevices.createdAt));
 }
 
 export async function getActiveNasDevices() {
@@ -43,6 +53,8 @@ export async function createNas(data: {
   mikrotikApiPassword?: string;
   vpnUsername?: string;
   vpnPassword?: string;
+  apiEnabled?: boolean;
+  ownerId: number; // Required for multi-tenancy
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -61,6 +73,8 @@ export async function createNas(data: {
     mikrotikApiPassword: data.mikrotikApiPassword,
     vpnUsername: data.vpnUsername,
     vpnPassword: data.vpnPassword,
+    apiEnabled: data.apiEnabled || false,
+    ownerId: data.ownerId, // Multi-tenancy owner
     status: "active",
   });
   

@@ -558,3 +558,12 @@
 - [x] Add testApiConnection endpoint in routers.ts
 - [x] Add test button in NAS settings UI
 - [x] Show test result to user (success/failure with message)
+
+## Multi-Tenancy Implementation (SaaS)
+- [x] Add ownerId to NAS table and filter by owner
+- [x] Filter cards/batches by owner (using createdBy field)
+- [x] Filter sessions (radacct) by owner's NAS devices
+- [x] Update Dashboard to show owner-specific statistics
+- [x] Update all UI components to respect data isolation (API-driven)
+- [x] Test complete data isolation between clients (7 tests passed)
+- [x] Ensure Super Admin can see all data (verified in tests)

@@ -160,19 +160,29 @@ const plansRouter = router({
 // NAS DEVICES ROUTER
 // ============================================================================
 const nasRouter = router({
-  list: superAdminProcedure.query(async () => {
-    return nasDb.getAllNasDevices();
+  // List NAS devices - super_admin sees all, others see only their own
+  list: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role === 'super_admin') {
+      return nasDb.getAllNasDevices();
+    }
+    return nasDb.getNasDevicesByOwner(ctx.user.id);
   }),
 
-  getById: superAdminProcedure
+  // Get NAS by ID - check ownership for non-super_admin
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const nas = await nasDb.getNasById(input.id);
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return nas;
     }),
 
-  create: superAdminProcedure
+  // Create NAS - any authenticated user can create, ownerId is set automatically
+  create: protectedProcedure
     .input(z.object({
       name: z.string().min(1),
       ipAddress: z.string().min(1),
@@ -190,7 +200,9 @@ const nasRouter = router({
       vpnUsername: z.string().optional(),
       vpnPassword: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Set ownerId to current user
+      const ownerId = ctx.user.id;
       // For VPN connections, generate unique credentials if not provided
       if (input.connectionType !== 'public_ip') {
         // Generate VPN username if not provided
@@ -254,15 +266,19 @@ const nasRouter = router({
           console.error('Failed to create RADIUS entry in database:', error);
         }
       }
-      return nasDb.createNas(input);
+      return nasDb.createNas({ ...input, ownerId });
     }),
 
-  // Get setup scripts for a NAS device
-  getSetupScripts: superAdminProcedure
+  // Get setup scripts for a NAS device - check ownership
+  getSetupScripts: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const nas = await nasDb.getNasById(input.id);
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       
       // Get system settings for RADIUS server addresses
       const settings = await db.getSystemSettings();
@@ -439,7 +455,8 @@ const nasRouter = router({
       };
     }),
 
-  update: superAdminProcedure
+  // Update NAS - check ownership
+  update: protectedProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
@@ -455,13 +472,26 @@ const nasRouter = router({
       mikrotikApiUser: z.string().optional(),
       mikrotikApiPassword: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Check ownership for non-super_admin
+      const nas = await nasDb.getNasById(input.id);
+      if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return nasDb.updateNas(input.id, input);
     }),
 
-  delete: superAdminProcedure
+  // Delete NAS - check ownership
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Check ownership for non-super_admin
+      const nasCheck = await nasDb.getNasById(input.id);
+      if (!nasCheck) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
+      if (ctx.user.role !== 'super_admin' && nasCheck.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       // Delete NAS and get VPN username for cleanup
       const result = await nasDb.deleteNas(input.id);
       
@@ -504,8 +534,8 @@ const nasRouter = router({
       return { success: true };
     }),
 
-  // Test MikroTik API connection
-  testApiConnection: superAdminProcedure
+  // Test MikroTik API connection - any authenticated user can test
+  testApiConnection: protectedProcedure
     .input(z.object({
       nasIp: z.string(),
       apiPort: z.number().default(8728),
@@ -691,11 +721,16 @@ const vouchersRouter = router({
       return cardDb.getCardsByReseller(ctx.user.id, input);
     }),
 
+  // Get card by ID - check ownership
   getById: resellerProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const card = await cardDb.getCardById(input.id);
       if (!card) throw new TRPCError({ code: "NOT_FOUND", message: "Card not found" });
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return card;
     }),
 
@@ -740,15 +775,27 @@ const vouchersRouter = router({
       return cardDb.activateCard(input.serialNumber, ctx.user.id);
     }),
 
-  suspend: superAdminProcedure
+  // Suspend card - check ownership
+  suspend: resellerProcedure
     .input(z.object({ cardId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const card = await cardDb.getCardById(input.cardId);
+      if (!card) throw new TRPCError({ code: "NOT_FOUND", message: "Card not found" });
+      if (ctx.user.role !== 'super_admin' && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return cardDb.suspendCard(input.cardId);
     }),
 
-  unsuspend: superAdminProcedure
+  // Unsuspend card - check ownership
+  unsuspend: resellerProcedure
     .input(z.object({ cardId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const card = await cardDb.getCardById(input.cardId);
+      if (!card) throw new TRPCError({ code: "NOT_FOUND", message: "Card not found" });
+      if (ctx.user.role !== 'super_admin' && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return cardDb.unsuspendCard(input.cardId);
     }),
 
@@ -759,24 +806,41 @@ const vouchersRouter = router({
     return cardDb.getBatchesByResellerWithStats(ctx.user.id);
   }),
 
-  // Get batch with statistics
+  // Get batch with statistics - check ownership
   getBatchWithStats: resellerProcedure
     .input(z.object({ batchId: z.string() }))
-    .query(async ({ input }) => {
-      return cardDb.getBatchWithStats(input.batchId);
+    .query(async ({ ctx, input }) => {
+      const batch = await cardDb.getBatchWithStats(input.batchId);
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      return batch;
     }),
 
-  // Enable batch - activate all cards for RADIUS
-  enableBatch: superAdminProcedure
+  // Enable batch - activate all cards for RADIUS - check ownership
+  enableBatch: resellerProcedure
     .input(z.object({ batchId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const batch = await cardDb.getBatchWithStats(input.batchId);
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return cardDb.enableBatch(input.batchId);
     }),
 
-  // Disable batch - deactivate all cards for RADIUS and disconnect active sessions
-  disableBatch: superAdminProcedure
+  // Disable batch - deactivate all cards for RADIUS and disconnect active sessions - check ownership
+  disableBatch: resellerProcedure
     .input(z.object({ batchId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Check ownership first
+      const batch = await cardDb.getBatchWithStats(input.batchId);
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       // First, get all cards in the batch to disconnect their sessions
       const cards = await cardDb.getCardsByBatch(input.batchId);
       
@@ -798,8 +862,8 @@ const vouchersRouter = router({
       return cardDb.disableBatch(input.batchId);
     }),
 
-  // Update batch time settings
-  updateBatchTime: superAdminProcedure
+  // Update batch time settings - check ownership
+  updateBatchTime: resellerProcedure
     .input(z.object({
       batchId: z.string(),
       cardTimeValue: z.number().optional(),
@@ -808,7 +872,13 @@ const vouchersRouter = router({
       internetTimeUnit: z.enum(['hours', 'days']).optional(),
       timeFromActivation: z.boolean().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Check ownership first
+      const batch = await cardDb.getBatchWithStats(input.batchId);
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       const { batchId, ...data } = input;
       return cardDb.updateBatchTime(batchId, data);
     }),
@@ -1382,7 +1452,13 @@ const notificationsRouter = router({
 const dashboardRouter = router({
   getStats: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role === 'super_admin') {
+      // Super admin sees all stats
       const activeSessionsCount = await subscriptionDb.getActiveSessionsCount();
+      const allNasDevices = await nasDb.getAllNasDevices();
+      const allBatches = await cardDb.getAllBatchesWithStats();
+      const totalCards = allBatches.reduce((sum, b) => sum + (b.stats?.total || 0), 0);
+      const usedCards = allBatches.reduce((sum, b) => sum + (b.stats?.used || 0), 0);
+      
       return {
         totalUsers: 0,
         totalResellers: 0,
@@ -1392,22 +1468,33 @@ const dashboardRouter = router({
         pendingInvoices: 0,
         activeSessions: activeSessionsCount,
         openTickets: 0,
-      };
-    } else if (ctx.user.role === 'reseller') {
-      return {
-        totalClients: 0,
-        activeSubscriptions: 0,
-        walletBalance: "0.00",
-        pendingInvoices: 0,
-        totalCards: 0,
-        usedCards: 0,
+        totalNasDevices: allNasDevices.length,
+        totalCards,
+        usedCards,
       };
     } else {
+      // Client/Reseller sees only their own stats
+      const ownerNasDevices = await nasDb.getNasDevicesByOwner(ctx.user.id);
+      const ownerNasIps = ownerNasDevices.map(n => n.nasname);
+      
+      // Get active sessions for owner's NAS devices
+      const allSessions = await mikrotikApi.getActiveSessions();
+      const ownerSessions = allSessions.filter((s: any) => 
+        ownerNasIps.includes(s.nasIpAddress || s.nasipaddress)
+      );
+      
+      // Get owner's batches and cards
+      const ownerBatches = await cardDb.getBatchesByResellerWithStats(ctx.user.id);
+      const totalCards = ownerBatches.reduce((sum, b) => sum + (b.stats?.total || 0), 0);
+      const usedCards = ownerBatches.reduce((sum, b) => sum + (b.stats?.used || 0), 0);
+      
       return {
+        totalNasDevices: ownerNasDevices.length,
+        activeSessions: ownerSessions.length,
+        totalCards,
+        usedCards,
         walletBalance: "0.00",
-        activeSubscriptions: 0,
         pendingInvoices: 0,
-        totalDataUsed: 0,
       };
     }
   }),
@@ -1417,34 +1504,78 @@ const dashboardRouter = router({
 // SESSIONS ROUTER (Active RADIUS Sessions)
 // ============================================================================
 const sessionsRouter = router({
-  list: superAdminProcedure.query(async () => {
-    return mikrotikApi.getActiveSessions();
+  // List sessions - filter by owner's NAS devices
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const allSessions = await mikrotikApi.getActiveSessions();
+    
+    // Super admin sees all sessions
+    if (ctx.user.role === 'super_admin') {
+      return allSessions;
+    }
+    
+    // Get owner's NAS devices
+    const ownerNasDevices = await nasDb.getNasDevicesByOwner(ctx.user.id);
+    const ownerNasIps = ownerNasDevices.map(n => n.nasname);
+    
+    // Filter sessions by owner's NAS
+    return allSessions.filter((s: any) => ownerNasIps.includes(s.nasIpAddress || s.nasipaddress));
   }),
 
-  getByUsername: superAdminProcedure
+  // Get sessions by username - filter by owner's NAS
+  getByUsername: protectedProcedure
     .input(z.object({ username: z.string() }))
-    .query(async ({ input }) => {
-      return mikrotikApi.getSessionsByUsername(input.username);
+    .query(async ({ ctx, input }) => {
+      const sessions = await mikrotikApi.getSessionsByUsername(input.username);
+      
+      if (ctx.user.role === 'super_admin') {
+        return sessions;
+      }
+      
+      const ownerNasDevices = await nasDb.getNasDevicesByOwner(ctx.user.id);
+      const ownerNasIps = ownerNasDevices.map(n => n.nasname);
+      return sessions.filter((s: any) => ownerNasIps.includes(s.nasIpAddress || s.nasipaddress));
     }),
 
-  getByNas: superAdminProcedure
+  // Get sessions by NAS - check ownership
+  getByNas: protectedProcedure
     .input(z.object({ nasIp: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasByIp(input.nasIp);
+      if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return mikrotikApi.getSessionsByNas(input.nasIp);
     }),
 
-  disconnect: superAdminProcedure
+  // Disconnect session - check NAS ownership
+  disconnect: protectedProcedure
     .input(z.object({
       sessionId: z.string(),
       nasIp: z.string(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasByIp(input.nasIp);
+      if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
       return mikrotikApi.disconnectSession(input.sessionId, input.nasIp);
     }),
 
-  disconnectUser: superAdminProcedure
+  // Disconnect user - check card ownership
+  disconnectUser: protectedProcedure
     .input(z.object({ username: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Check if user owns the card
+      if (ctx.user.role !== 'super_admin') {
+        const card = await cardDb.getCardByUsername(input.username);
+        if (card && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+      }
       // Disconnect from RADIUS (MikroTik sessions)
       const radiusResult = await mikrotikApi.disconnectUserSessions(input.username);
       
