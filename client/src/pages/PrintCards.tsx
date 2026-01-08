@@ -235,18 +235,25 @@ export default function PrintCards() {
     }
   };
 
-  // Handle drag for text positioning
+  // Handle drag for text positioning (Mouse + Touch support)
   const handleMouseDown = (type: "username" | "password" | "qr") => (e: React.MouseEvent) => {
     e.preventDefault();
     setDragging(type);
   };
   
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  // Touch start handler for mobile devices
+  const handleTouchStart = (type: "username" | "password" | "qr") => (e: React.TouchEvent) => {
+    e.preventDefault();
+    setDragging(type);
+  };
+  
+  // Unified position calculation for both mouse and touch
+  const updatePosition = useCallback((clientX: number, clientY: number) => {
     if (!dragging || !previewRef.current) return;
     
     const rect = previewRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
     
     if (dragging === "username") {
       setUsernameSettings(prev => ({ ...prev, x, y }));
@@ -257,20 +264,45 @@ export default function PrintCards() {
     }
   }, [dragging]);
   
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    updatePosition(e.clientX, e.clientY);
+  }, [updatePosition]);
+  
+  // Touch move handler for mobile devices
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      updatePosition(touch.clientX, touch.clientY);
+    }
+  }, [updatePosition]);
+  
   const handleMouseUp = useCallback(() => {
+    setDragging(null);
+  }, []);
+  
+  // Touch end handler
+  const handleTouchEnd = useCallback(() => {
     setDragging(null);
   }, []);
   
   useEffect(() => {
     if (dragging) {
+      // Mouse events
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
+      // Touch events for mobile
+      window.addEventListener("touchmove", handleTouchMove, { passive: false });
+      window.addEventListener("touchend", handleTouchEnd);
+      window.addEventListener("touchcancel", handleTouchEnd);
       return () => {
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
+        window.removeEventListener("touchmove", handleTouchMove);
+        window.removeEventListener("touchend", handleTouchEnd);
+        window.removeEventListener("touchcancel", handleTouchEnd);
       };
     }
-  }, [dragging, handleMouseMove, handleMouseUp]);
+  }, [dragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
   // Handle generate
   const handleGenerate = () => {
@@ -596,6 +628,7 @@ export default function PrintCards() {
                           border: "1px dashed #3b82f6",
                         }}
                         onMouseDown={handleMouseDown("username")}
+                        onTouchStart={handleTouchStart("username")}
                       >
                         <div className="flex items-center gap-1">
                           <GripVertical className="h-3 w-3 text-blue-500" />
@@ -621,6 +654,7 @@ export default function PrintCards() {
                           border: "1px dashed #ef4444",
                         }}
                         onMouseDown={handleMouseDown("password")}
+                        onTouchStart={handleTouchStart("password")}
                       >
                         <div className="flex items-center gap-1">
                           <GripVertical className="h-3 w-3 text-red-500" />
@@ -646,6 +680,7 @@ export default function PrintCards() {
                             justifyContent: "center",
                           }}
                           onMouseDown={handleMouseDown("qr")}
+                          onTouchStart={handleTouchStart("qr")}
                         >
                           <div className="flex flex-col items-center">
                             <QrCode className="text-green-600" style={{ width: `${qrSettings.size * 0.6}px`, height: `${qrSettings.size * 0.6}px` }} />

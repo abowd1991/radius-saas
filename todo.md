@@ -760,3 +760,9 @@
 - [x] Fix Plans page: empty page, no add button for client - Updated canManagePlans to include client role
 - [x] Fix Vouchers page: no create cards button for client - Updated isReseller to include client role
 - [x] Fix Templates page: uploaded templates not showing for client - Updated resellerProcedure to include client role
+
+
+## Bug Fixes (Jan 9, 2026 - User Report)
+- [x] Fix card/batch isolation: client sees super_admin cards - must filter by ownerId (updated getCardsByReseller and getBatchesByResellerWithStats to use OR condition for resellerId and createdBy)
+- [x] Fix statistics showing wrong count (20 instead of 50) - related to isolation issue (fixed by proper filtering)
+- [x] Fix touch drag not working on mobile for text positioning on card template (added handleTouchStart, handleTouchMove, handleTouchEnd events)

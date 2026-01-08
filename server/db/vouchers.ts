@@ -1,4 +1,4 @@
-import { eq, desc, and, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, or, inArray, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { radiusCards, cardBatches, radcheck, radreply, radusergroup, plans, InsertRadiusCard, InsertCardBatch } from "../../drizzle/schema";
 import { nanoid } from "nanoid";
@@ -162,11 +162,13 @@ export async function getAllCards(options?: { status?: string; batchId?: string;
     .limit(options?.limit || 50);
 }
 
-export async function getCardsByReseller(resellerId: number, options?: { status?: string; batchId?: string; page?: number; limit?: number }) {
+// Get cards by reseller/owner - includes cards where user is resellerId OR createdBy
+export async function getCardsByReseller(userId: number, options?: { status?: string; batchId?: string; page?: number; limit?: number }) {
   const db = await getDb();
   if (!db) return [];
   
-  let conditions = [eq(radiusCards.resellerId, resellerId)];
+  // Filter by resellerId OR createdBy for multi-tenant isolation
+  let conditions = [or(eq(radiusCards.resellerId, userId), eq(radiusCards.createdBy, userId))];
   
   if (options?.status) {
     conditions.push(eq(radiusCards.status, options.status as any));
@@ -1136,14 +1138,16 @@ export async function getAllBatchesWithStats() {
   return batchesWithStats;
 }
 
-// Get batches by reseller with statistics
-export async function getBatchesByResellerWithStats(resellerId: number) {
+// Get batches by reseller/owner with statistics
+// Includes batches where user is resellerId OR createdBy (for multi-tenant isolation)
+export async function getBatchesByResellerWithStats(userId: number) {
   const db = await getDb();
   if (!db) return [];
   
+  // Get batches where user is either the reseller or the creator
   const batches = await db.select()
     .from(cardBatches)
-    .where(eq(cardBatches.resellerId, resellerId))
+    .where(or(eq(cardBatches.resellerId, userId), eq(cardBatches.createdBy, userId)))
     .orderBy(desc(cardBatches.createdAt));
   
   const batchesWithStats = await Promise.all(
