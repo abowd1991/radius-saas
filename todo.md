@@ -950,3 +950,11 @@
 - [x] Save font settings (size, family, color, align) to template
 - [x] Save QR settings (enabled, X, Y, size, domain) to template
 - [x] Show success message after saving
+
+## Template & PDF Fixes (Jan 9, 2026) - Issue #7
+- [x] Fix PDF Generator to read template settings correctly for ALL templates
+- [x] Fix username/password position from template settings in PDF output
+- [x] Fix font settings (size, family, color, align) from template in PDF output
+- [x] Fix QR settings from template in PDF output
+- [x] Convert HTML output to real PDF format
+- [x] Ensure PDF is print-ready with high quality

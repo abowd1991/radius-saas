@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE card_templates SET usernameY = 40, passwordY = 60, usernameAlign = 'center', passwordAlign = 'center' WHERE usernameY > 90 OR passwordY > 90;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute UPDATE card_templates SET usernameY = 40, passwordY = 60, usernameAlign = 'center', passwordAlign = 'center' WHERE usernameY > 90 OR passwordY > 90;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 416
+}

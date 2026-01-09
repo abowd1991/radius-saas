@@ -1,0 +1,8 @@
+{
+  "query": "UPDATE card_templates \nSET username_x = 42, username_y = 39, \n    password_x = 38, password_y = 64,\n    username_font_size = 20, password_font_size = 20\nWHERE id = 2;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute UPDATE card_templates \nSET username_x = 42, username_y = 39, \n    password_x = 38, password_y = 64,\n    username_font_size = 20, password_font_size = 20\nWHERE id = 2;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'username_x' in 'field list'"
+  ]
+}

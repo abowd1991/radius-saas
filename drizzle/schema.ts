@@ -565,19 +565,19 @@ export const cardTemplates = mysqlTable("card_templates", {
   
   // Username text settings
   usernameX: int("usernameX").default(50),
-  usernameY: int("usernameY").default(100),
+  usernameY: int("usernameY").default(40),
   usernameFontSize: int("usernameFontSize").default(14),
   usernameFontFamily: varchar("usernameFontFamily", { length: 50 }).default("Arial"),
   usernameFontColor: varchar("usernameFontColor", { length: 9 }).default("#000000"),
-  usernameAlign: mysqlEnum("usernameAlign", ["left", "center", "right"]).default("left"),
+  usernameAlign: mysqlEnum("usernameAlign", ["left", "center", "right"]).default("center"),
   
   // Password text settings
   passwordX: int("passwordX").default(50),
-  passwordY: int("passwordY").default(130),
+  passwordY: int("passwordY").default(60),
   passwordFontSize: int("passwordFontSize").default(14),
   passwordFontFamily: varchar("passwordFontFamily", { length: 50 }).default("Arial"),
   passwordFontColor: varchar("passwordFontColor", { length: 9 }).default("#000000"),
-  passwordAlign: mysqlEnum("passwordAlign", ["left", "center", "right"]).default("left"),
+  passwordAlign: mysqlEnum("passwordAlign", ["left", "center", "right"]).default("center"),
   
   // QR Code settings
   qrCodeEnabled: boolean("qrCodeEnabled").default(false),

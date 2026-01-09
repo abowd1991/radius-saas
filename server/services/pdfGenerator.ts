@@ -1,6 +1,7 @@
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
+import htmlPdf from "html-pdf-node";
 
 // Card data interface
 interface CardData {
@@ -167,13 +168,26 @@ async function generateTemplateCardHTML(
   cardHeight: number,
   qrDataUrl?: string
 ): Promise<string> {
+  console.log('[PDF] generateTemplateCardHTML called with template:', JSON.stringify({
+    usernameX: template.usernameX,
+    usernameY: template.usernameY,
+    usernameFontSize: template.usernameFontSize,
+    usernameFontColor: template.usernameFontColor,
+    passwordX: template.passwordX,
+    passwordY: template.passwordY,
+    passwordFontSize: template.passwordFontSize,
+    passwordFontColor: template.passwordFontColor,
+  }));
+  console.log('[PDF] Card data:', JSON.stringify({ username: card.username, password: card.password }));
+  
   const usernameFontFamily = getFontFamilyCSS(template.usernameFontFamily);
   const passwordFontFamily = getFontFamilyCSS(template.passwordFontFamily);
 
-  // Scale font size based on card dimensions (assuming preview is ~400px wide)
-  const fontScale = cardWidth / 40; // Convert mm to approximate scale factor
-  const scaledUsernameFontSize = Math.max(6, template.usernameFontSize * fontScale * 0.3);
-  const scaledPasswordFontSize = Math.max(6, template.passwordFontSize * fontScale * 0.3);
+  // Use font size directly - the preview shows what you get
+  // Font size is in pixels, we convert to pt for PDF (1px ≈ 0.75pt)
+  // But since cards are small, we use the px value directly as pt for better readability
+  const scaledUsernameFontSize = Math.max(8, template.usernameFontSize);
+  const scaledPasswordFontSize = Math.max(8, template.passwordFontSize);
   
   // QR Code size scaled to card dimensions
   const qrSizePercent = (template.qrCodeSize / 400) * 100; // Assuming 400px preview width
@@ -450,15 +464,44 @@ export async function generateCardsPDFHTML(batch: BatchData): Promise<string> {
   });
 }
 
-// Generate and save PDF HTML to S3
+// Generate and save real PDF to S3 using html-pdf-node
 export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Promise<{ pdfUrl: string; pdfKey: string }> {
   const html = await generateCardsPDFHTMLWithTemplate(batch);
-  const fileName = `batch-${batch.batchId}-${nanoid(6)}.html`;
-  const fileKey = `pdf/${fileName}`;
   
-  const { url } = await storagePut(fileKey, html, "text/html");
-  
-  return { pdfUrl: url, pdfKey: fileKey };
+  try {
+    // Use html-pdf-node for PDF generation
+    const file = { content: html };
+    const options = {
+      format: 'A4' as const,
+      printBackground: true,
+      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' },
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+      ],
+    };
+    
+    const pdfBuffer = await htmlPdf.generatePdf(file, options);
+    
+    // Upload PDF to S3
+    const fileName = `batch-${batch.batchId}-${nanoid(6)}.pdf`;
+    const fileKey = `pdf/${fileName}`;
+    
+    const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
+    
+    return { pdfUrl: url, pdfKey: fileKey };
+  } catch (error: any) {
+    console.error('PDF generation error:', error?.message || error);
+    console.error('PDF generation stack:', error?.stack);
+    
+    // Fallback to HTML if PDF generation fails
+    const fileName = `batch-${batch.batchId}-${nanoid(6)}.html`;
+    const fileKey = `pdf/${fileName}`;
+    const { url } = await storagePut(fileKey, html, "text/html");
+    return { pdfUrl: url, pdfKey: fileKey };
+  }
 }
 
 // Legacy save function

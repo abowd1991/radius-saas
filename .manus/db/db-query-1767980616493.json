@@ -1,0 +1,258 @@
+{
+  "query": "DESCRIBE card_templates;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute DESCRIBE card_templates;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "name",
+      "Type": "varchar(100)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "resellerId",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "imageUrl",
+      "Type": "text",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "imageKey",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "usernameX",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "50",
+      "Extra": ""
+    },
+    {
+      "Field": "usernameY",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "100",
+      "Extra": ""
+    },
+    {
+      "Field": "usernameFontSize",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "14",
+      "Extra": ""
+    },
+    {
+      "Field": "usernameFontFamily",
+      "Type": "enum('normal','clear','digital')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "normal",
+      "Extra": ""
+    },
+    {
+      "Field": "usernameFontColor",
+      "Type": "varchar(9)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "#000000",
+      "Extra": ""
+    },
+    {
+      "Field": "usernameAlign",
+      "Type": "enum('left','center','right')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "left",
+      "Extra": ""
+    },
+    {
+      "Field": "passwordX",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "50",
+      "Extra": ""
+    },
+    {
+      "Field": "passwordY",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "130",
+      "Extra": ""
+    },
+    {
+      "Field": "passwordFontSize",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "14",
+      "Extra": ""
+    },
+    {
+      "Field": "passwordFontFamily",
+      "Type": "enum('normal','clear','digital')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "normal",
+      "Extra": ""
+    },
+    {
+      "Field": "passwordFontColor",
+      "Type": "varchar(9)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "#000000",
+      "Extra": ""
+    },
+    {
+      "Field": "passwordAlign",
+      "Type": "enum('left','center','right')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "left",
+      "Extra": ""
+    },
+    {
+      "Field": "qrCodeEnabled",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "qrCodeX",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "200",
+      "Extra": ""
+    },
+    {
+      "Field": "qrCodeY",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "50",
+      "Extra": ""
+    },
+    {
+      "Field": "qrCodeSize",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "80",
+      "Extra": ""
+    },
+    {
+      "Field": "qrCodeDomain",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "cardWidth",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "350",
+      "Extra": ""
+    },
+    {
+      "Field": "cardHeight",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "200",
+      "Extra": ""
+    },
+    {
+      "Field": "cardsPerPage",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "8",
+      "Extra": ""
+    },
+    {
+      "Field": "marginTop",
+      "Type": "decimal(4,2)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1.8",
+      "Extra": ""
+    },
+    {
+      "Field": "marginHorizontal",
+      "Type": "decimal(4,2)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1.8",
+      "Extra": ""
+    },
+    {
+      "Field": "columnsPerPage",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "5",
+      "Extra": ""
+    },
+    {
+      "Field": "isDefault",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "updatedAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\nname\tvarchar(100)\tNO\t\tNULL\t\nresellerId\tint(11)\tYES\t\tNULL\t\nimageUrl\ttext\tNO\t\tNULL\t\nimageKey\ttext\tYES\t\tNULL\t\nusernameX\tint(11)\tYES\t\t50\t\nusernameY\tint(11)\tYES\t\t100\t\nusernameFontSize\tint(11)\tYES\t\t14\t\nusernameFontFamily\tenum('normal','clear','digital')\tYES\t\tnormal\t\nusernameFontColor\tvarchar(9)\tYES\t\t#000000\t\nusernameAlign\tenum('left','center','right')\tYES\t\tleft\t\npasswordX\tint(11)\tYES\t\t50\t\npasswordY\tint(11)\tYES\t\t130\t\npasswordFontSize\tint(11)\tYES\t\t14\t\npasswordFontFamily\tenum('normal','clear','digital')\tYES\t\tnormal\t\npasswordFontColor\tvarchar(9)\tYES\t\t#000000\t\npasswordAlign\tenum('left','center','right')\tYES\t\tleft\t\nqrCodeEnabled\ttinyint(1)\tYES\t\t1\t\nqrCodeX\tint(11)\tYES\t\t200\t\nqrCodeY\tint(11)\tYES\t\t50\t\nqrCodeSize\tint(11)\tYES\t\t80\t\nqrCodeDomain\tvarchar(255)\tYES\t\tNULL\t\ncardWidth\tint(11)\tYES\t\t350\t\ncardHeight\tint(11)\tYES\t\t200\t\ncardsPerPage\tint(11)\tYES\t\t8\t\nmarginTop\tdecimal(4,2)\tYES\t\t1.8\t\nmarginHorizontal\tdecimal(4,2)\tYES\t\t1.8\t\ncolumnsPerPage\tint(11)\tYES\t\t5\t\nisDefault\ttinyint(1)\tYES\t\t0\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nupdatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

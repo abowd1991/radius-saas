@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE card_templates \nSET usernameX = 42, usernameY = 39, \n    passwordX = 38, passwordY = 64,\n    usernameFontSize = 20, passwordFontSize = 20\nWHERE id = 2;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute UPDATE card_templates \nSET usernameX = 42, usernameY = 39, \n    passwordX = 38, passwordY = 64,\n    usernameFontSize = 20, passwordFontSize = 20\nWHERE id = 2;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 53
+}

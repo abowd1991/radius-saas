@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, name, usernameX, usernameY, usernameFontSize, usernameFontColor, passwordX, passwordY, passwordFontSize, passwordFontColor FROM card_templates WHERE name LIKE '%file_%' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, name, usernameX, usernameY, usernameFontSize, usernameFontColor, passwordX, passwordY, passwordFontSize, passwordFontColor FROM card_templates WHERE name LIKE '%file_%' LIMIT 1;",
+  "rows": [
+    {
+      "id": "50",
+      "name": "file_000000000c4c61f599626aea17abd8e9",
+      "usernameX": "50",
+      "usernameY": "40",
+      "usernameFontSize": "14",
+      "usernameFontColor": "#000000",
+      "passwordX": "50",
+      "passwordY": "60",
+      "passwordFontSize": "14",
+      "passwordFontColor": "#000000"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tusernameX\tusernameY\tusernameFontSize\tusernameFontColor\tpasswordX\tpasswordY\tpasswordFontSize\tpasswordFontColor\n50\tfile_000000000c4c61f599626aea17abd8e9\t50\t40\t14\t#000000\t50\t60\t14\t#000000\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

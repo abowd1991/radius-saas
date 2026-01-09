@@ -174,7 +174,7 @@ export default function PrintCards() {
   const generatePDF = trpc.vouchers.generateBatchPDFWithTemplate.useMutation({
     onSuccess: (data) => {
       setGeneratedUrl(data.htmlUrl);
-      toast.success(`تم إنشاء ملف PDF بنجاح (${data.cardsCount} كرت)`);
+      toast.success(`تم إنشاء ملف PDF بنجاح (${data.cardsCount} كرت) - جاهز للطباعة`);
       setGenerating(false);
     },
     onError: (error) => {
@@ -1358,7 +1358,7 @@ export default function PrintCards() {
                           const link = document.createElement('a');
                           link.style.display = 'none';
                           link.href = blobUrl;
-                          link.download = `cards-${selectedBatchId || Date.now()}.html`;
+                          link.download = `cards-${selectedBatchId || Date.now()}.pdf`;
                           link.setAttribute('target', '_self');
                           
                           // For iOS Safari compatibility

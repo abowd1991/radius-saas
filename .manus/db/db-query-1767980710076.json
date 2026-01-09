@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, name, usernameX, usernameY, passwordX, passwordY FROM card_templates;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, name, usernameX, usernameY, passwordX, passwordY FROM card_templates;",
+  "rows": [
+    {
+      "id": "50",
+      "name": "file_000000000c4c61f599626aea17abd8e9",
+      "usernameX": "50",
+      "usernameY": "40",
+      "passwordX": "50",
+      "passwordY": "60"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tusernameX\tusernameY\tpasswordX\tpasswordY\n50\tfile_000000000c4c61f599626aea17abd8e9\t50\t40\t50\t60\n",
+  "stderr": "",
+  "execution_time_ms": 50
+}

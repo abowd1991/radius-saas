@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, name, usernameX, usernameY, usernameFontSize, usernameFontFamily, usernameFontColor, usernameAlign, passwordX, passwordY, passwordFontSize, passwordFontFamily, passwordFontColor, passwordAlign, qrCodeEnabled, qrCodeX, qrCodeY, qrCodeSize FROM card_templates ORDER BY id DESC LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, name, usernameX, usernameY, usernameFontSize, usernameFontFamily, usernameFontColor, usernameAlign, passwordX, passwordY, passwordFontSize, passwordFontFamily, passwordFontColor, passwordAlign, qrCodeEnabled, qrCodeX, qrCodeY, qrCodeSize FROM card_templates ORDER BY id DESC LIMIT 3;",
+  "rows": [
+    {
+      "id": "50",
+      "name": "file_000000000c4c61f599626aea17abd8e9",
+      "usernameX": "50",
+      "usernameY": "100",
+      "usernameFontSize": "14",
+      "usernameFontFamily": "normal",
+      "usernameFontColor": "#000000",
+      "usernameAlign": "left",
+      "passwordX": "50",
+      "passwordY": "130",
+      "passwordFontSize": "14",
+      "passwordFontFamily": "normal",
+      "passwordFontColor": "#000000",
+      "passwordAlign": "left",
+      "qrCodeEnabled": "1",
+      "qrCodeX": "50",
+      "qrCodeY": "50",
+      "qrCodeSize": "80"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tusernameX\tusernameY\tusernameFontSize\tusernameFontFamily\tusernameFontColor\tusernameAlign\tpasswordX\tpasswordY\tpasswordFontSize\tpasswordFontFamily\tpasswordFontColor\tpasswordAlign\tqrCodeEnabled\tqrCodeX\tqrCodeY\tqrCodeSize\n50\tfile_000000000c4c61f599626aea17abd8e9\t50\t100\t14\tnormal\t#000000\tleft\t50\t130\t14\tnormal\t#000000\tleft\t1\t50\t50\t80\n",
+  "stderr": "",
+  "execution_time_ms": 221
+}
