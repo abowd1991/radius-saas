@@ -770,3 +770,5 @@
 
 ## UI Permissions Fix (Jan 9, 2026)
 - [x] Hide RADIUS settings tab for clients - should only be visible to super_admin (added conditional rendering based on user.role)
+
+- [x] Fix 404 error when clicking on Profile link in user menu (redirected to /settings instead of non-existent /profile)

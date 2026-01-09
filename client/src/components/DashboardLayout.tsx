@@ -407,7 +407,7 @@ function DashboardLayoutContent({
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setLocation("/profile")} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => setLocation("/settings")} className="cursor-pointer">
                   <UserCircle className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
                   <span>{t("auth.profile")}</span>
                 </DropdownMenuItem>
