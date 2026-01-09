@@ -766,3 +766,7 @@
 - [x] Fix card/batch isolation: client sees super_admin cards - must filter by ownerId (updated getCardsByReseller and getBatchesByResellerWithStats to use OR condition for resellerId and createdBy)
 - [x] Fix statistics showing wrong count (20 instead of 50) - related to isolation issue (fixed by proper filtering)
 - [x] Fix touch drag not working on mobile for text positioning on card template (added handleTouchStart, handleTouchMove, handleTouchEnd events)
+
+
+## UI Permissions Fix (Jan 9, 2026)
+- [x] Hide RADIUS settings tab for clients - should only be visible to super_admin (added conditional rendering based on user.role)

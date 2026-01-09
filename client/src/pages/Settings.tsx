@@ -99,15 +99,18 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-[500px]">
+        <TabsList className={`grid w-full ${user?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'} lg:w-[${user?.role === 'super_admin' ? '500' : '400'}px]`}>
           <TabsTrigger value="profile">
             <User className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
             {language === "ar" ? "الملف" : "Profile"}
           </TabsTrigger>
-          <TabsTrigger value="radius">
-            <Server className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
-            {language === "ar" ? "RADIUS" : "RADIUS"}
-          </TabsTrigger>
+          {/* RADIUS tab - only visible to super_admin */}
+          {user?.role === 'super_admin' && (
+            <TabsTrigger value="radius">
+              <Server className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+              {language === "ar" ? "RADIUS" : "RADIUS"}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="notifications">
             <Bell className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
             {language === "ar" ? "الإشعارات" : "Notifications"}
@@ -166,7 +169,8 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        {/* RADIUS Tab */}
+        {/* RADIUS Tab - only visible to super_admin */}
+        {user?.role === 'super_admin' && (
         <TabsContent value="radius">
           <Card>
             <CardHeader>
@@ -289,6 +293,7 @@ export default function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
         {/* Notifications Tab */}
         <TabsContent value="notifications">
