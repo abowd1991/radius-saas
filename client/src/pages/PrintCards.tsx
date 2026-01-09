@@ -176,6 +176,48 @@ export default function PrintCards() {
     }
   }, [defaultTemplate, selectedTemplateId]);
 
+  // Load template settings when template is selected
+  useEffect(() => {
+    if (selectedTemplateId && templates) {
+      const template = templates.find(t => t.id === selectedTemplateId);
+      if (template) {
+        // Load username settings from template
+        setUsernameSettings({
+          x: template.usernameX ?? 50,
+          y: template.usernameY ?? 40,
+          fontSize: template.usernameFontSize ?? 14,
+          fontFamily: template.usernameFontFamily ?? "Arial",
+          color: template.usernameFontColor ?? "#000000",
+          align: (template.usernameAlign as "left" | "center" | "right") ?? "center",
+        });
+        // Load password settings from template
+        setPasswordSettings({
+          x: template.passwordX ?? 50,
+          y: template.passwordY ?? 60,
+          fontSize: template.passwordFontSize ?? 14,
+          fontFamily: template.passwordFontFamily ?? "Arial",
+          color: template.passwordFontColor ?? "#FF0000",
+          align: (template.passwordAlign as "left" | "center" | "right") ?? "center",
+        });
+        // Load QR settings from template
+        if (template.qrCodeEnabled !== undefined && template.qrCodeEnabled !== null) {
+          setQrEnabled(template.qrCodeEnabled);
+        }
+        if (template.qrCodeX !== undefined && template.qrCodeY !== undefined) {
+          setQrSettings(prev => ({
+            ...prev,
+            x: template.qrCodeX ?? prev.x,
+            y: template.qrCodeY ?? prev.y,
+            size: template.qrCodeSize ?? prev.size,
+          }));
+        }
+        if (template.qrCodeDomain) {
+          setQrDomain(template.qrCodeDomain);
+        }
+      }
+    }
+  }, [selectedTemplateId, templates]);
+
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);

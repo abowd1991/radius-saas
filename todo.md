@@ -920,3 +920,11 @@
 - [x] Ensure username font settings are applied in preview and PDF
 - [x] Ensure password font settings are applied in preview and PDF
 - [x] Support all font families: Arial, Tahoma, Courier New, Verdana, Georgia, Impact + legacy (normal, clear, digital)
+
+## Fix Font Settings Not Applied in Generated PDF (Jan 9, 2026) - Issue #2
+- [x] Debug data flow: Frontend → API → PDF Generator
+- [x] Add useEffect to load template settings when template is selected
+- [x] Load username settings (x, y, fontSize, fontFamily, color, align) from template
+- [x] Load password settings (x, y, fontSize, fontFamily, color, align) from template
+- [x] Load QR settings from template
+- [x] Now preview and PDF will reflect saved template settings
