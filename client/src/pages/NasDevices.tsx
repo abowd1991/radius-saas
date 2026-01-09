@@ -541,14 +541,159 @@ export default function NasDevices() {
     </form>
   );
 
-  // Special Tools Tab Content
-  const SpecialToolsContent = () => (
-    <div className="space-y-6 py-4">
-      <div className="text-center text-muted-foreground">
-        {language === "ar" ? "أدوات خاصة للشبكات - قريباً" : "Special network tools - Coming soon"}
+  // API Connection Tab Content
+  const SpecialToolsContent = () => {
+    const [selectedNas, setSelectedNas] = useState<string>("");
+    const [apiPort, setApiPort] = useState("8728");
+    const [apiUser, setApiUser] = useState("admin");
+    const [apiPassword, setApiPassword] = useState("");
+    const [testResult, setTestResult] = useState<{success: boolean; message: string} | null>(null);
+    const [isTesting, setIsTesting] = useState(false);
+
+    const testApi = trpc.nas.testApiConnection.useMutation({
+      onSuccess: (data) => {
+        const result = data as { success: boolean; message: string };
+        setTestResult(result);
+        setIsTesting(false);
+        if (result.success) {
+          toast.success(language === "ar" ? "اتصال ناجح!" : "Connection successful!");
+        } else {
+          toast.error(result.message);
+        }
+      },
+      onError: (error) => {
+        setTestResult({ success: false, message: error.message });
+        setIsTesting(false);
+        toast.error(error.message);
+      },
+    });
+
+    const handleTest = () => {
+      if (!selectedNas) {
+        toast.error(language === "ar" ? "يرجى اختيار شبكة" : "Please select a network");
+        return;
+      }
+      if (!apiPassword) {
+        toast.error(language === "ar" ? "يرجى إدخال كلمة مرور API" : "Please enter API password");
+        return;
+      }
+      setIsTesting(true);
+      setTestResult(null);
+      testApi.mutate({
+        nasIp: selectedNas,
+        apiPort: parseInt(apiPort),
+        apiUser,
+        apiPassword,
+      });
+    };
+
+    return (
+      <div className="space-y-6 py-4">
+        <div className="text-center mb-6">
+          <h3 className="text-lg font-semibold mb-2">
+            {language === "ar" ? "اختبار اتصال MikroTik API" : "Test MikroTik API Connection"}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {language === "ar" 
+              ? "اختبر الاتصال بـ API لأي شبكة موجودة"
+              : "Test API connection to any existing network"
+            }
+          </p>
+        </div>
+
+        <div className="max-w-md mx-auto space-y-4">
+          {/* Select Network */}
+          <div className="space-y-2">
+            <Label>{language === "ar" ? "اختر الشبكة" : "Select Network"}</Label>
+            <Select value={selectedNas} onValueChange={setSelectedNas}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder={language === "ar" ? "اختر شبكة..." : "Select network..."} />
+              </SelectTrigger>
+              <SelectContent>
+                {devices?.filter(d => d.type === "mikrotik").map((device) => (
+                  <SelectItem key={device.id} value={device.nasname}>
+                    {device.shortname} ({device.nasname})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* API Port */}
+          <div className="space-y-2">
+            <Label>{language === "ar" ? "منفذ API" : "API Port"}</Label>
+            <Input
+              type="number"
+              value={apiPort}
+              onChange={(e) => setApiPort(e.target.value)}
+              placeholder="8728"
+              className="bg-background"
+            />
+          </div>
+
+          {/* API Username */}
+          <div className="space-y-2">
+            <Label>{language === "ar" ? "اسم مستخدم API" : "API Username"}</Label>
+            <Input
+              value={apiUser}
+              onChange={(e) => setApiUser(e.target.value)}
+              placeholder="admin"
+              className="bg-background"
+            />
+          </div>
+
+          {/* API Password */}
+          <div className="space-y-2">
+            <Label>{language === "ar" ? "كلمة مرور API" : "API Password"}</Label>
+            <Input
+              type="password"
+              value={apiPassword}
+              onChange={(e) => setApiPassword(e.target.value)}
+              placeholder="••••••••"
+              className="bg-background"
+            />
+          </div>
+
+          {/* Test Button */}
+          <Button
+            onClick={handleTest}
+            disabled={isTesting || !selectedNas}
+            className="w-full gap-2"
+          >
+            {isTesting ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                {language === "ar" ? "جاري الاختبار..." : "Testing..."}
+              </>
+            ) : (
+              <>
+                <Wifi className="h-4 w-4" />
+                {language === "ar" ? "اختبار الاتصال" : "Test Connection"}
+              </>
+            )}
+          </Button>
+
+          {/* Test Result */}
+          {testResult && (
+            <div className={`p-4 rounded-lg flex items-center gap-3 ${
+              testResult.success 
+                ? 'bg-green-500/10 border border-green-500/30' 
+                : 'bg-red-500/10 border border-red-500/30'
+            }`}>
+              {testResult.success ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <XCircle className="h-5 w-5 text-red-500" />
+              )}
+              <span className={testResult.success ? 'text-green-600' : 'text-red-600'}>
+                {testResult.message}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -576,8 +721,8 @@ export default function NasDevices() {
                 {language === "ar" ? "إنشاء شبكة جديدة" : "Create Network"}
               </TabsTrigger>
               <TabsTrigger value="tools" className="gap-2">
-                <Settings className="h-4 w-4" />
-                {language === "ar" ? "ادوات خاصة" : "Special Tools"}
+                <Wifi className="h-4 w-4" />
+                {language === "ar" ? "اتصال API" : "API Connection"}
               </TabsTrigger>
             </TabsList>
             

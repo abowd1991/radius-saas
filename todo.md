@@ -893,3 +893,8 @@
 ## PDF Download Button Fix (Jan 9, 2026) - Issue #2
 - [x] Fix PDF download button not triggering file download (using fetch + blob approach)
 - [x] Ensure download button works on mobile browsers (with fallback to open in new tab)
+
+## Rename "أدوات خاصة" Tab to "اتصال API" (Jan 9, 2026)
+- [x] Rename tab from "أدوات خاصة" to "اتصال API"
+- [x] Move MikroTik API settings to this tab (with network selector)
+- [x] Update tab icon to Wifi icon
