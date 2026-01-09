@@ -143,6 +143,15 @@ export async function assignReseller(userId: number, resellerId: number) {
   return { success: true };
 }
 
+export async function updateUser(userId: number, data: { name?: string; phone?: string; address?: string; avatarUrl?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(users).set(data).where(eq(users.id, userId));
+  const updated = await db.select().from(users).where(eq(users.id, userId));
+  return updated[0];
+}
+
 
 // ============================================================================
 // SYSTEM SETTINGS

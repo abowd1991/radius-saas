@@ -772,3 +772,8 @@
 - [x] Hide RADIUS settings tab for clients - should only be visible to super_admin (added conditional rendering based on user.role)
 
 - [x] Fix 404 error when clicking on Profile link in user menu (redirected to /settings instead of non-existent /profile)
+
+
+## Profile Features (Jan 9, 2026)
+- [x] Add profile picture upload (avatar) with S3 storage (added /api/upload/avatar endpoint with multer + S3)
+- [x] Add password reset via email link (using existing requestPasswordReset + new requestPasswordChange for logged-in users)

@@ -14,6 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   User,
@@ -27,17 +35,36 @@ import {
   Save,
   Server,
   Network,
+  Camera,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, refresh: refetchUser } = useAuth();
   const { t, language, direction, setLanguage } = useLanguage();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [invoiceNotifications, setInvoiceNotifications] = useState(true);
   const [supportNotifications, setSupportNotifications] = useState(true);
+  
+  // Profile form state
+  const [profileName, setProfileName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileAddress, setProfileAddress] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Password reset state
+  const [showPasswordResetDialog, setShowPasswordResetDialog] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordResetStep, setPasswordResetStep] = useState<'request' | 'verify'>('request');
+  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
   
   // RADIUS Settings
   const [radiusPublicIp, setRadiusPublicIp] = useState('');
@@ -47,6 +74,15 @@ export default function Settings() {
   
   // Load RADIUS settings
   const { data: systemSettings, refetch: refetchSettings } = trpc.settings.getAll.useQuery();
+  
+  // Initialize profile form with user data
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name || '');
+      setProfilePhone(user.phone || '');
+      setProfileAddress(user.address || '');
+    }
+  }, [user]);
   
   // Update local state when settings are loaded
   useEffect(() => {
@@ -67,6 +103,50 @@ export default function Settings() {
     },
   });
   
+  const updateProfileMutation = trpc.auth.updateProfile.useMutation({
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تحديث الملف الشخصي' : 'Profile updated');
+      refetchUser();
+    },
+    onError: (error: { message: string }) => {
+      toast.error(error.message);
+    },
+  });
+  
+  const updateAvatarMutation = trpc.auth.updateAvatar.useMutation({
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تحديث الصورة الشخصية' : 'Avatar updated');
+      refetchUser();
+    },
+    onError: (error: { message: string }) => {
+      toast.error(error.message);
+    },
+  });
+  
+  const requestPasswordChangeMutation = trpc.auth.requestPasswordChange.useMutation({
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم إرسال رمز التحقق لبريدك الإلكتروني' : 'Verification code sent to your email');
+      setPasswordResetStep('verify');
+    },
+    onError: (error: { message: string }) => {
+      toast.error(error.message);
+    },
+  });
+  
+  const resetPasswordMutation = trpc.auth.resetPassword.useMutation({
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully');
+      setShowPasswordResetDialog(false);
+      setPasswordResetStep('request');
+      setResetCode('');
+      setNewPassword('');
+      setConfirmPassword('');
+    },
+    onError: (error: { message: string }) => {
+      toast.error(error.message);
+    },
+  });
+  
   const handleSaveRadiusSettings = async () => {
     setRadiusSettingsLoading(true);
     try {
@@ -78,14 +158,90 @@ export default function Settings() {
     }
   };
 
-  const handleSaveProfile = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast.success(language === "ar" ? "تم حفظ الإعدادات" : "Settings saved");
+    setProfileLoading(true);
+    try {
+      await updateProfileMutation.mutateAsync({
+        name: profileName,
+        phone: profilePhone,
+        address: profileAddress,
+      });
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
-  const handleChangePassword = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    toast.success(language === "ar" ? "تم تغيير كلمة المرور" : "Password changed");
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error(language === 'ar' ? 'يرجى اختيار صورة' : 'Please select an image');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(language === 'ar' ? 'حجم الصورة كبير جداً (الحد الأقصى 5MB)' : 'Image too large (max 5MB)');
+      return;
+    }
+    
+    setAvatarUploading(true);
+    try {
+      // Upload to S3 via API
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const { url } = await response.json();
+      await updateAvatarMutation.mutateAsync({ avatarUrl: url });
+    } catch (error) {
+      toast.error(language === 'ar' ? 'فشل رفع الصورة' : 'Failed to upload image');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleRequestPasswordChange = async () => {
+    setPasswordResetLoading(true);
+    try {
+      await requestPasswordChangeMutation.mutateAsync();
+    } finally {
+      setPasswordResetLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error(language === 'ar' ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast.error(language === 'ar' ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+      return;
+    }
+    
+    setPasswordResetLoading(true);
+    try {
+      await resetPasswordMutation.mutateAsync({
+        email: user?.email || '',
+        code: resetCode,
+        newPassword: newPassword,
+      });
+    } finally {
+      setPasswordResetLoading(false);
+    }
   };
 
   return (
@@ -127,46 +283,120 @@ export default function Settings() {
 
         {/* Profile Tab */}
         <TabsContent value="profile">
-          <Card>
-            <CardHeader>
-              <CardTitle>{language === "ar" ? "معلومات الملف الشخصي" : "Profile Information"}</CardTitle>
-              <CardDescription>
-                {language === "ar" ? "تحديث معلومات حسابك الشخصية" : "Update your personal account information"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSaveProfile} className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">{t("common.name")}</Label>
-                    <Input id="name" defaultValue={user?.name || ""} />
+          <div className="space-y-6">
+            {/* Avatar Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{language === "ar" ? "الصورة الشخصية" : "Profile Picture"}</CardTitle>
+                <CardDescription>
+                  {language === "ar" ? "قم برفع صورة شخصية لحسابك" : "Upload a profile picture for your account"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-6">
+                  <div className="relative">
+                    <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-border">
+                      {user?.avatarUrl ? (
+                        <img src={user.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                      ) : (
+                        <User className="h-12 w-12 text-muted-foreground" />
+                      )}
+                    </div>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={avatarUploading}
+                      className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                    >
+                      {avatarUploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Camera className="h-4 w-4" />
+                      )}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">{t("common.email")}</Label>
-                    <Input id="email" type="email" defaultValue={user?.email || ""} />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">{user?.name || user?.username}</p>
+                    <p className="text-sm text-muted-foreground">{user?.email}</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={avatarUploading}
+                    >
+                      <Upload className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+                      {language === "ar" ? "رفع صورة جديدة" : "Upload new picture"}
+                    </Button>
                   </div>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">{t("common.phone")}</Label>
-                    <Input id="phone" type="tel" />
+              </CardContent>
+            </Card>
+
+            {/* Profile Info Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{language === "ar" ? "معلومات الملف الشخصي" : "Profile Information"}</CardTitle>
+                <CardDescription>
+                  {language === "ar" ? "تحديث معلومات حسابك الشخصية" : "Update your personal account information"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSaveProfile} className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">{t("common.name")}</Label>
+                      <Input 
+                        id="name" 
+                        value={profileName}
+                        onChange={(e) => setProfileName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">{t("common.email")}</Label>
+                      <Input id="email" type="email" value={user?.email || ""} disabled />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">{t("common.phone")}</Label>
+                      <Input 
+                        id="phone" 
+                        type="tel" 
+                        value={profilePhone}
+                        onChange={(e) => setProfilePhone(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="company">{language === "ar" ? "اسم الشركة" : "Company Name"}</Label>
+                      <Input id="company" disabled placeholder={language === "ar" ? "قريباً" : "Coming soon"} />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="company">{language === "ar" ? "اسم الشركة" : "Company Name"}</Label>
-                    <Input id="company" />
+                    <Label htmlFor="address">{language === "ar" ? "العنوان" : "Address"}</Label>
+                    <Input 
+                      id="address" 
+                      value={profileAddress}
+                      onChange={(e) => setProfileAddress(e.target.value)}
+                    />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">{language === "ar" ? "العنوان" : "Address"}</Label>
-                  <Input id="address" />
-                </div>
-                <Button type="submit">
-                  <Save className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
-                  {t("common.save")}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                  <Button type="submit" disabled={profileLoading}>
+                    {profileLoading ? (
+                      <Loader2 className={`h-4 w-4 animate-spin ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+                    ) : (
+                      <Save className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+                    )}
+                    {t("common.save")}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* RADIUS Tab - only visible to super_admin */}
@@ -280,7 +510,7 @@ export default function Settings() {
               >
                 {radiusSettingsLoading ? (
                   <>
-                    <span className="animate-spin mr-2">⏳</span>
+                    <Loader2 className={`h-4 w-4 animate-spin ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
                     {language === "ar" ? "جاري الحفظ..." : "Saving..."}
                   </>
                 ) : (
@@ -309,7 +539,7 @@ export default function Settings() {
                 <div className="space-y-0.5">
                   <Label>{language === "ar" ? "إشعارات البريد الإلكتروني" : "Email Notifications"}</Label>
                   <p className="text-sm text-muted-foreground">
-                    {language === "ar" ? "استلام الإشعارات عبر البريد الإلكتروني" : "Receive notifications via email"}
+                    {language === "ar" ? "استلام إشعارات عبر البريد الإلكتروني" : "Receive notifications via email"}
                   </p>
                 </div>
                 <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
@@ -319,7 +549,7 @@ export default function Settings() {
                 <div className="space-y-0.5">
                   <Label>{language === "ar" ? "إشعارات الدفع" : "Push Notifications"}</Label>
                   <p className="text-sm text-muted-foreground">
-                    {language === "ar" ? "استلام إشعارات فورية في المتصفح" : "Receive instant browser notifications"}
+                    {language === "ar" ? "إشعارات فورية في المتصفح" : "Instant browser notifications"}
                   </p>
                 </div>
                 <Switch checked={pushNotifications} onCheckedChange={setPushNotifications} />
@@ -329,7 +559,7 @@ export default function Settings() {
                 <div className="space-y-0.5">
                   <Label>{language === "ar" ? "إشعارات الفواتير" : "Invoice Notifications"}</Label>
                   <p className="text-sm text-muted-foreground">
-                    {language === "ar" ? "إشعارات عند إنشاء فواتير جديدة" : "Notifications for new invoices"}
+                    {language === "ar" ? "إشعارات عند إصدار فاتورة جديدة" : "Notifications for new invoices"}
                   </p>
                 </div>
                 <Switch checked={invoiceNotifications} onCheckedChange={setInvoiceNotifications} />
@@ -337,7 +567,7 @@ export default function Settings() {
               <Separator />
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>{language === "ar" ? "إشعارات الدعم الفني" : "Support Notifications"}</Label>
+                  <Label>{language === "ar" ? "إشعارات الدعم" : "Support Notifications"}</Label>
                   <p className="text-sm text-muted-foreground">
                     {language === "ar" ? "إشعارات عند الرد على تذاكر الدعم" : "Notifications for support ticket replies"}
                   </p>
@@ -359,28 +589,30 @@ export default function Settings() {
               <CardHeader>
                 <CardTitle>{language === "ar" ? "تغيير كلمة المرور" : "Change Password"}</CardTitle>
                 <CardDescription>
-                  {language === "ar" ? "تحديث كلمة مرور حسابك" : "Update your account password"}
+                  {language === "ar" ? "سيتم إرسال رمز التحقق إلى بريدك الإلكتروني" : "A verification code will be sent to your email"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleChangePassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="current-password">{language === "ar" ? "كلمة المرور الحالية" : "Current Password"}</Label>
-                    <Input id="current-password" type="password" />
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
+                    <Mail className="h-10 w-10 text-primary" />
+                    <div className="flex-1">
+                      <p className="font-medium">{user?.email}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {language === "ar" 
+                          ? "سيتم إرسال رمز التحقق إلى هذا البريد" 
+                          : "Verification code will be sent to this email"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">{language === "ar" ? "كلمة المرور الجديدة" : "New Password"}</Label>
-                    <Input id="new-password" type="password" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">{language === "ar" ? "تأكيد كلمة المرور" : "Confirm Password"}</Label>
-                    <Input id="confirm-password" type="password" />
-                  </div>
-                  <Button type="submit">
+                  <Button 
+                    onClick={() => setShowPasswordResetDialog(true)}
+                    className="w-full sm:w-auto"
+                  >
                     <Key className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
                     {language === "ar" ? "تغيير كلمة المرور" : "Change Password"}
                   </Button>
-                </form>
+                </div>
               </CardContent>
             </Card>
 
@@ -422,7 +654,6 @@ export default function Settings() {
                 <Label>{language === "ar" ? "اللغة" : "Language"}</Label>
                 <Select value={language} onValueChange={(value: "ar" | "en") => setLanguage(value)}>
                   <SelectTrigger className="w-[200px]">
-                    <Globe className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -434,22 +665,97 @@ export default function Settings() {
               <Separator />
               <div className="space-y-2">
                 <Label>{language === "ar" ? "السمة" : "Theme"}</Label>
-                <Select defaultValue="light">
-                  <SelectTrigger className="w-[200px]">
-                    <Palette className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">{language === "ar" ? "فاتح" : "Light"}</SelectItem>
-                    <SelectItem value="dark">{language === "ar" ? "داكن" : "Dark"}</SelectItem>
-                    <SelectItem value="system">{language === "ar" ? "تلقائي" : "System"}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <p className="text-sm text-muted-foreground">
+                  {language === "ar" ? "يمكنك تغيير السمة من الزر في الشريط العلوي" : "You can change the theme from the button in the top bar"}
+                </p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Password Reset Dialog */}
+      <Dialog open={showPasswordResetDialog} onOpenChange={setShowPasswordResetDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {language === "ar" ? "تغيير كلمة المرور" : "Change Password"}
+            </DialogTitle>
+            <DialogDescription>
+              {passwordResetStep === 'request' 
+                ? (language === "ar" 
+                    ? "سيتم إرسال رمز التحقق إلى بريدك الإلكتروني" 
+                    : "A verification code will be sent to your email")
+                : (language === "ar" 
+                    ? "أدخل رمز التحقق وكلمة المرور الجديدة" 
+                    : "Enter the verification code and new password")
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {passwordResetStep === 'request' ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
+                <Mail className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="font-medium">{user?.email}</p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowPasswordResetDialog(false)}>
+                  {language === "ar" ? "إلغاء" : "Cancel"}
+                </Button>
+                <Button onClick={handleRequestPasswordChange} disabled={passwordResetLoading}>
+                  {passwordResetLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  {language === "ar" ? "إرسال الرمز" : "Send Code"}
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{language === "ar" ? "رمز التحقق" : "Verification Code"}</Label>
+                <Input 
+                  placeholder="123456"
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value)}
+                  maxLength={6}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === "ar" ? "كلمة المرور الجديدة" : "New Password"}</Label>
+                <Input 
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === "ar" ? "تأكيد كلمة المرور" : "Confirm Password"}</Label>
+                <Input 
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                  setPasswordResetStep('request');
+                  setResetCode('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}>
+                  {language === "ar" ? "رجوع" : "Back"}
+                </Button>
+                <Button onClick={handleResetPassword} disabled={passwordResetLoading}>
+                  {passwordResetLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  {language === "ar" ? "تغيير كلمة المرور" : "Change Password"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

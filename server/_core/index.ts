@@ -10,6 +10,10 @@ import { serveStatic, setupVite } from "./vite";
 import { startMonitor } from "../services/sessionMonitor";
 import { startSubscriptionNotifier } from "../services/subscriptionNotifier";
 import { startAlertMonitor } from "../services/alertMonitor";
+import multer from "multer";
+import { storagePut } from "../storage";
+import { sdk } from "./sdk";
+import { COOKIE_NAME } from "@shared/const";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -38,6 +42,45 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  
+  // Avatar upload endpoint
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  });
+  
+  app.post("/api/upload/avatar", upload.single("file"), async (req, res) => {
+    try {
+      // Verify user is authenticated
+      const token = req.cookies?.[COOKIE_NAME];
+      if (!token) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const session = await sdk.verifySession(token);
+      if (!session) {
+        return res.status(401).json({ error: "Invalid session" });
+      }
+      
+      const file = (req as any).file;
+      if (!file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      // Generate unique filename
+      const ext = file.originalname.split(".").pop() || "jpg";
+      const filename = `avatars/${session.openId}-${Date.now()}.${ext}`;
+      
+      // Upload to S3
+      const { url } = await storagePut(filename, file.buffer, file.mimetype);
+      
+      res.json({ url });
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      res.status(500).json({ error: "Upload failed" });
+    }
+  });
+  
   // tRPC API
   app.use(
     "/api/trpc",

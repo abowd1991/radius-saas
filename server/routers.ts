@@ -158,6 +158,38 @@ const authRouter = router({
       }
       return { success: true, message: "Password reset successful! You can now login." };
     }),
+
+  // Update profile
+  updateProfile: protectedProcedure
+    .input(z.object({
+      name: z.string().optional(),
+      phone: z.string().optional(),
+      address: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await db.updateUser(ctx.user.id, input);
+      return { success: true, user: result };
+    }),
+
+  // Update avatar
+  updateAvatar: protectedProcedure
+    .input(z.object({
+      avatarUrl: z.string().url("Invalid URL"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await db.updateUser(ctx.user.id, { avatarUrl: input.avatarUrl });
+      return { success: true, avatarUrl: input.avatarUrl };
+    }),
+
+  // Request password change (for logged-in users)
+  requestPasswordChange: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      if (!ctx.user.email) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No email associated with this account" });
+      }
+      const result = await authService.requestPasswordReset(ctx.user.email);
+      return { success: true, message: "Password reset code sent to your email" };
+    }),
 });
 
 // ============================================================================
