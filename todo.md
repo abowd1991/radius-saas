@@ -777,3 +777,7 @@
 ## Profile Features (Jan 9, 2026)
 - [x] Add profile picture upload (avatar) with S3 storage (added /api/upload/avatar endpoint with multer + S3)
 - [x] Add password reset via email link (using existing requestPasswordReset + new requestPasswordChange for logged-in users)
+
+
+## Bug Fix - Avatar Upload (Jan 9, 2026)
+- [x] Fix avatar upload failing - added cookie-parser middleware to read auth cookies

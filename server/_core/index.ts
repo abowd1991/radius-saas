@@ -14,6 +14,7 @@ import multer from "multer";
 import { storagePut } from "../storage";
 import { sdk } from "./sdk";
 import { COOKIE_NAME } from "@shared/const";
+import cookieParser from "cookie-parser";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +41,7 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.use(cookieParser());
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   
