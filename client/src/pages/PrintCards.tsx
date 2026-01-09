@@ -1225,6 +1225,21 @@ export default function PrintCards() {
                       معاينة الملف
                     </Button>
                     <Button
+                      variant="default"
+                      className="w-full"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = generatedUrl;
+                        link.download = `cards-${Date.now()}.pdf`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                    >
+                      <Download className="ml-2 h-4 w-4" />
+                      تحميل الملف
+                    </Button>
+                    <Button
                       variant="secondary"
                       className="w-full"
                       onClick={() => {
