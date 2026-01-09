@@ -877,3 +877,15 @@
 
 ## PDF Download Button Fix (Jan 9, 2026)
 - [x] Keep preview button, add new download button with direct download link (for all users)
+
+## Fix Card Time Logic (Jan 9, 2026)
+- [x] Update Session Monitor to check Max-All-Session (total internet time)
+- [x] Update Session Monitor to check Expiration (card validity date)
+- [x] Auto-disconnect when Max-All-Session is exhausted (even if validity not expired)
+- [x] Auto-disconnect when Expiration reached (even if internet time remains)
+- [x] Update card status to 'used' when internet time exhausted
+- [x] Update card status to 'expired' when validity date reached
+- [x] Support intermittent usage (connect/disconnect multiple times within validity period)
+- [x] Calculate total used time from all sessions in radacct
+- [x] Add checkUserTimeStatus API endpoint for checking user time status
+- [x] Add 20 vitest tests for time logic verification

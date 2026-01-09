@@ -1988,6 +1988,38 @@ const sessionsRouter = router({
       sessionMonitor.stopMonitor();
       return { success: true, message: 'Session monitor stopped' };
     }),
+
+  // Check user time status (Max-All-Session + Expiration)
+  checkUserTimeStatus: protectedProcedure
+    .input(z.object({ username: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // Check card ownership
+      if (ctx.user.role !== 'super_admin') {
+        const card = await cardDb.getCardByUsername(input.username);
+        if (card && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+      }
+      
+      const status = await sessionMonitor.checkUserTimeStatus(input.username);
+      if (!status) {
+        return null;
+      }
+      
+      return {
+        ...status,
+        maxAllSessionFormatted: status.maxAllSession > 0 
+          ? accountingService.formatTime(status.maxAllSession) 
+          : 'غير محدود',
+        totalUsedTimeFormatted: accountingService.formatTime(status.totalUsedTime),
+        remainingInternetTimeFormatted: status.remainingInternetTime >= 0 
+          ? accountingService.formatTime(status.remainingInternetTime) 
+          : 'غير محدود',
+        expirationDateFormatted: status.expirationDate 
+          ? status.expirationDate.toLocaleString('ar-SA') 
+          : 'غير محدد',
+      };
+    }),
 });
 
 // ============================================================================

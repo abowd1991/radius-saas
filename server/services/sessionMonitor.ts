@@ -2,20 +2,31 @@
  * Session Monitor Service
  * 
  * This service runs a periodic check (every 30 seconds) to:
- * 1. Find active sessions where user's time has expired
- * 2. Send CoA/Disconnect to MikroTik immediately
- * 3. Update radacct with termination cause
+ * 1. Find active sessions where user's internet time has expired (Max-All-Session)
+ * 2. Find active sessions where user's card validity has expired (Expiration)
+ * 3. Send CoA/Disconnect to MikroTik immediately
+ * 4. Update radacct with termination cause
+ * 5. Update card status in database (used/expired)
  * 
- * The time calculation is:
- * - Get original Session-Timeout from radreply
- * - Get total used time from radacct (completed sessions)
- * - Get current session time from radacct (active session)
- * - Remaining = Original - Used - Current
- * - If Remaining <= 0, disconnect immediately
+ * Time Logic:
+ * - Max-All-Session: Total internet time allowed (e.g., 6 hours)
+ *   - Calculated from radreply Max-All-Session attribute
+ *   - Used time = SUM(acctsessiontime) from all sessions in radacct
+ *   - If usedTime >= Max-All-Session → disconnect (time exhausted)
+ * 
+ * - Expiration: Card validity date (e.g., 12 hours from activation)
+ *   - Stored in radcheck Expiration attribute
+ *   - If current time >= Expiration → disconnect (card expired)
+ * 
+ * Example Scenario:
+ * - Card with 6 hours internet time, 12 hours validity
+ * - User can use 6 hours intermittently within 12 hours
+ * - After 6 hours total usage → disconnect (even if validity remains)
+ * - After 12 hours from activation → disconnect (even if time remains)
  */
 
 import { getDb } from "../db";
-import { radacct, radreply, radiusCards, cardBatches, nasDevices } from "../../drizzle/schema";
+import { radacct, radreply, radcheck, radiusCards, cardBatches, nasDevices } from "../../drizzle/schema";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 
 // Remote RADIUS API configuration
@@ -34,11 +45,17 @@ interface ActiveSession {
 
 interface SessionCheckResult {
   username: string;
-  originalTime: number;
-  usedTime: number;
-  currentSessionTime: number;
-  remainingTime: number;
+  // Max-All-Session (total internet time)
+  maxAllSession: number;        // Total allowed time in seconds
+  totalUsedTime: number;        // Total used from all sessions
+  currentSessionTime: number;   // Current active session time
+  remainingInternetTime: number; // Remaining internet time
+  // Expiration (card validity)
+  expirationDate: Date | null;  // Card expiration date
+  isExpired: boolean;           // Is card validity expired?
+  // Disconnect decision
   shouldDisconnect: boolean;
+  disconnectReason: 'time_exhausted' | 'card_expired' | 'none';
 }
 
 // Monitor state
@@ -84,9 +101,9 @@ async function getActiveSessions(): Promise<ActiveSession[]> {
 }
 
 /**
- * Get original Session-Timeout from radreply
+ * Get Max-All-Session from radreply (total internet time allowed)
  */
-async function getOriginalTimeout(username: string): Promise<number> {
+async function getMaxAllSession(username: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -95,25 +112,82 @@ async function getOriginalTimeout(username: string): Promise<number> {
       .from(radreply)
       .where(and(
         eq(radreply.username, username),
-        eq(radreply.attribute, 'Session-Timeout')
+        eq(radreply.attribute, 'Max-All-Session')
       ))
       .limit(1);
     
     return result ? parseInt(result.value) || 0 : 0;
   } catch (error) {
-    console.error(`[SessionMonitor] Error getting timeout for ${username}:`, error);
+    console.error(`[SessionMonitor] Error getting Max-All-Session for ${username}:`, error);
     return 0;
   }
 }
 
 /**
- * Get total used time from completed sessions in radacct
+ * Get Expiration date from radcheck (card validity)
  */
-async function getUsedTime(username: string): Promise<number> {
+async function getExpirationDate(username: string): Promise<Date | null> {
+  const db = await getDb();
+  if (!db) return null;
+  
+  try {
+    const [result] = await db.select({ value: radcheck.value })
+      .from(radcheck)
+      .where(and(
+        eq(radcheck.username, username),
+        eq(radcheck.attribute, 'Expiration')
+      ))
+      .limit(1);
+    
+    if (!result?.value) return null;
+    
+    // Parse FreeRADIUS date format: "Jan 09 2026 12:00:00"
+    const dateStr = result.value;
+    
+    // Check for far future date (card not activated yet or no expiration)
+    if (dateStr.includes('2099')) return null;
+    
+    // Parse the date
+    const parsed = new Date(dateStr);
+    if (isNaN(parsed.getTime())) {
+      // Try alternative parsing for "Jan 09 2026 12:00:00" format
+      const months: { [key: string]: number } = {
+        'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+        'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+      };
+      const parts = dateStr.split(' ');
+      if (parts.length >= 4) {
+        const month = months[parts[0]];
+        const day = parseInt(parts[1]);
+        const year = parseInt(parts[2]);
+        const timeParts = parts[3]?.split(':') || ['0', '0', '0'];
+        const hour = parseInt(timeParts[0]) || 0;
+        const minute = parseInt(timeParts[1]) || 0;
+        const second = parseInt(timeParts[2]) || 0;
+        
+        if (month !== undefined && !isNaN(day) && !isNaN(year)) {
+          return new Date(year, month, day, hour, minute, second);
+        }
+      }
+      return null;
+    }
+    
+    return parsed;
+  } catch (error) {
+    console.error(`[SessionMonitor] Error getting Expiration for ${username}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get total used time from ALL sessions in radacct (completed + current)
+ */
+async function getTotalUsedTime(username: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
   try {
+    // Get sum of all completed sessions
     const [result] = await db.select({
       totalUsed: sql<number>`COALESCE(SUM(${radacct.acctsessiontime}), 0)`
     })
@@ -145,32 +219,81 @@ function calculateCurrentSessionTime(startTime: Date | null, reportedTime: numbe
 }
 
 /**
+ * Update card status in database
+ */
+async function updateCardStatus(username: string, status: 'used' | 'expired'): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  try {
+    await db.update(radiusCards)
+      .set({ 
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(radiusCards.username, username));
+    
+    console.log(`[SessionMonitor] Updated card ${username} status to ${status}`);
+  } catch (error) {
+    console.error(`[SessionMonitor] Error updating card status for ${username}:`, error);
+  }
+}
+
+/**
  * Check if a session should be disconnected
  */
 async function checkSession(session: ActiveSession): Promise<SessionCheckResult> {
-  const originalTime = await getOriginalTimeout(session.username);
-  const usedTime = await getUsedTime(session.username);
+  const maxAllSession = await getMaxAllSession(session.username);
+  const expirationDate = await getExpirationDate(session.username);
+  const totalUsedTime = await getTotalUsedTime(session.username);
   const currentSessionTime = calculateCurrentSessionTime(session.startTime, session.currentSessionTime);
   
-  // Remaining = Original - (Used from completed sessions) - (Current session time)
-  const remainingTime = originalTime - usedTime - currentSessionTime;
+  // Calculate remaining internet time
+  const totalTimeUsed = totalUsedTime + currentSessionTime;
+  const remainingInternetTime = maxAllSession > 0 ? maxAllSession - totalTimeUsed : Infinity;
+  
+  // Check if card validity expired
+  const now = new Date();
+  const isExpired = expirationDate !== null && now >= expirationDate;
+  
+  // Determine if should disconnect and why
+  let shouldDisconnect = false;
+  let disconnectReason: 'time_exhausted' | 'card_expired' | 'none' = 'none';
+  
+  // Priority 1: Check if internet time exhausted
+  if (maxAllSession > 0 && remainingInternetTime <= 0) {
+    shouldDisconnect = true;
+    disconnectReason = 'time_exhausted';
+  }
+  // Priority 2: Check if card validity expired
+  else if (isExpired) {
+    shouldDisconnect = true;
+    disconnectReason = 'card_expired';
+  }
   
   return {
     username: session.username,
-    originalTime,
-    usedTime,
+    maxAllSession,
+    totalUsedTime,
     currentSessionTime,
-    remainingTime,
-    shouldDisconnect: remainingTime <= 0 && originalTime > 0,
+    remainingInternetTime: Math.max(0, remainingInternetTime === Infinity ? -1 : remainingInternetTime),
+    expirationDate,
+    isExpired,
+    shouldDisconnect,
+    disconnectReason,
   };
 }
 
 /**
  * Send CoA Disconnect via remote API
  */
-async function sendDisconnect(session: ActiveSession): Promise<boolean> {
+async function sendDisconnect(
+  session: ActiveSession, 
+  reason: 'time_exhausted' | 'card_expired'
+): Promise<boolean> {
   try {
-    console.log(`[SessionMonitor] Sending disconnect for ${session.username} to ${session.nasIp}`);
+    const terminateCause = reason === 'time_exhausted' ? 'Session-Timeout' : 'User-Request';
+    console.log(`[SessionMonitor] Sending disconnect for ${session.username} to ${session.nasIp} (reason: ${reason})`);
     
     // Get NAS secret
     const db = await getDb();
@@ -210,13 +333,17 @@ async function sendDisconnect(session: ActiveSession): Promise<boolean> {
       await db.update(radacct)
         .set({
           acctstoptime: new Date(),
-          acctterminatecause: 'Session-Timeout',
+          acctterminatecause: terminateCause,
         })
         .where(eq(radacct.acctuniqueid, session.uniqueId));
     }
     
+    // Update card status
+    const cardStatus = reason === 'time_exhausted' ? 'used' : 'expired';
+    await updateCardStatus(session.username, cardStatus);
+    
     if (result.success) {
-      console.log(`[SessionMonitor] Successfully disconnected ${session.username}`);
+      console.log(`[SessionMonitor] Successfully disconnected ${session.username} (${reason})`);
       return true;
     } else {
       console.log(`[SessionMonitor] CoA failed for ${session.username}, but session marked as stopped`);
@@ -228,12 +355,17 @@ async function sendDisconnect(session: ActiveSession): Promise<boolean> {
     // Still try to update database
     const db = await getDb();
     if (db) {
+      const terminateCause = reason === 'time_exhausted' ? 'Session-Timeout' : 'User-Request';
       await db.update(radacct)
         .set({
           acctstoptime: new Date(),
-          acctterminatecause: 'Session-Timeout',
+          acctterminatecause: terminateCause,
         })
         .where(eq(radacct.acctuniqueid, session.uniqueId));
+      
+      // Update card status
+      const cardStatus = reason === 'time_exhausted' ? 'used' : 'expired';
+      await updateCardStatus(session.username, cardStatus);
     }
     
     return true; // Count as success since we updated the database
@@ -243,9 +375,17 @@ async function sendDisconnect(session: ActiveSession): Promise<boolean> {
 /**
  * Main check function - runs every 30 seconds
  */
-async function runCheck(): Promise<{ checked: number; disconnected: number; errors: string[] }> {
+async function runCheck(): Promise<{ 
+  checked: number; 
+  disconnected: number; 
+  timeExhausted: number;
+  cardExpired: number;
+  errors: string[] 
+}> {
   const errors: string[] = [];
   let disconnected = 0;
+  let timeExhausted = 0;
+  let cardExpired = 0;
   
   try {
     const sessions = await getActiveSessions();
@@ -254,15 +394,23 @@ async function runCheck(): Promise<{ checked: number; disconnected: number; erro
       try {
         const result = await checkSession(session);
         
-        if (result.shouldDisconnect) {
-          console.log(`[SessionMonitor] User ${session.username} time expired: ` +
-            `Original=${result.originalTime}s, Used=${result.usedTime}s, ` +
-            `Current=${result.currentSessionTime}s, Remaining=${result.remainingTime}s`);
+        if (result.shouldDisconnect && result.disconnectReason !== 'none') {
+          const reasonText = result.disconnectReason === 'time_exhausted' 
+            ? `Internet time exhausted: Max=${result.maxAllSession}s, Used=${result.totalUsedTime}s, Current=${result.currentSessionTime}s`
+            : `Card validity expired: Expiration=${result.expirationDate?.toISOString()}`;
           
-          const success = await sendDisconnect(session);
+          console.log(`[SessionMonitor] User ${session.username} - ${reasonText}`);
+          
+          const success = await sendDisconnect(session, result.disconnectReason);
           if (success) {
             disconnected++;
             totalDisconnects++;
+            
+            if (result.disconnectReason === 'time_exhausted') {
+              timeExhausted++;
+            } else {
+              cardExpired++;
+            }
           }
         }
       } catch (error: any) {
@@ -273,10 +421,10 @@ async function runCheck(): Promise<{ checked: number; disconnected: number; erro
     lastCheckTime = new Date();
     totalChecks++;
     
-    return { checked: sessions.length, disconnected, errors };
+    return { checked: sessions.length, disconnected, timeExhausted, cardExpired, errors };
   } catch (error: any) {
     console.error('[SessionMonitor] Error in runCheck:', error);
-    return { checked: 0, disconnected: 0, errors: [error.message] };
+    return { checked: 0, disconnected: 0, timeExhausted: 0, cardExpired: 0, errors: [error.message] };
   }
 }
 
@@ -290,18 +438,21 @@ export function startMonitor(intervalMs: number = 30000): void {
   }
   
   console.log(`[SessionMonitor] Starting with interval ${intervalMs}ms`);
+  console.log('[SessionMonitor] Monitoring: Max-All-Session (internet time) + Expiration (card validity)');
   isRunning = true;
   
   // Run immediately
   runCheck().then(result => {
-    console.log(`[SessionMonitor] Initial check: ${result.checked} sessions, ${result.disconnected} disconnected`);
+    console.log(`[SessionMonitor] Initial check: ${result.checked} sessions, ${result.disconnected} disconnected ` +
+      `(${result.timeExhausted} time exhausted, ${result.cardExpired} card expired)`);
   });
   
   // Then run periodically
   intervalId = setInterval(async () => {
     const result = await runCheck();
     if (result.disconnected > 0) {
-      console.log(`[SessionMonitor] Check complete: ${result.checked} sessions, ${result.disconnected} disconnected`);
+      console.log(`[SessionMonitor] Check complete: ${result.checked} sessions, ${result.disconnected} disconnected ` +
+        `(${result.timeExhausted} time exhausted, ${result.cardExpired} card expired)`);
     }
   }, intervalMs);
 }
@@ -344,6 +495,54 @@ export function getMonitorStatus(): {
 /**
  * Manually trigger a check
  */
-export async function triggerCheck(): Promise<{ checked: number; disconnected: number; errors: string[] }> {
+export async function triggerCheck(): Promise<{ 
+  checked: number; 
+  disconnected: number; 
+  timeExhausted: number;
+  cardExpired: number;
+  errors: string[] 
+}> {
   return runCheck();
+}
+
+/**
+ * Check a specific user's time status (for debugging/API)
+ */
+export async function checkUserTimeStatus(username: string): Promise<{
+  maxAllSession: number;
+  totalUsedTime: number;
+  remainingInternetTime: number;
+  expirationDate: Date | null;
+  isExpired: boolean;
+  canConnect: boolean;
+} | null> {
+  const db = await getDb();
+  if (!db) return null;
+  
+  try {
+    const maxAllSession = await getMaxAllSession(username);
+    const expirationDate = await getExpirationDate(username);
+    const totalUsedTime = await getTotalUsedTime(username);
+    
+    const remainingInternetTime = maxAllSession > 0 ? Math.max(0, maxAllSession - totalUsedTime) : -1;
+    const now = new Date();
+    const isExpired = expirationDate !== null && now >= expirationDate;
+    
+    // Can connect if:
+    // 1. Has remaining internet time (or no limit)
+    // 2. Card is not expired
+    const canConnect = (remainingInternetTime > 0 || remainingInternetTime === -1) && !isExpired;
+    
+    return {
+      maxAllSession,
+      totalUsedTime,
+      remainingInternetTime,
+      expirationDate,
+      isExpired,
+      canConnect,
+    };
+  } catch (error) {
+    console.error(`[SessionMonitor] Error checking user status for ${username}:`, error);
+    return null;
+  }
 }
