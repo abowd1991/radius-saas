@@ -79,8 +79,8 @@ export default function PrintCards() {
   const [qrEnabled, setQrEnabled] = useState(false);
   const [qrDomain, setQrDomain] = useState("");
   const [qrSettings, setQrSettings] = useState({
-    x: 10,
-    y: 10,
+    x: 50,  // Center horizontally
+    y: 80,  // Near bottom
     size: 60,
   });
   

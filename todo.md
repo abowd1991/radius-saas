@@ -934,3 +934,10 @@
 - [x] Make QR Code disabled by default (user chooses to enable)
 - [x] Move QR settings section below password settings (in Step 3: تحريك النصوص)
 - [x] Removed duplicate QR settings from Step 4 (إعدادات الطباعة)
+
+## Fix QR Default Position and PDF Settings (Jan 9, 2026) - Issue #4
+- [x] Change QR default X position from 200 to 50 (center of card)
+- [x] Change QR default Y position to 80 (near bottom)
+- [x] Verified: Font settings ARE being sent correctly to Backend (textSettings object)
+- [x] Verified: Backend correctly passes settings to pdfGenerator (routers.ts lines 1335-1346)
+- [x] Verified: pdfGenerator applies font settings in HTML output (lines 203-226)
