@@ -781,3 +781,63 @@
 
 ## Bug Fix - Avatar Upload (Jan 9, 2026)
 - [x] Fix avatar upload failing - added cookie-parser middleware to read auth cookies
+
+
+## PPPoE Subscribers System - Prepaid (Jan 9, 2026)
+
+### Database Schema
+- [x] Create subscribers table (username, password, status, planId, nasId, ownerId, phone, address, etc.)
+- [x] Create subscriptions table (subscriberId, startDate, endDate, amount, status)
+- [x] Add relations to plans and NAS tables
+- [x] Run db:push to apply schema changes (created tables via SQL)
+
+### Backend APIs
+- [x] subscribers.list - list all subscribers for owner (multi-tenant)
+- [x] subscribers.create - create new subscriber with RADIUS entries
+- [x] subscribers.update - update subscriber details
+- [x] subscribers.delete - delete subscriber and RADIUS entries
+- [x] subscribers.suspend - suspend subscriber (disable in RADIUS)
+- [x] subscribers.activate - activate subscriber (enable in RADIUS)
+- [x] subscribers.renew - renew subscription (extend endDate)
+- [x] subscribers.getById - get subscriber details with subscription history
+
+### RADIUS Integration
+- [x] Add subscriber to radcheck on creation (username/password)
+- [x] Add subscriber to radreply on creation (speed limits, attributes)
+- [x] Handle expired subscriptions (Auth-Type := Reject)
+- [x] Return proper attributes (Framed-IP, Session-Timeout, etc.)
+
+### CoA/Disconnect for Immediate Session Termination
+- [x] Implement CoA (Change of Authorization) for MikroTik
+- [x] Implement Disconnect-Request for immediate session termination
+- [x] Auto-disconnect on subscription expiry (cron job or trigger)
+- [x] Disconnect on manual suspend
+
+### UI Pages
+- [x] Subscribers list page with filters (status, plan, NAS)
+- [x] Add subscriber dialog/page with all fields
+- [x] Edit subscriber dialog
+- [x] Renew subscription dialog
+- [x] Suspend/Activate/Disconnect buttons
+- [x] Delete confirmation
+- [x] Added to sidebar navigation
+
+### Testing
+- [x] Unit tests for subscribers module (13 tests passing)
+- [x] All 209 tests passing
+- [ ] Edit subscriber dialog/page
+- [ ] Subscriber details page with subscription history
+- [ ] Renew subscription dialog with amount calculation
+- [ ] Suspend/Activate buttons with confirmation
+
+### Multi-tenancy
+- [ ] Filter all queries by ownerId (resellerId or createdBy)
+- [ ] Ensure client isolation - each client sees only their subscribers
+- [ ] Admin sees all subscribers
+
+### Testing
+- [ ] Test subscriber creation with RADIUS entries
+- [ ] Test subscriber authentication on MikroTik
+- [ ] Test subscription expiry and auto-reject
+- [ ] Test CoA disconnect on suspend
+- [ ] Test multi-tenant isolation

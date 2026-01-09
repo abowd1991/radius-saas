@@ -189,3 +189,356 @@ export async function setSystemSetting(key: string, value: string, description?:
     .values({ key, value, description })
     .onDuplicateKeyUpdate({ set: { value, description } });
 }
+
+
+// ============================================================================
+// PPPoE SUBSCRIBERS QUERIES
+// ============================================================================
+
+import { subscribers, subscriberSubscriptions, plans, nasDevices } from "../drizzle/schema";
+import { or, desc, and, lte, gte, sql } from "drizzle-orm";
+
+export type SubscriberStatus = 'active' | 'suspended' | 'expired' | 'pending';
+export type SubscriberPaymentMethod = 'cash' | 'wallet' | 'card' | 'bank_transfer' | 'online';
+
+export interface CreateSubscriberInput {
+  username: string;
+  password: string;
+  ownerId: number;
+  createdBy: number;
+  fullName: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  nationalId?: string;
+  notes?: string;
+  planId: number;
+  nasId?: number;
+  ipAssignmentType?: 'dynamic' | 'static';
+  staticIp?: string;
+  simultaneousUse?: number;
+  macAddress?: string;
+  macBindingEnabled?: boolean;
+  subscriptionMonths?: number;
+  amount?: number;
+  paymentMethod?: SubscriberPaymentMethod;
+}
+
+// Get all subscribers for an owner (multi-tenant)
+export async function getSubscribersByOwner(ownerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select({
+    subscriber: subscribers,
+    plan: {
+      id: plans.id,
+      name: plans.name,
+      downloadSpeed: plans.downloadSpeed,
+      uploadSpeed: plans.uploadSpeed,
+      price: plans.price,
+    },
+    nas: {
+      id: nasDevices.id,
+      nasname: nasDevices.nasname,
+      shortname: nasDevices.shortname,
+    }
+  })
+  .from(subscribers)
+  .leftJoin(plans, eq(subscribers.planId, plans.id))
+  .leftJoin(nasDevices, eq(subscribers.nasId, nasDevices.id))
+  .where(or(eq(subscribers.ownerId, ownerId), eq(subscribers.createdBy, ownerId)))
+  .orderBy(desc(subscribers.createdAt));
+}
+
+// Get subscriber by ID
+export async function getSubscriberById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select({
+    subscriber: subscribers,
+    plan: {
+      id: plans.id,
+      name: plans.name,
+      downloadSpeed: plans.downloadSpeed,
+      uploadSpeed: plans.uploadSpeed,
+      price: plans.price,
+
+    },
+    nas: {
+      id: nasDevices.id,
+      nasname: nasDevices.nasname,
+      shortname: nasDevices.shortname,
+    }
+  })
+  .from(subscribers)
+  .leftJoin(plans, eq(subscribers.planId, plans.id))
+  .leftJoin(nasDevices, eq(subscribers.nasId, nasDevices.id))
+  .where(eq(subscribers.id, id))
+  .limit(1);
+  
+  return result[0];
+}
+
+// Check if username exists
+export async function subscriberUsernameExists(username: string) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  const result = await db.select({ id: subscribers.id })
+    .from(subscribers)
+    .where(eq(subscribers.username, username))
+    .limit(1);
+  
+  return result.length > 0;
+}
+
+// Create new subscriber
+export async function createSubscriber(input: CreateSubscriberInput) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Calculate subscription dates
+  const now = new Date();
+  const months = input.subscriptionMonths || 1;
+  const endDate = new Date(now);
+  endDate.setMonth(endDate.getMonth() + months);
+  
+  // Insert subscriber
+  const [result] = await db.insert(subscribers).values({
+    username: input.username,
+    password: input.password,
+    ownerId: input.ownerId,
+    createdBy: input.createdBy,
+    fullName: input.fullName,
+    phone: input.phone || null,
+    email: input.email || null,
+    address: input.address || null,
+    nationalId: input.nationalId || null,
+    notes: input.notes || null,
+    planId: input.planId,
+    nasId: input.nasId || null,
+    ipAssignmentType: input.ipAssignmentType || 'dynamic',
+    staticIp: input.staticIp || null,
+    simultaneousUse: input.simultaneousUse || 1,
+    macAddress: input.macAddress || null,
+    macBindingEnabled: input.macBindingEnabled || false,
+    status: 'active',
+    subscriptionStartDate: now,
+    subscriptionEndDate: endDate,
+  });
+  
+  const subscriberId = result.insertId;
+  
+  // Create subscription record
+  if (input.amount && input.amount > 0) {
+    await db.insert(subscriberSubscriptions).values({
+      subscriberId: subscriberId,
+      startDate: now,
+      endDate: endDate,
+      planId: input.planId,
+      planName: '', // Will be filled by the caller
+      amount: input.amount.toString(),
+      currency: 'USD',
+      paymentMethod: input.paymentMethod || 'cash',
+      status: 'active',
+      processedBy: input.createdBy,
+      notes: input.notes || null,
+    });
+  }
+  
+  return subscriberId;
+}
+
+// Update subscriber
+export async function updateSubscriber(id: number, data: Partial<{
+  fullName: string;
+  phone: string;
+  email: string;
+  address: string;
+  nationalId: string;
+  notes: string;
+  planId: number;
+  nasId: number;
+  ipAssignmentType: 'dynamic' | 'static';
+  staticIp: string;
+  simultaneousUse: number;
+  macAddress: string;
+  macBindingEnabled: boolean;
+  status: SubscriberStatus;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(subscribers)
+    .set(data)
+    .where(eq(subscribers.id, id));
+}
+
+// Suspend subscriber
+export async function suspendSubscriber(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(subscribers)
+    .set({ status: 'suspended' })
+    .where(eq(subscribers.id, id));
+}
+
+// Activate subscriber
+export async function activateSubscriber(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(subscribers)
+    .set({ status: 'active' })
+    .where(eq(subscribers.id, id));
+}
+
+// Renew subscription
+export async function renewSubscription(
+  subscriberId: number, 
+  months: number, 
+  amount: number, 
+  processedBy: number,
+  paymentMethod: SubscriberPaymentMethod = 'cash',
+  notes?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Get current subscriber
+  const [subscriber] = await db.select()
+    .from(subscribers)
+    .where(eq(subscribers.id, subscriberId))
+    .limit(1);
+  
+  if (!subscriber) throw new Error("Subscriber not found");
+  
+  // Calculate new end date
+  const now = new Date();
+  const currentEnd = subscriber.subscriptionEndDate || now;
+  const startDate = currentEnd > now ? currentEnd : now;
+  const endDate = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + months);
+  
+  // Get plan name
+  const [plan] = await db.select({ name: plans.name })
+    .from(plans)
+    .where(eq(plans.id, subscriber.planId))
+    .limit(1);
+  
+  // Update subscriber
+  await db.update(subscribers)
+    .set({ 
+      status: 'active',
+      subscriptionStartDate: startDate,
+      subscriptionEndDate: endDate,
+    })
+    .where(eq(subscribers.id, subscriberId));
+  
+  // Create subscription record
+  await db.insert(subscriberSubscriptions).values({
+    subscriberId: subscriberId,
+    startDate: startDate,
+    endDate: endDate,
+    planId: subscriber.planId,
+    planName: plan?.name || 'Unknown',
+    amount: amount.toString(),
+    currency: 'USD',
+    paymentMethod: paymentMethod,
+    status: 'active',
+    processedBy: processedBy,
+    notes: notes || null,
+  });
+  
+  return { startDate, endDate };
+}
+
+// Get subscription history
+export async function getSubscriptionHistory(subscriberId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select()
+    .from(subscriberSubscriptions)
+    .where(eq(subscriberSubscriptions.subscriberId, subscriberId))
+    .orderBy(desc(subscriberSubscriptions.createdAt));
+}
+
+// Get expired subscribers (for cron job)
+export async function getExpiredSubscribers() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const now = new Date();
+  
+  return db.select()
+    .from(subscribers)
+    .where(and(
+      eq(subscribers.status, 'active'),
+      lte(subscribers.subscriptionEndDate, now)
+    ));
+}
+
+// Mark subscriber as expired
+export async function markSubscriberExpired(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(subscribers)
+    .set({ status: 'expired' })
+    .where(eq(subscribers.id, id));
+}
+
+// Get subscriber stats for owner
+export async function getSubscriberStats(ownerId: number) {
+  const db = await getDb();
+  if (!db) return { total: 0, active: 0, suspended: 0, expired: 0, pending: 0 };
+  
+  const result = await db.select({
+    status: subscribers.status,
+    count: sql<number>`COUNT(*)`,
+  })
+  .from(subscribers)
+  .where(or(eq(subscribers.ownerId, ownerId), eq(subscribers.createdBy, ownerId)))
+  .groupBy(subscribers.status);
+  
+  const stats = { total: 0, active: 0, suspended: 0, expired: 0, pending: 0 };
+  
+  for (const row of result) {
+    const count = Number(row.count);
+    stats.total += count;
+    if (row.status === 'active') stats.active = count;
+    else if (row.status === 'suspended') stats.suspended = count;
+    else if (row.status === 'expired') stats.expired = count;
+    else if (row.status === 'pending') stats.pending = count;
+  }
+  
+  return stats;
+}
+
+// Delete subscriber
+export async function deleteSubscriber(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Delete subscription history first
+  await db.delete(subscriberSubscriptions)
+    .where(eq(subscriberSubscriptions.subscriberId, id));
+  
+  // Delete subscriber
+  await db.delete(subscribers)
+    .where(eq(subscribers.id, id));
+}
+
+// Update last login
+export async function updateSubscriberLastLogin(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.update(subscribers)
+    .set({ lastLoginAt: new Date() })
+    .where(eq(subscribers.id, id));
+}

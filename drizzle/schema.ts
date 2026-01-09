@@ -654,3 +654,95 @@ export const internalNotifications = mysqlTable("internal_notifications", {
 
 export type InternalNotification = typeof internalNotifications.$inferSelect;
 export type InsertInternalNotification = typeof internalNotifications.$inferInsert;
+
+
+// ============================================================================
+// PPPoE SUBSCRIBERS (Monthly Prepaid Subscribers)
+// ============================================================================
+
+export const subscribers = mysqlTable("subscribers", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // RADIUS credentials
+  username: varchar("username", { length: 64 }).notNull().unique(),
+  password: varchar("password", { length: 64 }).notNull(),
+  
+  // Owner (for multi-tenancy)
+  ownerId: int("ownerId").notNull(), // Client/Reseller who owns this subscriber
+  createdBy: int("createdBy").notNull(), // User who created this subscriber
+  
+  // Subscriber info
+  fullName: varchar("fullName", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 20 }),
+  email: varchar("email", { length: 320 }),
+  address: text("address"),
+  nationalId: varchar("nationalId", { length: 50 }), // رقم الهوية
+  notes: text("notes"),
+  
+  // Service configuration
+  planId: int("planId").notNull(), // Linked plan for speed/limits
+  nasId: int("nasId"), // Optional: restrict to specific NAS
+  
+  // IP Assignment
+  ipAssignmentType: mysqlEnum("ipAssignmentType", ["dynamic", "static"]).default("dynamic").notNull(),
+  staticIp: varchar("staticIp", { length: 45 }), // If static IP assigned
+  
+  // RADIUS attributes
+  simultaneousUse: int("simultaneousUse").default(1), // Number of concurrent sessions
+  
+  // Status
+  status: mysqlEnum("status", ["active", "suspended", "expired", "pending"]).default("pending").notNull(),
+  
+  // Subscription dates
+  subscriptionStartDate: timestamp("subscriptionStartDate"),
+  subscriptionEndDate: timestamp("subscriptionEndDate"),
+  
+  // MAC binding (optional)
+  macAddress: varchar("macAddress", { length: 17 }),
+  macBindingEnabled: boolean("macBindingEnabled").default(false),
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  lastLoginAt: timestamp("lastLoginAt"),
+});
+
+export type Subscriber = typeof subscribers.$inferSelect;
+export type InsertSubscriber = typeof subscribers.$inferInsert;
+
+// ============================================================================
+// SUBSCRIBER SUBSCRIPTIONS (Payment/Renewal History)
+// ============================================================================
+
+export const subscriberSubscriptions = mysqlTable("subscriber_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  subscriberId: int("subscriberId").notNull(),
+  
+  // Subscription period
+  startDate: timestamp("startDate").notNull(),
+  endDate: timestamp("endDate").notNull(),
+  
+  // Plan at time of subscription (for historical reference)
+  planId: int("planId").notNull(),
+  planName: varchar("planName", { length: 100 }).notNull(),
+  
+  // Payment info
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+  paymentMethod: mysqlEnum("paymentMethod", ["cash", "wallet", "card", "bank_transfer", "online"]).default("cash").notNull(),
+  
+  // Status
+  status: mysqlEnum("status", ["active", "expired", "cancelled", "refunded"]).default("active").notNull(),
+  
+  // Who processed this subscription
+  processedBy: int("processedBy").notNull(),
+  
+  // Notes
+  notes: text("notes"),
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SubscriberSubscription = typeof subscriberSubscriptions.$inferSelect;
+export type InsertSubscriberSubscription = typeof subscriberSubscriptions.$inferInsert;

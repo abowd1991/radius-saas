@@ -26,6 +26,7 @@ import * as authService from "./services/authService";
 import { getDb } from "./db";
 import { radcheck } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+import * as radiusSubscribers from "./db/radiusSubscribers";
 
 // ============================================================================
 // AUTH ROUTER
@@ -2589,6 +2590,278 @@ const backupsRouter = router({
 });
 
 // ============================================================================
+// PPPoE SUBSCRIBERS ROUTER
+// ============================================================================
+const subscribersRouter = router({
+  // List all subscribers for owner
+  list: resellerProcedure.query(async ({ ctx }) => {
+    const subscribers = await db.getSubscribersByOwner(ctx.user.id);
+    const stats = await db.getSubscriberStats(ctx.user.id);
+    return { subscribers, stats };
+  }),
+
+  // Get single subscriber
+  get: resellerProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const subscriber = await db.getSubscriberById(input.id);
+      if (!subscriber) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
+      }
+      // Check ownership
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+      }
+      return subscriber;
+    }),
+
+  // Create new subscriber
+  create: resellerProcedure
+    .input(z.object({
+      username: z.string().min(3).max(64),
+      password: z.string().min(4).max(64),
+      fullName: z.string().min(2).max(255),
+      phone: z.string().optional(),
+      email: z.string().email().optional(),
+      address: z.string().optional(),
+      nationalId: z.string().optional(),
+      notes: z.string().optional(),
+      planId: z.number(),
+      nasId: z.number().optional(),
+      ipAssignmentType: z.enum(['dynamic', 'static']).optional(),
+      staticIp: z.string().optional(),
+      simultaneousUse: z.number().min(1).max(10).optional(),
+      macAddress: z.string().optional(),
+      macBindingEnabled: z.boolean().optional(),
+      subscriptionMonths: z.number().min(1).max(24).optional(),
+      amount: z.number().min(0).optional(),
+      paymentMethod: z.enum(['cash', 'wallet', 'card', 'bank_transfer', 'online']).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Check if username exists
+      const exists = await db.subscriberUsernameExists(input.username);
+      if (exists) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'اسم المستخدم موجود مسبقاً' });
+      }
+
+      // Create subscriber
+      const subscriberId = await db.createSubscriber({
+        ...input,
+        ownerId: ctx.user.id,
+        createdBy: ctx.user.id,
+      });
+
+      // Get subscriber to get subscription end date
+      const subscriber = await db.getSubscriberById(subscriberId);
+      if (subscriber && subscriber.subscriber.subscriptionEndDate) {
+        // Create RADIUS entries for PPPoE authentication
+        await radiusSubscribers.createSubscriberRadiusEntries(
+          input.username,
+          input.password,
+          input.planId,
+          new Date(subscriber.subscriber.subscriptionEndDate),
+          {
+            simultaneousUse: input.simultaneousUse,
+            staticIp: input.staticIp,
+          }
+        );
+      }
+
+      return { id: subscriberId, success: true };
+    }),
+
+  // Update subscriber
+  update: resellerProcedure
+    .input(z.object({
+      id: z.number(),
+      fullName: z.string().optional(),
+      phone: z.string().optional(),
+      email: z.string().email().optional(),
+      address: z.string().optional(),
+      nationalId: z.string().optional(),
+      notes: z.string().optional(),
+      planId: z.number().optional(),
+      nasId: z.number().optional(),
+      ipAssignmentType: z.enum(['dynamic', 'static']).optional(),
+      staticIp: z.string().optional(),
+      simultaneousUse: z.number().optional(),
+      macAddress: z.string().optional(),
+      macBindingEnabled: z.boolean().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const subscriber = await db.getSubscriberById(input.id);
+      if (!subscriber) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
+      }
+      // Check ownership
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+      }
+
+      const { id, ...data } = input;
+      await db.updateSubscriber(id, data);
+
+      return { success: true };
+    }),
+
+  // Suspend subscriber
+  suspend: resellerProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const subscriber = await db.getSubscriberById(input.id);
+      if (!subscriber) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
+      }
+      // Check ownership
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+      }
+
+      await db.suspendSubscriber(input.id);
+
+      // Suspend in RADIUS (set Auth-Type to Reject)
+      await radiusSubscribers.suspendSubscriberRadius(subscriber.subscriber.username);
+
+      // Send CoA Disconnect to kick user off
+      try {
+        await coaService.disconnectUserAllSessions(subscriber.subscriber.username);
+      } catch (e) {
+        console.error('[Subscribers] Failed to disconnect user:', e);
+      }
+
+      return { success: true };
+    }),
+
+  // Activate subscriber
+  activate: resellerProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const subscriber = await db.getSubscriberById(input.id);
+      if (!subscriber) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
+      }
+      // Check ownership
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+      }
+
+      await db.activateSubscriber(input.id);
+
+      // Activate in RADIUS (set Auth-Type to Accept)
+      await radiusSubscribers.activateSubscriberRadius(subscriber.subscriber.username);
+
+      return { success: true };
+    }),
+
+  // Renew subscription
+  renew: resellerProcedure
+    .input(z.object({
+      id: z.number(),
+      months: z.number().min(1).max(24),
+      amount: z.number().min(0),
+      paymentMethod: z.enum(['cash', 'wallet', 'card', 'bank_transfer', 'online']).optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const subscriber = await db.getSubscriberById(input.id);
+      if (!subscriber) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
+      }
+      // Check ownership
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+      }
+
+      const result = await db.renewSubscription(
+        input.id,
+        input.months,
+        input.amount,
+        ctx.user.id,
+        input.paymentMethod || 'cash',
+        input.notes
+      );
+
+      // Update RADIUS Expiration date
+      if (result.endDate) {
+        await radiusSubscribers.updateSubscriberRadiusEntries(
+          subscriber.subscriber.username,
+          new Date(result.endDate)
+        );
+      }
+
+      // Activate in RADIUS if was expired
+      if (subscriber.subscriber.status === 'expired') {
+        await radiusSubscribers.activateSubscriberRadius(subscriber.subscriber.username);
+      }
+
+      return { success: true, ...result };
+    }),
+
+  // Get subscription history
+  history: resellerProcedure
+    .input(z.object({ subscriberId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const subscriber = await db.getSubscriberById(input.subscriberId);
+      if (!subscriber) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
+      }
+      // Check ownership
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+      }
+
+      return db.getSubscriptionHistory(input.subscriberId);
+    }),
+
+  // Delete subscriber
+  delete: resellerProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const subscriber = await db.getSubscriberById(input.id);
+      if (!subscriber) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
+      }
+      // Check ownership
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+      }
+
+      // Remove all RADIUS entries (radcheck, radreply, radusergroup)
+      await radiusSubscribers.deleteSubscriberRadiusEntries(subscriber.subscriber.username);
+
+      // Disconnect user if online
+      try {
+        await coaService.disconnectUserAllSessions(subscriber.subscriber.username);
+      } catch (e) {
+        console.error('[Subscribers] Failed to disconnect user:', e);
+      }
+
+      await db.deleteSubscriber(input.id);
+      return { success: true };
+    }),
+
+  // Disconnect user (kick off network)
+  disconnect: resellerProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const subscriber = await db.getSubscriberById(input.id);
+      if (!subscriber) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
+      }
+      // Check ownership
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+      }
+
+      if (subscriber.nas) {
+        await coaService.disconnectUserAllSessions(subscriber.subscriber.username);
+      }
+
+      return { success: true };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -2611,6 +2884,7 @@ export const appRouter = router({
   reports: reportsRouter,
   backups: backupsRouter,
   internalNotifications: internalNotificationsRouter,
+  subscribers: subscribersRouter,
 });
 
 export type AppRouter = typeof appRouter;

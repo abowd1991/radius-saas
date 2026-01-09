@@ -24,6 +24,7 @@ import Auth from "./pages/Auth";
 import Reports from "./pages/Reports";
 import Backups from "./pages/Backups";
 import Landing from "./pages/Landing";
+import Subscribers from "./pages/Subscribers";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -48,6 +49,11 @@ function Router() {
       <Route path="/vouchers">
         <DashboardLayout>
           <Vouchers />
+        </DashboardLayout>
+      </Route>
+      <Route path="/subscribers">
+        <DashboardLayout>
+          <Subscribers />
         </DashboardLayout>
       </Route>
       <Route path="/wallet">

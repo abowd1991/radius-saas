@@ -47,6 +47,7 @@ import {
   Moon,
   Sun,
   Database,
+  UserCheck,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -90,6 +91,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: Server, label: t("nav.nas"), path: "/nas" },
     { icon: Link2, label: t("nav.mikrotikSetup"), path: "/mikrotik-setup" },
     { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
+    { icon: UserCheck, label: "المشتركين الشهريين", path: "/subscribers" },
     { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
     { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
     { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
@@ -115,6 +117,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: Link2, label: t("nav.mikrotikSetup"), path: "/mikrotik-setup" },
     { icon: Package, label: t("nav.plans"), path: "/plans" },
     { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
+    { icon: UserCheck, label: "المشتركين الشهريين", path: "/subscribers" },
     { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
     { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
     { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
