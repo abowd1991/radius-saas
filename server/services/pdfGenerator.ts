@@ -1,35 +1,10 @@
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
-import puppeteer from "puppeteer";
+import { PDFDocument, rgb, StandardFonts, PDFPage, PDFFont, PDFImage } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
-import { promisify } from "util";
-
-const writeFileAsync = promisify(fs.writeFile);
-const readFileAsync = promisify(fs.readFile);
-const unlinkAsync = promisify(fs.unlink);
-
-// Puppeteer browser instance for reuse
-let browserInstance: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
-
-async function getBrowser() {
-  if (!browserInstance || !browserInstance.connected) {
-    console.log('[PDF] Launching new Puppeteer browser...');
-    browserInstance = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--font-render-hinting=none',
-      ],
-    });
-  }
-  return browserInstance;
-}
 
 // PDF Cache to avoid regenerating same PDF
 const pdfCache = new Map<string, { url: string; key: string; timestamp: number }>();
@@ -57,14 +32,14 @@ interface TemplateSettings {
   usernameX: number;
   usernameY: number;
   usernameFontSize: number;
-  usernameFontFamily: string; // Accepts any font name (Arial, Tahoma, etc.) or short names (normal, clear, digital)
+  usernameFontFamily: string;
   usernameFontColor: string;
   usernameAlign: "left" | "center" | "right";
   // Password settings
   passwordX: number;
   passwordY: number;
   passwordFontSize: number;
-  passwordFontFamily: string; // Accepts any font name (Arial, Tahoma, etc.) or short names (normal, clear, digital)
+  passwordFontFamily: string;
   passwordFontColor: string;
   passwordAlign: "left" | "center" | "right";
   // QR Code settings
@@ -82,14 +57,14 @@ interface TemplateSettings {
 
 // Enhanced print settings interface
 interface PrintSettings {
-  columns: number;           // Number of columns (3-10)
-  cardsPerPage: number;      // Total cards per page
-  marginTop: number;         // Top margin in mm
-  marginBottom: number;      // Bottom margin in mm
-  marginLeft: number;        // Left margin in mm
-  marginRight: number;       // Right margin in mm
-  spacingH: number;          // Horizontal spacing between cards in mm
-  spacingV: number;          // Vertical spacing between cards in mm
+  columns: number;
+  cardsPerPage: number;
+  marginTop: number;
+  marginBottom: number;
+  marginLeft: number;
+  marginRight: number;
+  spacingH: number;
+  spacingV: number;
 }
 
 // Batch data interface
@@ -109,34 +84,12 @@ interface BatchDataWithTemplate extends BatchData {
   printSettings?: PrintSettings;
 }
 
-// Font family CSS mapping - supports both short names and direct font names
-const FONT_FAMILY_MAP: Record<string, string> = {
-  // Short names (from CardTemplates.tsx)
-  normal: "Arial, 'Segoe UI', sans-serif",
-  clear: "'Courier New', 'Consolas', monospace",
-  digital: "'DSEG7 Classic', 'Courier New', monospace",
-  // Direct font names (from PrintCards.tsx)
-  Arial: "Arial, 'Segoe UI', sans-serif",
-  Tahoma: "Tahoma, 'Segoe UI', sans-serif",
-  "Courier New": "'Courier New', 'Consolas', monospace",
-  Verdana: "Verdana, Geneva, sans-serif",
-  Georgia: "Georgia, 'Times New Roman', serif",
-  Impact: "Impact, 'Arial Black', sans-serif",
-};
+// A4 page dimensions in points (1 point = 1/72 inch)
+const A4_WIDTH_PT = 595.28;
+const A4_HEIGHT_PT = 841.89;
 
-// Helper function to get font family CSS
-function getFontFamilyCSS(fontFamily: string): string {
-  // Check if it's in the map
-  if (FONT_FAMILY_MAP[fontFamily]) {
-    return FONT_FAMILY_MAP[fontFamily];
-  }
-  // If not found, return the font name directly with fallback
-  return `'${fontFamily}', Arial, sans-serif`;
-}
-
-// A4 page dimensions in mm
-const A4_WIDTH_MM = 210;
-const A4_HEIGHT_MM = 297;
+// Convert mm to points
+const mmToPt = (mm: number): number => mm * 2.83465;
 
 // Default print settings
 const DEFAULT_PRINT_SETTINGS: PrintSettings = {
@@ -150,350 +103,68 @@ const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   spacingV: 2,
 };
 
-// Generate QR Code as data URL
-async function generateQRCodeDataURL(data: string, size: number = 100): Promise<string> {
-  try {
-    return await QRCode.toDataURL(data, {
+// Parse hex color to RGB
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (result) {
+    return {
+      r: parseInt(result[1], 16) / 255,
+      g: parseInt(result[2], 16) / 255,
+      b: parseInt(result[3], 16) / 255,
+    };
+  }
+  return { r: 0, g: 0, b: 0 };
+}
+
+// Generate QR Code as PNG buffer
+async function generateQRCodeBuffer(data: string, size: number = 100): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    QRCode.toBuffer(data, {
       width: size,
       margin: 1,
       color: {
         dark: "#000000",
         light: "#ffffff",
       },
+    }, (err, buffer) => {
+      if (err) reject(err);
+      else resolve(buffer);
     });
+  });
+}
+
+// Fetch image as buffer
+async function fetchImageBuffer(url: string): Promise<Buffer> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
   } catch (error) {
-    console.error("QR Code generation error:", error);
-    return `data:image/svg+xml,${encodeURIComponent(`
-      <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100" height="100" fill="white" stroke="#000" stroke-width="2"/>
-        <text x="50" y="55" font-size="12" text-anchor="middle" fill="#666">QR</text>
-      </svg>
-    `)}`;
+    console.error('[PDF] Error fetching image:', error);
+    throw error;
   }
 }
 
 // Calculate card dimensions to fit A4 page
 function calculateCardDimensions(settings: PrintSettings): { cardWidth: number; cardHeight: number; rows: number } {
-  const availableWidth = A4_WIDTH_MM - settings.marginLeft - settings.marginRight;
-  const availableHeight = A4_HEIGHT_MM - settings.marginTop - settings.marginBottom;
+  const availableWidthMm = 210 - settings.marginLeft - settings.marginRight;
+  const availableHeightMm = 297 - settings.marginTop - settings.marginBottom;
   
-  // Calculate card width based on columns and horizontal spacing
   const totalHSpacing = (settings.columns - 1) * settings.spacingH;
-  const cardWidth = (availableWidth - totalHSpacing) / settings.columns;
+  const cardWidthMm = (availableWidthMm - totalHSpacing) / settings.columns;
   
-  // Calculate rows based on cards per page
   const rows = Math.ceil(settings.cardsPerPage / settings.columns);
-  
-  // Calculate card height based on rows and vertical spacing
   const totalVSpacing = (rows - 1) * settings.spacingV;
-  const cardHeight = (availableHeight - totalVSpacing) / rows;
+  const cardHeightMm = (availableHeightMm - totalVSpacing) / rows;
   
-  return { cardWidth, cardHeight, rows };
-}
-
-// Generate single card HTML with template (scaled to fit) - WYSIWYG
-// Uses percentage-based positioning to match preview exactly
-async function generateTemplateCardHTML(
-  card: CardData,
-  template: TemplateSettings,
-  cardWidth: number,
-  cardHeight: number,
-  qrDataUrl?: string
-): Promise<string> {
-  console.log('[PDF] generateTemplateCardHTML called with template:', JSON.stringify({
-    usernameX: template.usernameX,
-    usernameY: template.usernameY,
-    usernameFontSize: template.usernameFontSize,
-    usernameFontColor: template.usernameFontColor,
-    passwordX: template.passwordX,
-    passwordY: template.passwordY,
-    passwordFontSize: template.passwordFontSize,
-    passwordFontColor: template.passwordFontColor,
-  }));
-  console.log('[PDF] Card data:', JSON.stringify({ username: card.username, password: card.password }));
-  
-  const usernameFontFamily = getFontFamilyCSS(template.usernameFontFamily);
-  const passwordFontFamily = getFontFamilyCSS(template.passwordFontFamily);
-
-  // Use font size directly - the preview shows what you get
-  // Font size is in pixels, we convert to pt for PDF (1px ≈ 0.75pt)
-  // But since cards are small, we use the px value directly as pt for better readability
-  const scaledUsernameFontSize = Math.max(8, template.usernameFontSize);
-  const scaledPasswordFontSize = Math.max(8, template.passwordFontSize);
-  
-  // QR Code size scaled to card dimensions
-  const qrSizePercent = (template.qrCodeSize / 400) * 100; // Assuming 400px preview width
-  const scaledQrSize = (qrSizePercent / 100) * cardWidth;
-
-  // Get text alignment transform
-  const getAlignTransform = (align: string) => {
-    switch (align) {
-      case 'left': return 'translate(0, -50%)';
-      case 'right': return 'translate(-100%, -50%)';
-      default: return 'translate(-50%, -50%)';
-    }
+  return { 
+    cardWidth: mmToPt(cardWidthMm), 
+    cardHeight: mmToPt(cardHeightMm), 
+    rows 
   };
-
-  return `
-    <div class="card" style="
-      width: ${cardWidth}mm;
-      height: ${cardHeight}mm;
-      position: relative;
-      background-image: url('${template.imageUrl}');
-      background-size: 100% 100%;
-      background-position: center;
-      overflow: hidden;
-      box-sizing: border-box;
-    ">
-      <!-- Username - WYSIWYG positioning using percentages -->
-      <div style="
-        position: absolute;
-        left: ${template.usernameX}%;
-        top: ${template.usernameY}%;
-        transform: ${getAlignTransform(template.usernameAlign)};
-        font-size: ${scaledUsernameFontSize}pt;
-        font-family: ${usernameFontFamily};
-        color: ${template.usernameFontColor};
-        text-align: ${template.usernameAlign};
-        white-space: nowrap;
-      ">${card.username}</div>
-      
-      <!-- Password - WYSIWYG positioning using percentages -->
-      <div style="
-        position: absolute;
-        left: ${template.passwordX}%;
-        top: ${template.passwordY}%;
-        transform: ${getAlignTransform(template.passwordAlign)};
-        font-size: ${scaledPasswordFontSize}pt;
-        font-family: ${passwordFontFamily};
-        color: ${template.passwordFontColor};
-        text-align: ${template.passwordAlign};
-        white-space: nowrap;
-      ">${card.password}</div>
-      
-      ${template.qrCodeEnabled && qrDataUrl ? `
-        <!-- QR Code - WYSIWYG positioning using percentages -->
-        <img src="${qrDataUrl}" style="
-          position: absolute;
-          left: ${template.qrCodeX}%;
-          top: ${template.qrCodeY}%;
-          transform: translate(-50%, -50%);
-          width: ${scaledQrSize}mm;
-          height: ${scaledQrSize}mm;
-        " />
-      ` : ""}
-    </div>
-  `;
-}
-
-// Generate single card HTML (legacy - default design)
-function generateCardHTML(
-  card: CardData, 
-  cardWidth: number, 
-  cardHeight: number,
-  hotspotUrl?: string, 
-  companyName?: string
-): string {
-  // Calculate font sizes based on card dimensions
-  const baseFontSize = Math.min(cardWidth, cardHeight) * 0.08;
-  const smallFontSize = baseFontSize * 0.7;
-  const qrSize = Math.min(cardWidth, cardHeight) * 0.3;
-  
-  return `
-    <div class="card" style="
-      width: ${cardWidth}mm;
-      height: ${cardHeight}mm;
-      border: 0.3mm solid #ddd;
-      border-radius: 1mm;
-      padding: 1mm;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      overflow: hidden;
-    ">
-      <div style="text-align: center; border-bottom: 0.2mm solid #dee2e6; padding-bottom: 0.5mm;">
-        <div style="font-size: ${baseFontSize}pt; font-weight: bold; color: #1a5f7a;">${companyName || 'RADIUS'}</div>
-        <div style="font-size: ${smallFontSize}pt; color: #666;">${card.planNameAr || card.planName}</div>
-      </div>
-      
-      <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 1mm;">
-        <div style="text-align: center;">
-          <div style="font-size: ${smallFontSize}pt; color: #666;">اسم المستخدم</div>
-          <div style="font-size: ${baseFontSize * 1.1}pt; font-weight: bold; color: #0066cc; font-family: 'Courier New', monospace;">${card.username}</div>
-          <div style="font-size: ${smallFontSize}pt; color: #666; margin-top: 0.5mm;">كلمة المرور</div>
-          <div style="font-size: ${baseFontSize * 1.1}pt; font-weight: bold; color: #cc0000; font-family: 'Courier New', monospace;">${card.password}</div>
-        </div>
-      </div>
-      
-      <div style="text-align: center; border-top: 0.2mm solid #dee2e6; padding-top: 0.5mm;">
-        <div style="font-size: ${smallFontSize * 0.8}pt; color: #888;">${card.serialNumber}</div>
-      </div>
-    </div>
-  `;
-}
-
-// Generate full PDF HTML with template and enhanced print settings
-export async function generateCardsPDFHTMLWithTemplate(batch: BatchDataWithTemplate): Promise<string> {
-  const template = batch.template;
-  const printSettings = batch.printSettings || DEFAULT_PRINT_SETTINGS;
-  
-  // Calculate card dimensions based on print settings
-  const { cardWidth, cardHeight, rows } = calculateCardDimensions(printSettings);
-  const cardsPerPage = printSettings.columns * rows;
-  const cards = batch.cards;
-  const pages: string[] = [];
-  
-  // Generate QR codes for all cards if template has QR enabled
-  const qrDataUrls: string[] = [];
-  if (template?.qrCodeEnabled) {
-    for (const card of cards) {
-      const qrData = template.qrCodeDomain 
-        ? `${template.qrCodeDomain}?username=${card.username}&password=${card.password}`
-        : card.serialNumber;
-      const qrDataUrl = await generateQRCodeDataURL(qrData, template.qrCodeSize);
-      qrDataUrls.push(qrDataUrl);
-    }
-  }
-
-  // Split cards into pages
-  for (let i = 0; i < cards.length; i += cardsPerPage) {
-    const pageCards = cards.slice(i, i + cardsPerPage);
-    const pageQrUrls = qrDataUrls.slice(i, i + cardsPerPage);
-    
-    let cardsHTML: string[];
-    
-    if (template) {
-      cardsHTML = await Promise.all(
-        pageCards.map((card, idx) => 
-          generateTemplateCardHTML(card, template, cardWidth, cardHeight, pageQrUrls[idx])
-        )
-      );
-    } else {
-      cardsHTML = pageCards.map(card => 
-        generateCardHTML(card, cardWidth, cardHeight, batch.hotspotUrl, batch.companyName)
-      );
-    }
-    
-    pages.push(`
-      <div class="page">
-        <div class="cards-grid">
-          ${cardsHTML.join('\n')}
-        </div>
-      </div>
-    `);
-  }
-
-  // Digital font CSS
-  const digitalFontCSS = `
-    @font-face {
-      font-family: 'DSEG7 Classic';
-      src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Regular.woff2') format('woff2');
-    }
-  `;
-
-  return `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <title>بطاقات RADIUS - ${batch.batchName}</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
-    ${digitalFontCSS}
-    
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: 'Cairo', sans-serif;
-      background: #f5f5f5;
-      direction: rtl;
-    }
-    
-    .page {
-      width: ${A4_WIDTH_MM}mm;
-      height: ${A4_HEIGHT_MM}mm;
-      margin: 0 auto;
-      background: white;
-      page-break-after: always;
-      overflow: hidden;
-      position: relative;
-    }
-    
-    .page:last-child {
-      page-break-after: auto;
-    }
-    
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(${printSettings.columns}, ${cardWidth}mm);
-      grid-template-rows: repeat(${rows}, ${cardHeight}mm);
-      gap: ${printSettings.spacingV}mm ${printSettings.spacingH}mm;
-      padding: ${printSettings.marginTop}mm ${printSettings.marginRight}mm ${printSettings.marginBottom}mm ${printSettings.marginLeft}mm;
-      justify-content: center;
-      align-content: start;
-    }
-    
-    .card {
-      break-inside: avoid;
-      print-color-adjust: exact;
-      -webkit-print-color-adjust: exact;
-    }
-    
-    @media print {
-      body {
-        background: white;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      
-      .page {
-        margin: 0;
-        box-shadow: none;
-        page-break-after: always;
-      }
-      
-      .page:last-child {
-        page-break-after: auto;
-      }
-      
-      @page {
-        size: A4;
-        margin: 0;
-      }
-    }
-    
-    @media screen {
-      .page {
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        margin: 10mm auto;
-      }
-    }
-  </style>
-</head>
-<body>
-  ${pages.join('\n')}
-  
-  <script>
-    // Auto-print when opened
-    // window.onload = function() { window.print(); }
-  </script>
-</body>
-</html>
-  `;
-}
-
-// Legacy function for backward compatibility
-export async function generateCardsPDFHTML(batch: BatchData): Promise<string> {
-  return generateCardsPDFHTMLWithTemplate({
-    ...batch,
-    printSettings: DEFAULT_PRINT_SETTINGS,
-  });
 }
 
 // Generate cache key from batch data
@@ -524,7 +195,164 @@ function cleanExpiredCache(): void {
   keysToDelete.forEach(key => pdfCache.delete(key));
 }
 
-// Generate and save REAL PDF to S3 using Puppeteer/Chromium
+// Draw a single card on PDF page - optimized to reuse embedded images
+function drawCard(
+  page: PDFPage,
+  card: CardData,
+  x: number,
+  y: number,
+  cardWidth: number,
+  cardHeight: number,
+  template: TemplateSettings | undefined,
+  font: PDFFont,
+  embeddedTemplateImage: PDFImage | null,
+  embeddedQrImage: PDFImage | null
+): void {
+  // Draw template background image if available (already embedded)
+  if (embeddedTemplateImage) {
+    page.drawImage(embeddedTemplateImage, {
+      x,
+      y,
+      width: cardWidth,
+      height: cardHeight,
+    });
+  } else {
+    // Draw default card design
+    page.drawRectangle({
+      x,
+      y,
+      width: cardWidth,
+      height: cardHeight,
+      borderColor: rgb(0.8, 0.8, 0.8),
+      borderWidth: 0.5,
+      color: rgb(0.98, 0.98, 0.98),
+    });
+  }
+
+  if (template) {
+    // Draw username using template settings
+    const usernameColor = hexToRgb(template.usernameFontColor);
+    const usernameFontSize = Math.max(6, template.usernameFontSize * 0.75); // Scale down for PDF
+    
+    // Calculate position based on percentage
+    const usernameX = x + (template.usernameX / 100) * cardWidth;
+    const usernameY = y + cardHeight - (template.usernameY / 100) * cardHeight;
+    
+    // Get text width for alignment
+    const usernameWidth = font.widthOfTextAtSize(card.username, usernameFontSize);
+    let usernameDrawX = usernameX;
+    if (template.usernameAlign === 'center') {
+      usernameDrawX = usernameX - usernameWidth / 2;
+    } else if (template.usernameAlign === 'right') {
+      usernameDrawX = usernameX - usernameWidth;
+    }
+    
+    page.drawText(card.username, {
+      x: usernameDrawX,
+      y: usernameY - usernameFontSize / 2,
+      size: usernameFontSize,
+      font,
+      color: rgb(usernameColor.r, usernameColor.g, usernameColor.b),
+    });
+
+    // Draw password using template settings
+    const passwordColor = hexToRgb(template.passwordFontColor);
+    const passwordFontSize = Math.max(6, template.passwordFontSize * 0.75);
+    
+    const passwordX = x + (template.passwordX / 100) * cardWidth;
+    const passwordY = y + cardHeight - (template.passwordY / 100) * cardHeight;
+    
+    const passwordWidth = font.widthOfTextAtSize(card.password, passwordFontSize);
+    let passwordDrawX = passwordX;
+    if (template.passwordAlign === 'center') {
+      passwordDrawX = passwordX - passwordWidth / 2;
+    } else if (template.passwordAlign === 'right') {
+      passwordDrawX = passwordX - passwordWidth;
+    }
+    
+    page.drawText(card.password, {
+      x: passwordDrawX,
+      y: passwordY - passwordFontSize / 2,
+      size: passwordFontSize,
+      font,
+      color: rgb(passwordColor.r, passwordColor.g, passwordColor.b),
+    });
+
+    // Draw QR code if enabled (already embedded)
+    if (template.qrCodeEnabled && embeddedQrImage) {
+      const qrSizePt = (template.qrCodeSize / 400) * cardWidth; // Scale QR size
+      const qrX = x + (template.qrCodeX / 100) * cardWidth - qrSizePt / 2;
+      const qrY = y + cardHeight - (template.qrCodeY / 100) * cardHeight - qrSizePt / 2;
+      
+      page.drawImage(embeddedQrImage, {
+        x: qrX,
+        y: qrY,
+        width: qrSizePt,
+        height: qrSizePt,
+      });
+    }
+  } else {
+    // Default card design without template
+    const fontSize = Math.min(cardWidth, cardHeight) * 0.08;
+    const smallFontSize = fontSize * 0.7;
+    
+    // Company name
+    page.drawText('RADIUS', {
+      x: x + cardWidth / 2 - font.widthOfTextAtSize('RADIUS', fontSize) / 2,
+      y: y + cardHeight - fontSize - 5,
+      size: fontSize,
+      font,
+      color: rgb(0.1, 0.37, 0.48),
+    });
+    
+    // Username label and value
+    const usernameLabel = 'Username:';
+    page.drawText(usernameLabel, {
+      x: x + 5,
+      y: y + cardHeight / 2 + smallFontSize,
+      size: smallFontSize,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
+    });
+    
+    page.drawText(card.username, {
+      x: x + 5,
+      y: y + cardHeight / 2,
+      size: fontSize,
+      font,
+      color: rgb(0, 0.4, 0.8),
+    });
+    
+    // Password label and value
+    const passwordLabel = 'Password:';
+    page.drawText(passwordLabel, {
+      x: x + 5,
+      y: y + cardHeight / 2 - fontSize - smallFontSize,
+      size: smallFontSize,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
+    });
+    
+    page.drawText(card.password, {
+      x: x + 5,
+      y: y + cardHeight / 2 - fontSize - smallFontSize * 2,
+      size: fontSize,
+      font,
+      color: rgb(0.8, 0, 0),
+    });
+    
+    // Serial number
+    page.drawText(card.serialNumber, {
+      x: x + cardWidth / 2 - font.widthOfTextAtSize(card.serialNumber, smallFontSize * 0.8) / 2,
+      y: y + 5,
+      size: smallFontSize * 0.8,
+      font,
+      color: rgb(0.5, 0.5, 0.5),
+    });
+  }
+}
+
+// Generate and save REAL PDF to S3 using pdf-lib
 export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Promise<{ pdfUrl: string; pdfKey: string }> {
   // Clean expired cache
   cleanExpiredCache();
@@ -537,69 +365,128 @@ export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Pr
     return { pdfUrl: cached.url, pdfKey: cached.key };
   }
   
-  console.log('[PDF] Starting REAL PDF generation with Puppeteer...');
-  const html = await generateCardsPDFHTMLWithTemplate(batch);
+  console.log('[PDF] Starting REAL PDF generation with pdf-lib...');
+  const startTime = Date.now();
   
-  // Create temp HTML file
-  const tempDir = os.tmpdir();
-  const tempHtmlPath = path.join(tempDir, `cards-${nanoid(8)}.html`);
+  const template = batch.template;
+  const printSettings = batch.printSettings || DEFAULT_PRINT_SETTINGS;
+  const { cardWidth, cardHeight, rows } = calculateCardDimensions(printSettings);
+  const cardsPerPage = printSettings.columns * rows;
+  const cards = batch.cards;
   
-  try {
-    // Write HTML to temp file
-    await writeFileAsync(tempHtmlPath, html, 'utf8');
-    
-    // Get browser instance
-    const browser = await getBrowser();
-    const page = await browser.newPage();
-    
+  // Create PDF document
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
+  
+  // Use Helvetica as default font (supports basic characters)
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  
+  // Embed template image ONCE (not per card) for performance
+  let embeddedTemplateImage: PDFImage | null = null;
+  if (template?.imageUrl) {
     try {
-      // Load HTML file
-      await page.goto(`file://${tempHtmlPath}`, {
-        waitUntil: 'networkidle0',
-        timeout: 60000,
-      });
+      const buffer = await fetchImageBuffer(template.imageUrl);
+      const imageBytes = new Uint8Array(buffer);
+      // Detect image type
+      const isPng = imageBytes[0] === 0x89 && imageBytes[1] === 0x50;
+      const isJpg = imageBytes[0] === 0xFF && imageBytes[1] === 0xD8;
       
-      // Wait for images to load
-      await page.evaluate(() => {
-        return Promise.all(
-          Array.from(document.images)
-            .filter(img => !img.complete)
-            .map(img => new Promise(resolve => {
-              img.onload = img.onerror = resolve;
-            }))
-        );
-      });
-      
-      // Generate PDF
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: { top: '0', right: '0', bottom: '0', left: '0' },
-        preferCSSPageSize: true,
-      });
-      
-      // Upload PDF to S3 with .pdf extension
-      const fileName = `cards-${batch.batchId}-${nanoid(6)}.pdf`;
-      const fileKey = `pdf/${fileName}`;
-      const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
-      
-      console.log('[PDF] Real PDF generated and saved:', url);
-      
-      // Cache the result
-      pdfCache.set(cacheKey, { url, key: fileKey, timestamp: Date.now() });
-      
-      return { pdfUrl: url, pdfKey: fileKey };
-    } finally {
-      await page.close();
-    }
-  } finally {
-    // Cleanup temp file
-    try {
-      if (fs.existsSync(tempHtmlPath)) await unlinkAsync(tempHtmlPath);
-    } catch (cleanupError) {
-      console.warn('[PDF] Cleanup warning:', cleanupError);
+      if (isPng) {
+        embeddedTemplateImage = await pdfDoc.embedPng(imageBytes);
+      } else if (isJpg) {
+        embeddedTemplateImage = await pdfDoc.embedJpg(imageBytes);
+      } else {
+        try {
+          embeddedTemplateImage = await pdfDoc.embedPng(imageBytes);
+        } catch {
+          embeddedTemplateImage = await pdfDoc.embedJpg(imageBytes);
+        }
+      }
+      console.log('[PDF] Template image embedded successfully (once)');
+    } catch (error) {
+      console.error('[PDF] Failed to embed template image:', error);
     }
   }
+  
+  // Pre-embed QR codes (each card has unique QR, so we embed each once)
+  const embeddedQrImages: (PDFImage | null)[] = [];
+  if (template?.qrCodeEnabled) {
+    console.log('[PDF] Generating and embedding QR codes...');
+    for (const card of cards) {
+      const qrData = template.qrCodeDomain 
+        ? `${template.qrCodeDomain}?u=${card.username}&p=${card.password}`
+        : `${card.username}:${card.password}`;
+      try {
+        const qrBuffer = await generateQRCodeBuffer(qrData, template.qrCodeSize || 50);
+        const embeddedQr = await pdfDoc.embedPng(qrBuffer);
+        embeddedQrImages.push(embeddedQr);
+      } catch (error) {
+        console.error('[PDF] QR generation error:', error);
+        embeddedQrImages.push(null);
+      }
+    }
+  }
+  
+  // Calculate margins in points
+  const marginTop = mmToPt(printSettings.marginTop);
+  const marginBottom = mmToPt(printSettings.marginBottom);
+  const marginLeft = mmToPt(printSettings.marginLeft);
+  const marginRight = mmToPt(printSettings.marginRight);
+  const spacingH = mmToPt(printSettings.spacingH);
+  const spacingV = mmToPt(printSettings.spacingV);
+  
+  // Generate pages
+  const totalPages = Math.ceil(cards.length / cardsPerPage);
+  console.log(`[PDF] Generating ${totalPages} pages for ${cards.length} cards...`);
+  
+  for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+    const page = pdfDoc.addPage([A4_WIDTH_PT, A4_HEIGHT_PT]);
+    const pageCards = cards.slice(pageIndex * cardsPerPage, (pageIndex + 1) * cardsPerPage);
+    
+    for (let i = 0; i < pageCards.length; i++) {
+      const card = pageCards[i];
+      const col = i % printSettings.columns;
+      const row = Math.floor(i / printSettings.columns);
+      
+      // Calculate position (PDF coordinates start from bottom-left)
+      const x = marginLeft + col * (cardWidth + spacingH);
+      const y = A4_HEIGHT_PT - marginTop - (row + 1) * cardHeight - row * spacingV;
+      
+      const embeddedQr = template?.qrCodeEnabled ? embeddedQrImages[pageIndex * cardsPerPage + i] : null;
+      
+      drawCard(
+        page,
+        card,
+        x,
+        y,
+        cardWidth,
+        cardHeight,
+        template,
+        font,
+        embeddedTemplateImage,
+        embeddedQr
+      );
+    }
+  }
+  
+  // Save PDF
+  const pdfBytes = await pdfDoc.save();
+  const pdfBuffer = Buffer.from(pdfBytes);
+  
+  const generationTime = Date.now() - startTime;
+  console.log(`[PDF] PDF generated in ${generationTime}ms`);
+  
+  // Upload to S3 with .pdf extension
+  const fileName = `cards-${batch.batchId}-${nanoid(6)}.pdf`;
+  const fileKey = `pdf/${fileName}`;
+  const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
+  
+  console.log('[PDF] Real PDF generated and saved:', url);
+  
+  // Cache the result
+  pdfCache.set(cacheKey, { url, key: fileKey, timestamp: Date.now() });
+  
+  return { pdfUrl: url, pdfKey: fileKey };
 }
 
 // Legacy save function
@@ -635,4 +522,207 @@ export async function saveBatchCSV(batchId: string, cards: CardData[]): Promise<
   return { csvUrl: url, csvKey: fileKey };
 }
 
+// Legacy HTML generation for preview (kept for backward compatibility)
+export async function generateCardsPDFHTMLWithTemplate(batch: BatchDataWithTemplate): Promise<string> {
+  // This function is kept for preview purposes only
+  // The actual PDF generation now uses pdf-lib
+  const template = batch.template;
+  const printSettings = batch.printSettings || DEFAULT_PRINT_SETTINGS;
+  const { cardWidth, cardHeight, rows } = calculateCardDimensions(printSettings);
+  
+  // Convert points back to mm for HTML
+  const cardWidthMm = cardWidth / 2.83465;
+  const cardHeightMm = cardHeight / 2.83465;
+  
+  const cardsPerPage = printSettings.columns * rows;
+  const cards = batch.cards;
+  const pages: string[] = [];
+  
+  // Generate QR codes for all cards if template has QR enabled
+  const qrDataUrls: string[] = [];
+  if (template?.qrCodeEnabled) {
+    for (const card of cards) {
+      const qrData = template.qrCodeDomain 
+        ? `${template.qrCodeDomain}?u=${card.username}&p=${card.password}`
+        : `${card.username}:${card.password}`;
+      try {
+        const qrDataUrl = await QRCode.toDataURL(qrData, {
+          width: template.qrCodeSize || 50,
+          margin: 1,
+        });
+        qrDataUrls.push(qrDataUrl);
+      } catch {
+        qrDataUrls.push('');
+      }
+    }
+  }
+  
+  // Generate pages
+  for (let pageStart = 0; pageStart < cards.length; pageStart += cardsPerPage) {
+    const pageCards = cards.slice(pageStart, pageStart + cardsPerPage);
+    const cardHtmls: string[] = [];
+    
+    for (let i = 0; i < pageCards.length; i++) {
+      const card = pageCards[i];
+      const qrDataUrl = template?.qrCodeEnabled ? qrDataUrls[pageStart + i] : undefined;
+      
+      if (template) {
+        cardHtmls.push(`
+          <div class="card" style="
+            width: ${cardWidthMm}mm;
+            height: ${cardHeightMm}mm;
+            position: relative;
+            background-image: url('${template.imageUrl}');
+            background-size: 100% 100%;
+            overflow: hidden;
+          ">
+            <div style="
+              position: absolute;
+              left: ${template.usernameX}%;
+              top: ${template.usernameY}%;
+              transform: translate(-50%, -50%);
+              font-size: ${template.usernameFontSize}pt;
+              color: ${template.usernameFontColor};
+            ">${card.username}</div>
+            <div style="
+              position: absolute;
+              left: ${template.passwordX}%;
+              top: ${template.passwordY}%;
+              transform: translate(-50%, -50%);
+              font-size: ${template.passwordFontSize}pt;
+              color: ${template.passwordFontColor};
+            ">${card.password}</div>
+            ${template.qrCodeEnabled && qrDataUrl ? `
+              <img src="${qrDataUrl}" style="
+                position: absolute;
+                left: ${template.qrCodeX}%;
+                top: ${template.qrCodeY}%;
+                transform: translate(-50%, -50%);
+                width: ${(template.qrCodeSize / 400) * cardWidthMm}mm;
+                height: ${(template.qrCodeSize / 400) * cardWidthMm}mm;
+              " />
+            ` : ''}
+          </div>
+        `);
+      } else {
+        cardHtmls.push(`
+          <div class="card" style="
+            width: ${cardWidthMm}mm;
+            height: ${cardHeightMm}mm;
+            border: 0.3mm solid #ddd;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+          ">
+            <div style="font-weight: bold; color: #0066cc;">${card.username}</div>
+            <div style="font-weight: bold; color: #cc0000;">${card.password}</div>
+          </div>
+        `);
+      }
+    }
+    
+    pages.push(`
+      <div class="page" style="
+        width: 210mm;
+        height: 297mm;
+        padding: ${printSettings.marginTop}mm ${printSettings.marginRight}mm ${printSettings.marginBottom}mm ${printSettings.marginLeft}mm;
+        display: grid;
+        grid-template-columns: repeat(${printSettings.columns}, 1fr);
+        gap: ${printSettings.spacingV}mm ${printSettings.spacingH}mm;
+        box-sizing: border-box;
+      ">
+        ${cardHtmls.join('\n')}
+      </div>
+    `);
+  }
+  
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>بطاقات RADIUS - ${batch.batchName}</title>
+  <style>
+    @page { size: A4; margin: 0; }
+    body { margin: 0; padding: 0; }
+    .page { page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+  </style>
+</head>
+<body>
+  ${pages.join('\n')}
+</body>
+</html>
+  `;
+}
+
 export { CardData, TemplateSettings, PrintSettings, BatchData, BatchDataWithTemplate, DEFAULT_PRINT_SETTINGS };
+
+
+// Legacy function for backward compatibility
+export function generateCardsPDFHTML(batch: BatchData): string {
+  // Simple HTML generation for legacy code
+  const cards = batch.cards;
+  const cardsPerPage = batch.cardsPerPage || 50;
+  const pages: string[] = [];
+  
+  for (let pageStart = 0; pageStart < cards.length; pageStart += cardsPerPage) {
+    const pageCards = cards.slice(pageStart, pageStart + cardsPerPage);
+    const cardHtmls = pageCards.map(card => `
+      <div class="card" style="
+        width: 38mm;
+        height: 25mm;
+        border: 0.3mm solid #ddd;
+        border-radius: 1mm;
+        padding: 1mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      ">
+        <div style="font-size: 8pt; font-weight: bold; color: #1a5f7a;">${batch.companyName || 'RADIUS'}</div>
+        <div style="font-size: 7pt; color: #666;">${card.planNameAr || card.planName}</div>
+        <div style="font-size: 9pt; font-weight: bold; color: #0066cc; font-family: 'Courier New', monospace;">${card.username}</div>
+        <div style="font-size: 9pt; font-weight: bold; color: #cc0000; font-family: 'Courier New', monospace;">${card.password}</div>
+        <div style="font-size: 5pt; color: #888;">${card.serialNumber}</div>
+      </div>
+    `);
+    
+    pages.push(`
+      <div class="page" style="
+        width: 210mm;
+        height: 297mm;
+        padding: 5mm;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 2mm;
+        box-sizing: border-box;
+      ">
+        ${cardHtmls.join('\n')}
+      </div>
+    `);
+  }
+  
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>بطاقات RADIUS - ${batch.batchName}</title>
+  <style>
+    @page { size: A4; margin: 0; }
+    body { margin: 0; padding: 0; }
+    .page { page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+  </style>
+</head>
+<body>
+  ${pages.join('\n')}
+</body>
+</html>
+  `;
+}

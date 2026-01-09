@@ -977,3 +977,8 @@
 - [x] Implement real PDF generation using Puppeteer/Chromium
 - [x] Ensure output is .pdf with application/pdf content-type
 - [x] No HTML workarounds - direct PDF download
+
+- [x] Implement pdf-lib for real PDF generation (no Chrome/browser needed)
+- [x] Each card shows unique username/password (no placeholders)
+- [x] QR disabled by default, size 50x50 when enabled
+- [x] Fast performance for bulk printing (50/100/1000 cards)
