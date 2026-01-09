@@ -2116,12 +2116,12 @@ const templatesRouter = router({
       passwordY: z.number().optional(),
       // Username font settings
       usernameFontSize: z.number().optional(),
-      usernameFontFamily: z.enum(['normal', 'clear', 'digital']).optional(),
+      usernameFontFamily: z.string().optional(),
       usernameFontColor: z.string().optional(),
       usernameAlign: z.enum(['left', 'center', 'right']).optional(),
       // Password font settings
       passwordFontSize: z.number().optional(),
-      passwordFontFamily: z.enum(['normal', 'clear', 'digital']).optional(),
+      passwordFontFamily: z.string().optional(),
       passwordFontColor: z.string().optional(),
       passwordAlign: z.enum(['left', 'center', 'right']).optional(),
       // QR Code settings

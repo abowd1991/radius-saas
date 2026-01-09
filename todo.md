@@ -944,3 +944,9 @@
 ## Fix QR Position and Mobile PDF Download (Jan 9, 2026) - Issue #5
 - [x] Fix QR default X position from 200 to 50 (still showing 200 in UI)
 - [x] Fix PDF download on mobile (file opens instead of downloading)
+## Save Template Settings Feature (Jan 9, 2026) - Issue #6
+- [x] Add "Save Settings to Template" button in PrintCards page
+- [x] Save current text positions (username X/Y, password X/Y) to template
+- [x] Save font settings (size, family, color, align) to template
+- [x] Save QR settings (enabled, X, Y, size, domain) to template
+- [x] Show success message after saving

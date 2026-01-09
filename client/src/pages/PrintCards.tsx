@@ -155,6 +155,20 @@ export default function PrintCards() {
       toast.success("تم تعيين القالب كافتراضي");
     },
   });
+  
+  // Save template settings mutation
+  const [savingSettings, setSavingSettings] = useState(false);
+  const updateTemplate = trpc.templates.update.useMutation({
+    onSuccess: () => {
+      refetchTemplates();
+      toast.success("تم حفظ الإعدادات في القالب بنجاح");
+      setSavingSettings(false);
+    },
+    onError: (error) => {
+      toast.error(`فشل حفظ الإعدادات: ${error.message}`);
+      setSavingSettings(false);
+    },
+  });
 
   // Generate PDF mutation
   const generatePDF = trpc.vouchers.generateBatchPDFWithTemplate.useMutation({
@@ -1078,6 +1092,56 @@ export default function PrintCards() {
                         </p>
                       </div>
                     )}
+                  </div>
+                  
+                  {/* Save Settings Button */}
+                  <div className="flex justify-end pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        if (!selectedTemplateId) {
+                          toast.error("يرجى اختيار قالب أولاً");
+                          return;
+                        }
+                        setSavingSettings(true);
+                        updateTemplate.mutate({
+                          id: selectedTemplateId,
+                          // Username settings
+                          usernameX: Math.round(usernameSettings.x),
+                          usernameY: Math.round(usernameSettings.y),
+                          usernameFontSize: usernameSettings.fontSize,
+                          usernameFontFamily: usernameSettings.fontFamily,
+                          usernameFontColor: usernameSettings.color,
+                          usernameAlign: usernameSettings.align,
+                          // Password settings
+                          passwordX: Math.round(passwordSettings.x),
+                          passwordY: Math.round(passwordSettings.y),
+                          passwordFontSize: passwordSettings.fontSize,
+                          passwordFontFamily: passwordSettings.fontFamily,
+                          passwordFontColor: passwordSettings.color,
+                          passwordAlign: passwordSettings.align,
+                          // QR settings
+                          qrCodeEnabled: qrEnabled,
+                          qrCodeX: Math.round(qrSettings.x),
+                          qrCodeY: Math.round(qrSettings.y),
+                          qrCodeSize: qrSettings.size,
+                          qrCodeDomain: qrDomain,
+                        });
+                      }}
+                      disabled={savingSettings || !selectedTemplateId}
+                    >
+                      {savingSettings ? (
+                        <>
+                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                          جاري الحفظ...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="ml-2 h-4 w-4" />
+                          حفظ الإعدادات في القالب
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

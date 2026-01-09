@@ -567,7 +567,7 @@ export const cardTemplates = mysqlTable("card_templates", {
   usernameX: int("usernameX").default(50),
   usernameY: int("usernameY").default(100),
   usernameFontSize: int("usernameFontSize").default(14),
-  usernameFontFamily: mysqlEnum("usernameFontFamily", ["normal", "clear", "digital"]).default("normal"),
+  usernameFontFamily: varchar("usernameFontFamily", { length: 50 }).default("Arial"),
   usernameFontColor: varchar("usernameFontColor", { length: 9 }).default("#000000"),
   usernameAlign: mysqlEnum("usernameAlign", ["left", "center", "right"]).default("left"),
   
@@ -575,7 +575,7 @@ export const cardTemplates = mysqlTable("card_templates", {
   passwordX: int("passwordX").default(50),
   passwordY: int("passwordY").default(130),
   passwordFontSize: int("passwordFontSize").default(14),
-  passwordFontFamily: mysqlEnum("passwordFontFamily", ["normal", "clear", "digital"]).default("normal"),
+  passwordFontFamily: varchar("passwordFontFamily", { length: 50 }).default("Arial"),
   passwordFontColor: varchar("passwordFontColor", { length: 9 }).default("#000000"),
   passwordAlign: mysqlEnum("passwordAlign", ["left", "center", "right"]).default("left"),
   
