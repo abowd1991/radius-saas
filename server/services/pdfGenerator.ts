@@ -24,14 +24,14 @@ interface TemplateSettings {
   usernameX: number;
   usernameY: number;
   usernameFontSize: number;
-  usernameFontFamily: "normal" | "clear" | "digital";
+  usernameFontFamily: string; // Accepts any font name (Arial, Tahoma, etc.) or short names (normal, clear, digital)
   usernameFontColor: string;
   usernameAlign: "left" | "center" | "right";
   // Password settings
   passwordX: number;
   passwordY: number;
   passwordFontSize: number;
-  passwordFontFamily: "normal" | "clear" | "digital";
+  passwordFontFamily: string; // Accepts any font name (Arial, Tahoma, etc.) or short names (normal, clear, digital)
   passwordFontColor: string;
   passwordAlign: "left" | "center" | "right";
   // QR Code settings
@@ -76,12 +76,30 @@ interface BatchDataWithTemplate extends BatchData {
   printSettings?: PrintSettings;
 }
 
-// Font family CSS mapping
+// Font family CSS mapping - supports both short names and direct font names
 const FONT_FAMILY_MAP: Record<string, string> = {
+  // Short names (from CardTemplates.tsx)
   normal: "Arial, 'Segoe UI', sans-serif",
   clear: "'Courier New', 'Consolas', monospace",
   digital: "'DSEG7 Classic', 'Courier New', monospace",
+  // Direct font names (from PrintCards.tsx)
+  Arial: "Arial, 'Segoe UI', sans-serif",
+  Tahoma: "Tahoma, 'Segoe UI', sans-serif",
+  "Courier New": "'Courier New', 'Consolas', monospace",
+  Verdana: "Verdana, Geneva, sans-serif",
+  Georgia: "Georgia, 'Times New Roman', serif",
+  Impact: "Impact, 'Arial Black', sans-serif",
 };
+
+// Helper function to get font family CSS
+function getFontFamilyCSS(fontFamily: string): string {
+  // Check if it's in the map
+  if (FONT_FAMILY_MAP[fontFamily]) {
+    return FONT_FAMILY_MAP[fontFamily];
+  }
+  // If not found, return the font name directly with fallback
+  return `'${fontFamily}', Arial, sans-serif`;
+}
 
 // A4 page dimensions in mm
 const A4_WIDTH_MM = 210;
@@ -149,8 +167,8 @@ async function generateTemplateCardHTML(
   cardHeight: number,
   qrDataUrl?: string
 ): Promise<string> {
-  const usernameFontFamily = FONT_FAMILY_MAP[template.usernameFontFamily] || FONT_FAMILY_MAP.normal;
-  const passwordFontFamily = FONT_FAMILY_MAP[template.passwordFontFamily] || FONT_FAMILY_MAP.normal;
+  const usernameFontFamily = getFontFamilyCSS(template.usernameFontFamily);
+  const passwordFontFamily = getFontFamilyCSS(template.passwordFontFamily);
 
   // Scale font size based on card dimensions (assuming preview is ~400px wide)
   const fontScale = cardWidth / 40; // Convert mm to approximate scale factor

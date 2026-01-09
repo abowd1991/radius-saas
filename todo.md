@@ -913,3 +913,10 @@
 - [x] Add dynamic helper text based on connection type
 - [x] Add warning when private IP entered with "Public IP" connection type (detects 10.x.x.x, 172.16-31.x.x, 192.168.x.x)
 - [x] Apply changes to both admin and client views (same component used)
+
+## Fix Font Settings in Card Templates (Jan 9, 2026)
+- [x] Fix live preview to update immediately when font settings change (already working)
+- [x] Fix PDF generation to apply saved font settings (size, family, color)
+- [x] Ensure username font settings are applied in preview and PDF
+- [x] Ensure password font settings are applied in preview and PDF
+- [x] Support all font families: Arial, Tahoma, Courier New, Verdana, Georgia, Impact + legacy (normal, clear, digital)
