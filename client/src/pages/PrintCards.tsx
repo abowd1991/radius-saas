@@ -1325,7 +1325,7 @@ export default function PrintCards() {
                   ) : (
                     <>
                       <Download className="ml-2 h-5 w-5" />
-                      إنشاء ملف الطباعة
+                      تحميل PDF
                     </>
                   )}
                 </Button>
@@ -1358,7 +1358,7 @@ export default function PrintCards() {
                           const link = document.createElement('a');
                           link.style.display = 'none';
                           link.href = blobUrl;
-                          link.download = `cards-${selectedBatchId || Date.now()}.html`;
+                          link.download = `cards-${selectedBatchId || Date.now()}.pdf`;
                           link.setAttribute('target', '_self');
                           
                           // For iOS Safari compatibility
@@ -1381,7 +1381,7 @@ export default function PrintCards() {
                             window.URL.revokeObjectURL(blobUrl);
                           }, 5000);
                           
-                          toast.success('جاري تحميل الملف...');
+                          toast.success('جاري تحميل ملف PDF...');
                         } catch (error) {
                           console.error('Download error:', error);
                           // Fallback: open in new tab
