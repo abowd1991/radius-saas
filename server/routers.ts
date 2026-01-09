@@ -1711,21 +1711,12 @@ const dashboardRouter = router({
 // SESSIONS ROUTER (Active RADIUS Sessions)
 // ============================================================================
 const sessionsRouter = router({
-  // List sessions - filter by owner's NAS devices
+  // List sessions - filter by owner's cards/subscribers (multi-tenancy)
   list: protectedProcedure.query(async ({ ctx }) => {
-    const allSessions = await mikrotikApi.getActiveSessions();
-    
-    // Super admin sees all sessions
-    if (ctx.user.role === 'super_admin') {
-      return allSessions;
-    }
-    
-    // Get owner's NAS devices
-    const ownerNasDevices = await nasDb.getNasDevicesByOwner(ctx.user.id);
-    const ownerNasIps = ownerNasDevices.map(n => n.nasname);
-    
-    // Filter sessions by owner's NAS
-    return allSessions.filter((s: any) => ownerNasIps.includes(s.nasIpAddress || s.nasipaddress));
+    // Super admin sees all sessions (pass null)
+    // Others see only their cards/subscribers sessions
+    const ownerId = ctx.user.role === 'super_admin' ? null : ctx.user.id;
+    return mikrotikApi.getActiveSessionsByOwner(ownerId);
   }),
 
   // Get sessions by username - filter by owner's NAS

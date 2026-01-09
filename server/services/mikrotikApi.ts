@@ -9,7 +9,7 @@
  */
 
 import { getDb } from "../db";
-import { nasDevices, radacct, onlineSessions } from "../../drizzle/schema";
+import { nasDevices, radacct, onlineSessions, radiusCards, subscribers } from "../../drizzle/schema";
 import { eq, and, isNull, desc } from "drizzle-orm";
 
 // MikroTik API response interface
@@ -218,6 +218,81 @@ export async function disconnectUserSessions(username: string): Promise<MikroTik
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to disconnect sessions" };
   }
+}
+
+// Get active sessions filtered by owner (multi-tenancy)
+export async function getActiveSessionsByOwner(ownerId: number | null): Promise<ActiveSession[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // radiusCards and subscribers are imported at the top
+  
+  // Get all active sessions
+  const sessions = await db.select()
+    .from(radacct)
+    .where(isNull(radacct.acctstoptime))
+    .orderBy(desc(radacct.acctstarttime))
+    .limit(1000);
+  
+  // If super_admin (ownerId is null), return all sessions
+  if (ownerId === null) {
+    const nasDevicesList = await db.select().from(nasDevices);
+    const nasMap = new Map(nasDevicesList.map(n => [n.nasname, n.shortname || n.nasname]));
+    
+    return sessions.map(session => ({
+      id: session.acctuniqueid,
+      username: session.username,
+      nasIpAddress: session.nasipaddress,
+      nasName: nasMap.get(session.nasipaddress) || session.nasipaddress,
+      framedIpAddress: session.framedipaddress || undefined,
+      callingStationId: session.callingstationid || undefined,
+      sessionTime: session.acctsessiontime || 0,
+      inputOctets: session.acctinputoctets || 0,
+      outputOctets: session.acctoutputoctets || 0,
+      startTime: session.acctstarttime || new Date(),
+      serviceType: session.servicetype || 'PPP',
+    }));
+  }
+  
+  // Get usernames from cards created by this owner
+  const ownerCards = await db.select({ username: radiusCards.username })
+    .from(radiusCards)
+    .where(eq(radiusCards.createdBy, ownerId));
+  const cardUsernames = new Set(ownerCards.map(c => c.username));
+  
+  // Get usernames from subscribers created by this owner
+  const ownerSubscribers = await db.select({ username: subscribers.username })
+    .from(subscribers)
+    .where(eq(subscribers.createdBy, ownerId));
+  const subscriberUsernames = new Set(ownerSubscribers.map(s => s.username));
+  
+  // Combine all usernames owned by this user
+  const ownerUsernames = new Set<string>();
+  cardUsernames.forEach(u => ownerUsernames.add(u));
+  subscriberUsernames.forEach(u => ownerUsernames.add(u));
+  
+  // Filter sessions by owner's usernames
+  const filteredSessions = sessions.filter(session => 
+    ownerUsernames.has(session.username)
+  );
+  
+  // Get NAS names
+  const nasDevicesList = await db.select().from(nasDevices);
+  const nasMap = new Map(nasDevicesList.map(n => [n.nasname, n.shortname || n.nasname]));
+  
+  return filteredSessions.map(session => ({
+    id: session.acctuniqueid,
+    username: session.username,
+    nasIpAddress: session.nasipaddress,
+    nasName: nasMap.get(session.nasipaddress) || session.nasipaddress,
+    framedIpAddress: session.framedipaddress || undefined,
+    callingStationId: session.callingstationid || undefined,
+    sessionTime: session.acctsessiontime || 0,
+    inputOctets: session.acctinputoctets || 0,
+    outputOctets: session.acctoutputoctets || 0,
+    startTime: session.acctstarttime || new Date(),
+    serviceType: session.servicetype || 'PPP',
+  }));
 }
 
 // Get session statistics

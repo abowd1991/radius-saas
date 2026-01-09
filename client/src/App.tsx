@@ -25,6 +25,7 @@ import Reports from "./pages/Reports";
 import Backups from "./pages/Backups";
 import Landing from "./pages/Landing";
 import Subscribers from "./pages/Subscribers";
+import OnlineUsers from "./pages/OnlineUsers";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -94,6 +95,11 @@ function Router() {
       <Route path="/sessions">
         <DashboardLayout>
           <Sessions />
+        </DashboardLayout>
+      </Route>
+      <Route path="/online-users">
+        <DashboardLayout>
+          <OnlineUsers />
         </DashboardLayout>
       </Route>
       <Route path="/reports">

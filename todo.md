@@ -841,3 +841,31 @@
 - [ ] Test subscription expiry and auto-reject
 - [ ] Test CoA disconnect on suspend
 - [ ] Test multi-tenant isolation
+
+
+## Online Users Page (Jan 9, 2026)
+
+### Backend API
+- [ ] sessions.getOnline - get currently connected users from radacct (acctstoptime IS NULL)
+- [ ] sessions.disconnect - disconnect user via CoA
+- [ ] sessions.getStats - get online users count by NAS/plan
+
+### UI Page
+- [ ] Online users list with real-time data
+- [ ] Show username, IP, NAS, plan, connected time, upload/download
+- [ ] Disconnect button for each user
+- [ ] Auto-refresh every 30 seconds
+- [ ] Filter by NAS, plan, search by username
+- [ ] Add to sidebar navigation
+
+### Multi-tenancy
+- [ ] Each client sees only their online users
+- [ ] Filter by ownerId/createdBy
+
+
+## Online Users Page - COMPLETED (Jan 9, 2026)
+- [x] Backend API: getActiveSessionsByOwner with multi-tenancy
+- [x] UI Page: OnlineUsers.tsx with stats, search, table
+- [x] Disconnect button with CoA integration
+- [x] Added to sidebar navigation for super_admin and client
+- [x] All 209 tests passing

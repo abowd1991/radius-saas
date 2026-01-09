@@ -48,6 +48,7 @@ import {
   Sun,
   Database,
   UserCheck,
+  Wifi,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -95,6 +96,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
     { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
     { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
+    { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
     { icon: MessageSquare, label: t("nav.support"), path: "/support" },
     { icon: Settings, label: t("nav.settings"), path: "/settings" },
     { icon: CreditCard, label: "إدارة الاشتراكات", path: "/tenant-subscriptions" },
@@ -120,6 +122,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: UserCheck, label: "المشتركين الشهريين", path: "/subscribers" },
     { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
     { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
+    { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
     { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
     { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },
     { icon: MessageSquare, label: t("nav.support"), path: "/support" },
