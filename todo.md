@@ -869,3 +869,7 @@
 - [x] Disconnect button with CoA integration
 - [x] Added to sidebar navigation for super_admin and client
 - [x] All 209 tests passing
+
+
+## Bug Fix - Speed Display (Jan 9, 2026)
+- [x] Fix speed display in plan dropdown - showing kbps instead of Mbps (converted using Math.round(speed / 1000))

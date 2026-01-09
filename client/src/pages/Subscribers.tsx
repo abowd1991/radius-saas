@@ -372,7 +372,7 @@ export default function Subscribers() {
                     <SelectContent>
                       {plansData?.map((plan: any) => (
                         <SelectItem key={plan.id} value={String(plan.id)}>
-                          {plan.name} - {plan.downloadSpeed}Mbps / {plan.uploadSpeed}Mbps - ${plan.price}
+                          {plan.name} - {Math.round(plan.downloadSpeed / 1000)}Mbps / {Math.round(plan.uploadSpeed / 1000)}Mbps - ${plan.price}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -656,7 +656,7 @@ export default function Subscribers() {
                           <div className="flex flex-col">
                             <span>{sub.plan.name}</span>
                             <span className="text-xs text-muted-foreground">
-                              {sub.plan.downloadSpeed}/{sub.plan.uploadSpeed} Mbps
+                              {Math.round(sub.plan.downloadSpeed / 1000)}/{Math.round(sub.plan.uploadSpeed / 1000)} Mbps
                             </span>
                           </div>
                         ) : (
