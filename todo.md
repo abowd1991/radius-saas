@@ -889,3 +889,7 @@
 - [x] Calculate total used time from all sessions in radacct
 - [x] Add checkUserTimeStatus API endpoint for checking user time status
 - [x] Add 20 vitest tests for time logic verification
+
+## PDF Download Button Fix (Jan 9, 2026) - Issue #2
+- [x] Fix PDF download button not triggering file download (using fetch + blob approach)
+- [x] Ensure download button works on mobile browsers (with fallback to open in new tab)

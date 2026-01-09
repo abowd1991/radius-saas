@@ -1227,13 +1227,23 @@ export default function PrintCards() {
                     <Button
                       variant="default"
                       className="w-full"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = generatedUrl;
-                        link.download = `cards-${Date.now()}.pdf`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
+                      onClick={async () => {
+                        try {
+                          // Fetch the file and create a blob for download
+                          const response = await fetch(generatedUrl);
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = `cards-${Date.now()}.html`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          window.URL.revokeObjectURL(url);
+                        } catch (error) {
+                          // Fallback: open in new tab if fetch fails
+                          window.open(generatedUrl, '_blank');
+                        }
                       }}
                     >
                       <Download className="ml-2 h-4 w-4" />
