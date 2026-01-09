@@ -907,3 +907,9 @@
 - [x] Add "Test Connection" button (required before saving when API enabled)
 - [x] Add "Save Settings" button to save API config to selected network
 - [x] Load existing API settings when network is selected
+
+## Improve IP Address Field UX (Jan 9, 2026)
+- [x] Rename field from "عنوان IP العام" to "عنوان IP للراوتر"
+- [x] Add dynamic helper text based on connection type
+- [x] Add warning when private IP entered with "Public IP" connection type (detects 10.x.x.x, 172.16-31.x.x, 192.168.x.x)
+- [x] Apply changes to both admin and client views (same component used)

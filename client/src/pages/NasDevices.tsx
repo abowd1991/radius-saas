@@ -78,6 +78,35 @@ export default function NasDevices() {
   const [activeTab, setActiveTab] = useState("create");
   const [autoIpAddress, setAutoIpAddress] = useState("");
   const [apiTestResult, setApiTestResult] = useState<{success: boolean; message: string} | null>(null);
+  const [ipAddress, setIpAddress] = useState("");
+  const [ipWarning, setIpWarning] = useState<string | null>(null);
+
+  // Check if IP is private
+  const isPrivateIP = (ip: string): boolean => {
+    if (!ip) return false;
+    const parts = ip.split('.').map(Number);
+    if (parts.length !== 4) return false;
+    // 10.0.0.0 - 10.255.255.255
+    if (parts[0] === 10) return true;
+    // 172.16.0.0 - 172.31.255.255
+    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+    // 192.168.0.0 - 192.168.255.255
+    if (parts[0] === 192 && parts[1] === 168) return true;
+    return false;
+  };
+
+  // Handle IP change with validation
+  const handleIpChange = (value: string) => {
+    setIpAddress(value);
+    if (connectionType === "public_ip" && isPrivateIP(value)) {
+      setIpWarning(language === "ar" 
+        ? "⚠️ هذا عنوان IP خاص (Private). إذا كان الراوتر خلف NAT، استخدم اتصال VPN بدلاً من ذلك."
+        : "⚠️ This is a private IP address. If router is behind NAT, use VPN connection instead."
+      );
+    } else {
+      setIpWarning(null);
+    }
+  };
   const [isTestingApi, setIsTestingApi] = useState(false);
   // VPN credentials are auto-generated on the server, no need for state
 
@@ -295,18 +324,33 @@ export default function NasDevices() {
         <div className="space-y-2">
           <Label htmlFor="ipAddress">
             {connectionType === "public_ip" 
-              ? (language === "ar" ? "عنوان IP العام" : "Public IP Address")
+              ? (language === "ar" ? "عنوان IP للراوتر" : "Router IP Address")
               : (language === "ar" ? "عنوان IP النفق (تلقائي)" : "Tunnel IP (Auto)")
             }
           </Label>
           {connectionType === "public_ip" ? (
-            <Input 
-              id="ipAddress" 
-              name="ipAddress" 
-              placeholder="192.168.7.85" 
-              required 
-              className="bg-background"
-            />
+            <>
+              <Input 
+                id="ipAddress" 
+                name="ipAddress" 
+                placeholder="203.0.113.50"
+                value={ipAddress}
+                onChange={(e) => handleIpChange(e.target.value)}
+                required 
+                className={`bg-background ${ipWarning ? 'border-amber-500' : ''}`}
+              />
+              <p className="text-xs text-muted-foreground">
+                {language === "ar" 
+                  ? "أدخل عنوان IP العام للراوتر (يجب أن يكون قابلاً للوصول من الإنترنت)"
+                  : "Enter the router's public IP address (must be reachable from the internet)"
+                }
+              </p>
+              {ipWarning && (
+                <p className="text-xs text-amber-600 bg-amber-500/10 p-2 rounded">
+                  {ipWarning}
+                </p>
+              )}
+            </>
           ) : (
             <div className="relative">
               <Input 
