@@ -1,16 +1,35 @@
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
-import { exec } from "child_process";
-import { promisify } from "util";
+import puppeteer from "puppeteer";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import { promisify } from "util";
 
-const execAsync = promisify(exec);
 const writeFileAsync = promisify(fs.writeFile);
 const readFileAsync = promisify(fs.readFile);
 const unlinkAsync = promisify(fs.unlink);
+
+// Puppeteer browser instance for reuse
+let browserInstance: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+
+async function getBrowser() {
+  if (!browserInstance || !browserInstance.connected) {
+    console.log('[PDF] Launching new Puppeteer browser...');
+    browserInstance = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--font-render-hinting=none',
+      ],
+    });
+  }
+  return browserInstance;
+}
 
 // PDF Cache to avoid regenerating same PDF
 const pdfCache = new Map<string, { url: string; key: string; timestamp: number }>();
@@ -505,8 +524,7 @@ function cleanExpiredCache(): void {
   keysToDelete.forEach(key => pdfCache.delete(key));
 }
 
-// Generate and save HTML for printing to S3
-// Note: wkhtmltopdf is not available in production, so we save HTML which can be printed/saved as PDF from browser
+// Generate and save REAL PDF to S3 using Puppeteer/Chromium
 export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Promise<{ pdfUrl: string; pdfKey: string }> {
   // Clean expired cache
   cleanExpiredCache();
@@ -515,24 +533,73 @@ export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Pr
   const cacheKey = generateCacheKey(batch);
   const cached = pdfCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    console.log('[PDF] Returning cached file:', cached.url);
+    console.log('[PDF] Returning cached PDF:', cached.url);
     return { pdfUrl: cached.url, pdfKey: cached.key };
   }
   
-  console.log('[PDF] Starting HTML generation for printing...');
+  console.log('[PDF] Starting REAL PDF generation with Puppeteer...');
   const html = await generateCardsPDFHTMLWithTemplate(batch);
   
-  // Upload HTML to S3 (user can print/save as PDF from browser)
-  const fileName = `cards-${batch.batchId}-${nanoid(6)}.html`;
-  const fileKey = `pdf/${fileName}`;
-  const { url } = await storagePut(fileKey, html, "text/html");
+  // Create temp HTML file
+  const tempDir = os.tmpdir();
+  const tempHtmlPath = path.join(tempDir, `cards-${nanoid(8)}.html`);
   
-  console.log('[PDF] HTML for printing generated and saved:', url);
-  
-  // Cache the result
-  pdfCache.set(cacheKey, { url, key: fileKey, timestamp: Date.now() });
-  
-  return { pdfUrl: url, pdfKey: fileKey };
+  try {
+    // Write HTML to temp file
+    await writeFileAsync(tempHtmlPath, html, 'utf8');
+    
+    // Get browser instance
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+    
+    try {
+      // Load HTML file
+      await page.goto(`file://${tempHtmlPath}`, {
+        waitUntil: 'networkidle0',
+        timeout: 60000,
+      });
+      
+      // Wait for images to load
+      await page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images)
+            .filter(img => !img.complete)
+            .map(img => new Promise(resolve => {
+              img.onload = img.onerror = resolve;
+            }))
+        );
+      });
+      
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '0', right: '0', bottom: '0', left: '0' },
+        preferCSSPageSize: true,
+      });
+      
+      // Upload PDF to S3 with .pdf extension
+      const fileName = `cards-${batch.batchId}-${nanoid(6)}.pdf`;
+      const fileKey = `pdf/${fileName}`;
+      const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
+      
+      console.log('[PDF] Real PDF generated and saved:', url);
+      
+      // Cache the result
+      pdfCache.set(cacheKey, { url, key: fileKey, timestamp: Date.now() });
+      
+      return { pdfUrl: url, pdfKey: fileKey };
+    } finally {
+      await page.close();
+    }
+  } finally {
+    // Cleanup temp file
+    try {
+      if (fs.existsSync(tempHtmlPath)) await unlinkAsync(tempHtmlPath);
+    } catch (cleanupError) {
+      console.warn('[PDF] Cleanup warning:', cleanupError);
+    }
+  }
 }
 
 // Legacy save function

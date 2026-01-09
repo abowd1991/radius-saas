@@ -973,3 +973,7 @@
 - [x] Fix QR Code default size from 200 to 50
 - [x] Verify QR Code is disabled by default
 
+
+- [x] Implement real PDF generation using Puppeteer/Chromium
+- [x] Ensure output is .pdf with application/pdf content-type
+- [x] No HTML workarounds - direct PDF download
