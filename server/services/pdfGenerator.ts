@@ -505,7 +505,8 @@ function cleanExpiredCache(): void {
   keysToDelete.forEach(key => pdfCache.delete(key));
 }
 
-// Generate and save real PDF to S3 using wkhtmltopdf
+// Generate and save HTML for printing to S3
+// Note: wkhtmltopdf is not available in production, so we save HTML which can be printed/saved as PDF from browser
 export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Promise<{ pdfUrl: string; pdfKey: string }> {
   // Clean expired cache
   cleanExpiredCache();
@@ -514,66 +515,24 @@ export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Pr
   const cacheKey = generateCacheKey(batch);
   const cached = pdfCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    console.log('[PDF] Returning cached PDF:', cached.url);
+    console.log('[PDF] Returning cached file:', cached.url);
     return { pdfUrl: cached.url, pdfKey: cached.key };
   }
   
-  console.log('[PDF] Starting PDF generation with wkhtmltopdf...');
+  console.log('[PDF] Starting HTML generation for printing...');
   const html = await generateCardsPDFHTMLWithTemplate(batch);
   
-  // Create temp files
-  const tempDir = os.tmpdir();
-  const tempHtmlPath = path.join(tempDir, `cards-${nanoid(8)}.html`);
-  const tempPdfPath = path.join(tempDir, `cards-${nanoid(8)}.pdf`);
+  // Upload HTML to S3 (user can print/save as PDF from browser)
+  const fileName = `cards-${batch.batchId}-${nanoid(6)}.html`;
+  const fileKey = `pdf/${fileName}`;
+  const { url } = await storagePut(fileKey, html, "text/html");
   
-  try {
-    // Write HTML to temp file
-    await writeFileAsync(tempHtmlPath, html, 'utf8');
-    
-    // Convert HTML to PDF using wkhtmltopdf
-    const wkhtmltopdfCmd = `wkhtmltopdf --page-size A4 --margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 --enable-local-file-access --print-media-type --no-stop-slow-scripts --javascript-delay 500 "${tempHtmlPath}" "${tempPdfPath}"`;
-    
-    try {
-      await execAsync(wkhtmltopdfCmd, { timeout: 60000 });
-    } catch (cmdError: any) {
-      // wkhtmltopdf often returns non-zero exit code but still produces valid PDF
-      // Check if PDF was created
-      if (!fs.existsSync(tempPdfPath)) {
-        console.error('[PDF] wkhtmltopdf failed, retrying once...');
-        // Retry once
-        try {
-          await execAsync(wkhtmltopdfCmd, { timeout: 60000 });
-        } catch (retryError) {
-          if (!fs.existsSync(tempPdfPath)) {
-            throw new Error('PDF generation failed after retry');
-          }
-        }
-      }
-    }
-    
-    // Read the generated PDF
-    const pdfBuffer = await readFileAsync(tempPdfPath);
-    
-    // Upload to S3 with .pdf extension
-    const fileName = `cards-${batch.batchId}-${nanoid(6)}.pdf`;
-    const fileKey = `pdf/${fileName}`;
-    const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
-    
-    console.log('[PDF] Real PDF generated and saved:', url);
-    
-    // Cache the result
-    pdfCache.set(cacheKey, { url, key: fileKey, timestamp: Date.now() });
-    
-    return { pdfUrl: url, pdfKey: fileKey };
-  } finally {
-    // Cleanup temp files
-    try {
-      if (fs.existsSync(tempHtmlPath)) await unlinkAsync(tempHtmlPath);
-      if (fs.existsSync(tempPdfPath)) await unlinkAsync(tempPdfPath);
-    } catch (cleanupError) {
-      console.warn('[PDF] Cleanup warning:', cleanupError);
-    }
-  }
+  console.log('[PDF] HTML for printing generated and saved:', url);
+  
+  // Cache the result
+  pdfCache.set(cacheKey, { url, key: fileKey, timestamp: Date.now() });
+  
+  return { pdfUrl: url, pdfKey: fileKey };
 }
 
 // Legacy save function
