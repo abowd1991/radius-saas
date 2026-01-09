@@ -181,10 +181,14 @@ export default function PrintCards() {
     if (selectedTemplateId && templates) {
       const template = templates.find(t => t.id === selectedTemplateId);
       if (template) {
-        // Load username settings from template
+        // Load username settings from template with sensible defaults
+        // Ensure Y position is within visible bounds (not at edges)
+        const usernameY = template.usernameY ?? 40;
+        const passwordY = template.passwordY ?? 55;
+        
         setUsernameSettings({
           x: template.usernameX ?? 50,
-          y: template.usernameY ?? 40,
+          y: usernameY > 90 ? 40 : usernameY, // Reset if too low
           fontSize: template.usernameFontSize ?? 14,
           fontFamily: template.usernameFontFamily ?? "Arial",
           color: template.usernameFontColor ?? "#000000",
@@ -193,15 +197,17 @@ export default function PrintCards() {
         // Load password settings from template
         setPasswordSettings({
           x: template.passwordX ?? 50,
-          y: template.passwordY ?? 60,
+          y: passwordY > 90 ? 55 : passwordY, // Reset if too low
           fontSize: template.passwordFontSize ?? 14,
           fontFamily: template.passwordFontFamily ?? "Arial",
           color: template.passwordFontColor ?? "#FF0000",
           align: (template.passwordAlign as "left" | "center" | "right") ?? "center",
         });
-        // Load QR settings from template
-        if (template.qrCodeEnabled !== undefined && template.qrCodeEnabled !== null) {
-          setQrEnabled(template.qrCodeEnabled);
+        // Load QR settings from template - QR is DISABLED by default unless explicitly enabled in template
+        if (template.qrCodeEnabled === true) {
+          setQrEnabled(true);
+        } else {
+          setQrEnabled(false); // Default to disabled
         }
         if (template.qrCodeX !== undefined && template.qrCodeY !== undefined) {
           setQrSettings(prev => ({
@@ -1002,6 +1008,77 @@ export default function PrintCards() {
                       </div>
                     </div>
                   </div>
+
+                  <Separator />
+
+                  {/* QR Code Settings - Moved here under password settings */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <QrCode className="h-4 w-4 text-green-500" />
+                        <Label className="font-medium">رمز QR Code</Label>
+                      </div>
+                      <Switch
+                        checked={qrEnabled}
+                        onCheckedChange={setQrEnabled}
+                      />
+                    </div>
+                    
+                    {qrEnabled && (
+                      <div className="space-y-4 p-3 bg-muted/50 rounded-lg">
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">رابط الدخول (IP أو Domain)</Label>
+                          <Input
+                            value={qrDomain}
+                            onChange={(e) => setQrDomain(e.target.value)}
+                            placeholder="مثال: http://192.168.1.1/login"
+                            dir="ltr"
+                            className="h-9"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">X %</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={qrSettings.x.toFixed(0)}
+                              onChange={(e) => setQrSettings(prev => ({ ...prev, x: Number(e.target.value) }))}
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Y %</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={qrSettings.y.toFixed(0)}
+                              onChange={(e) => setQrSettings(prev => ({ ...prev, y: Number(e.target.value) }))}
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">الحجم</Label>
+                            <Input
+                              type="number"
+                              min="20"
+                              max="150"
+                              value={qrSettings.size}
+                              onChange={(e) => setQrSettings(prev => ({ ...prev, size: Number(e.target.value) }))}
+                              className="h-9"
+                            />
+                          </div>
+                        </div>
+                        
+                        <p className="text-xs text-muted-foreground">
+                          اسحب QR Code في المعاينة أو أدخل الإحداثيات يدوياً
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -1162,73 +1239,6 @@ export default function PrintCards() {
                   </div>
                 </div>
 
-                <Separator />
-
-                {/* QR Code Settings */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <QrCode className="h-5 w-5 text-muted-foreground" />
-                      <Label>رمز QR Code</Label>
-                    </div>
-                    <Switch
-                      checked={qrEnabled}
-                      onCheckedChange={setQrEnabled}
-                    />
-                  </div>
-                  
-                  {qrEnabled && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">رابط الدخول (IP أو Domain)</Label>
-                        <Input
-                          value={qrDomain}
-                          onChange={(e) => setQrDomain(e.target.value)}
-                          placeholder="مثال: http://192.168.1.1/login أو http://hotspot.example.com"
-                          dir="ltr"
-                        />
-                      </div>
-                      
-                      {/* QR Position */}
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <Label className="text-xs">X %</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={qrSettings.x.toFixed(0)}
-                            onChange={(e) => setQrSettings(prev => ({ ...prev, x: Number(e.target.value) }))}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Y %</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={qrSettings.y.toFixed(0)}
-                            onChange={(e) => setQrSettings(prev => ({ ...prev, y: Number(e.target.value) }))}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">الحجم</Label>
-                          <Input
-                            type="number"
-                            min="20"
-                            max="150"
-                            value={qrSettings.size}
-                            onChange={(e) => setQrSettings(prev => ({ ...prev, size: Number(e.target.value) }))}
-                          />
-                        </div>
-                      </div>
-                      
-                      <p className="text-xs text-muted-foreground">
-                        اسحب QR Code في المعاينة أو أدخل الإحداثيات يدوياً
-                      </p>
-                    </div>
-                  )}
-                </div>
               </CardContent>
             </Card>
           </div>

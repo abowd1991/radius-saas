@@ -928,3 +928,9 @@
 - [x] Load password settings (x, y, fontSize, fontFamily, color, align) from template
 - [x] Load QR settings from template
 - [x] Now preview and PDF will reflect saved template settings
+
+## Fix Print Cards Page Issues (Jan 9, 2026) - Issue #3
+- [x] Fix default text position (Y should be within card bounds: username ~40%, password ~55%)
+- [x] Make QR Code disabled by default (user chooses to enable)
+- [x] Move QR settings section below password settings (in Step 3: تحريك النصوص)
+- [x] Removed duplicate QR settings from Step 4 (إعدادات الطباعة)
