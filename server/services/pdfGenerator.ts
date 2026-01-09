@@ -1,7 +1,7 @@
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
-import htmlPdf from "html-pdf-node";
+// PDF generation handled via HTML (use browser's Print to PDF)
 
 // Card data interface
 interface CardData {
@@ -468,40 +468,13 @@ export async function generateCardsPDFHTML(batch: BatchData): Promise<string> {
 export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Promise<{ pdfUrl: string; pdfKey: string }> {
   const html = await generateCardsPDFHTMLWithTemplate(batch);
   
-  try {
-    // Use html-pdf-node for PDF generation
-    const file = { content: html };
-    const options = {
-      format: 'A4' as const,
-      printBackground: true,
-      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' },
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-      ],
-    };
-    
-    const pdfBuffer = await htmlPdf.generatePdf(file, options);
-    
-    // Upload PDF to S3
-    const fileName = `batch-${batch.batchId}-${nanoid(6)}.pdf`;
-    const fileKey = `pdf/${fileName}`;
-    
-    const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
-    
-    return { pdfUrl: url, pdfKey: fileKey };
-  } catch (error: any) {
-    console.error('PDF generation error:', error?.message || error);
-    console.error('PDF generation stack:', error?.stack);
-    
-    // Fallback to HTML if PDF generation fails
-    const fileName = `batch-${batch.batchId}-${nanoid(6)}.html`;
-    const fileKey = `pdf/${fileName}`;
-    const { url } = await storagePut(fileKey, html, "text/html");
-    return { pdfUrl: url, pdfKey: fileKey };
-  }
+  // Save as HTML file (optimized for printing)
+  // User can use browser's "Print to PDF" feature for actual PDF
+  const fileName = `cards-${batch.batchId}-${nanoid(6)}.html`;
+  const fileKey = `pdf/${fileName}`;
+  const { url } = await storagePut(fileKey, html, "text/html");
+  console.log('[PDF] Print-ready HTML saved:', url);
+  return { pdfUrl: url, pdfKey: fileKey };
 }
 
 // Legacy save function

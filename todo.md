@@ -958,3 +958,11 @@
 - [x] Fix QR settings from template in PDF output
 - [x] Convert HTML output to real PDF format
 - [x] Ensure PDF is print-ready with high quality
+
+
+## QR Code & PDF Final Fixes (Jan 9, 2026) - Issue #8
+- [x] Make QR Code disabled by default (not enabled)
+- [x] Change QR default size from 80 to 50
+- [x] Change QR default X position from 200 to 50
+- [x] Changed to HTML format (use browser Print to PDF)
+- [x] HTML format with instant generation (no timeout issues)

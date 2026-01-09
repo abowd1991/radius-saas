@@ -81,7 +81,7 @@ export default function PrintCards() {
   const [qrSettings, setQrSettings] = useState({
     x: 50,  // Center horizontally
     y: 80,  // Near bottom
-    size: 60,
+    size: 50,  // Default size 50x50
   });
   
   // Text positioning settings
@@ -1325,7 +1325,7 @@ export default function PrintCards() {
                   ) : (
                     <>
                       <Download className="ml-2 h-5 w-5" />
-                      تحميل PDF
+                      إنشاء ملف الطباعة
                     </>
                   )}
                 </Button>
@@ -1358,7 +1358,7 @@ export default function PrintCards() {
                           const link = document.createElement('a');
                           link.style.display = 'none';
                           link.href = blobUrl;
-                          link.download = `cards-${selectedBatchId || Date.now()}.pdf`;
+                          link.download = `cards-${selectedBatchId || Date.now()}.html`;
                           link.setAttribute('target', '_self');
                           
                           // For iOS Safari compatibility
@@ -1419,7 +1419,7 @@ export default function PrintCards() {
               <CardContent className="text-sm text-muted-foreground space-y-2">
                 <p>• اختر قالب ثم اسحب النصوص لتحديد موضعها</p>
                 <p>• المعاينة تطابق الملف النهائي تماماً</p>
-                <p>• استخدم Ctrl+P في المتصفح للطباعة</p>
+                <p>• افتح الملف ثم اضغط Ctrl+P للطباعة أو حفظ PDF</p>
                 <p>• تأكد من إعدادات الطابعة (بدون هوامش)</p>
                 <p>• للحصول على أفضل نتيجة، استخدم 5 أعمدة و 50 كرت</p>
               </CardContent>

@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE card_templates SET qrCodeSize = 50 WHERE qrCodeSize = 80;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute UPDATE card_templates SET qrCodeSize = 50 WHERE qrCodeSize = 80;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 142
+}
