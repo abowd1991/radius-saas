@@ -1282,18 +1282,46 @@ export default function PrintCards() {
                       onClick={async () => {
                         try {
                           // Fetch the file and create a blob for download
-                          const response = await fetch(generatedUrl);
+                          const response = await fetch(generatedUrl, {
+                            mode: 'cors',
+                            credentials: 'omit'
+                          });
+                          if (!response.ok) throw new Error('Fetch failed');
                           const blob = await response.blob();
-                          const url = window.URL.createObjectURL(blob);
+                          const blobUrl = window.URL.createObjectURL(blob);
+                          
+                          // Create invisible link and trigger download
                           const link = document.createElement('a');
-                          link.href = url;
-                          link.download = `cards-${Date.now()}.html`;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                          window.URL.revokeObjectURL(url);
+                          link.style.display = 'none';
+                          link.href = blobUrl;
+                          link.download = `cards-${selectedBatchId || Date.now()}.html`;
+                          link.setAttribute('target', '_self');
+                          
+                          // For iOS Safari compatibility
+                          if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
+                            // iOS needs special handling - open blob URL directly
+                            const newWindow = window.open(blobUrl, '_blank');
+                            if (!newWindow) {
+                              // If popup blocked, use location
+                              window.location.href = blobUrl;
+                            }
+                          } else {
+                            // Standard download for other browsers/devices
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }
+                          
+                          // Cleanup after delay
+                          setTimeout(() => {
+                            window.URL.revokeObjectURL(blobUrl);
+                          }, 5000);
+                          
+                          toast.success('جاري تحميل الملف...');
                         } catch (error) {
-                          // Fallback: open in new tab if fetch fails
+                          console.error('Download error:', error);
+                          // Fallback: open in new tab
+                          toast.info('جاري فتح الملف في نافذة جديدة...');
                           window.open(generatedUrl, '_blank');
                         }
                       }}

@@ -580,8 +580,8 @@ export const cardTemplates = mysqlTable("card_templates", {
   passwordAlign: mysqlEnum("passwordAlign", ["left", "center", "right"]).default("left"),
   
   // QR Code settings
-  qrCodeEnabled: boolean("qrCodeEnabled").default(true),
-  qrCodeX: int("qrCodeX").default(200),
+  qrCodeEnabled: boolean("qrCodeEnabled").default(false),
+  qrCodeX: int("qrCodeX").default(50),
   qrCodeY: int("qrCodeY").default(50),
   qrCodeSize: int("qrCodeSize").default(80),
   qrCodeDomain: varchar("qrCodeDomain", { length: 255 }), // IP or domain for QR

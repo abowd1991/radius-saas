@@ -941,3 +941,6 @@
 - [x] Verified: Font settings ARE being sent correctly to Backend (textSettings object)
 - [x] Verified: Backend correctly passes settings to pdfGenerator (routers.ts lines 1335-1346)
 - [x] Verified: pdfGenerator applies font settings in HTML output (lines 203-226)
+## Fix QR Position and Mobile PDF Download (Jan 9, 2026) - Issue #5
+- [x] Fix QR default X position from 200 to 50 (still showing 200 in UI)
+- [x] Fix PDF download on mobile (file opens instead of downloading)

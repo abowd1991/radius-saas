@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, name, qrCodeX, qrCodeY, qrCodeEnabled, qrCodeSize FROM card_templates LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, name, qrCodeX, qrCodeY, qrCodeEnabled, qrCodeSize FROM card_templates LIMIT 10;",
+  "rows": [
+    {
+      "id": "50",
+      "name": "file_000000000c4c61f599626aea17abd8e9",
+      "qrCodeX": "50",
+      "qrCodeY": "50",
+      "qrCodeEnabled": "1",
+      "qrCodeSize": "80"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tqrCodeX\tqrCodeY\tqrCodeEnabled\tqrCodeSize\n50\tfile_000000000c4c61f599626aea17abd8e9\t50\t50\t1\t80\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}
