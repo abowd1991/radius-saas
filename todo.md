@@ -966,3 +966,10 @@
 - [x] Change QR default X position from 200 to 50
 - [x] Changed to HTML format (use browser Print to PDF)
 - [x] HTML format with instant generation (no timeout issues)
+
+## PDF Real Generation Fix (Jan 9, 2026)
+- [x] Fix PDF generation to use wkhtmltopdf (real PDF, not HTML)
+- [x] Fix file extension from .html to .pdf
+- [x] Fix QR Code default size from 200 to 50
+- [x] Verify QR Code is disabled by default
+

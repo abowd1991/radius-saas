@@ -1,7 +1,20 @@
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
-// PDF generation handled via HTML (use browser's Print to PDF)
+import { exec } from "child_process";
+import { promisify } from "util";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
+
+const execAsync = promisify(exec);
+const writeFileAsync = promisify(fs.writeFile);
+const readFileAsync = promisify(fs.readFile);
+const unlinkAsync = promisify(fs.unlink);
+
+// PDF Cache to avoid regenerating same PDF
+const pdfCache = new Map<string, { url: string; key: string; timestamp: number }>();
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes cache
 
 // Card data interface
 interface CardData {
@@ -464,17 +477,103 @@ export async function generateCardsPDFHTML(batch: BatchData): Promise<string> {
   });
 }
 
-// Generate and save real PDF to S3 using html-pdf-node
+// Generate cache key from batch data
+function generateCacheKey(batch: BatchDataWithTemplate): string {
+  const templateKey = batch.template ? JSON.stringify({
+    imageUrl: batch.template.imageUrl,
+    usernameX: batch.template.usernameX,
+    usernameY: batch.template.usernameY,
+    passwordX: batch.template.passwordX,
+    passwordY: batch.template.passwordY,
+    qrCodeEnabled: batch.template.qrCodeEnabled,
+    qrCodeSize: batch.template.qrCodeSize,
+  }) : 'default';
+  const printKey = batch.printSettings ? JSON.stringify(batch.printSettings) : 'default';
+  const cardsKey = batch.cards.map(c => `${c.username}:${c.password}`).join(',');
+  return `${batch.batchId}-${templateKey}-${printKey}-${cardsKey}`.substring(0, 200);
+}
+
+// Clean expired cache entries
+function cleanExpiredCache(): void {
+  const now = Date.now();
+  const keysToDelete: string[] = [];
+  pdfCache.forEach((value, key) => {
+    if (now - value.timestamp > CACHE_TTL) {
+      keysToDelete.push(key);
+    }
+  });
+  keysToDelete.forEach(key => pdfCache.delete(key));
+}
+
+// Generate and save real PDF to S3 using wkhtmltopdf
 export async function saveBatchPDFWithTemplate(batch: BatchDataWithTemplate): Promise<{ pdfUrl: string; pdfKey: string }> {
+  // Clean expired cache
+  cleanExpiredCache();
+  
+  // Check cache first
+  const cacheKey = generateCacheKey(batch);
+  const cached = pdfCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log('[PDF] Returning cached PDF:', cached.url);
+    return { pdfUrl: cached.url, pdfKey: cached.key };
+  }
+  
+  console.log('[PDF] Starting PDF generation with wkhtmltopdf...');
   const html = await generateCardsPDFHTMLWithTemplate(batch);
   
-  // Save as HTML file (optimized for printing)
-  // User can use browser's "Print to PDF" feature for actual PDF
-  const fileName = `cards-${batch.batchId}-${nanoid(6)}.html`;
-  const fileKey = `pdf/${fileName}`;
-  const { url } = await storagePut(fileKey, html, "text/html");
-  console.log('[PDF] Print-ready HTML saved:', url);
-  return { pdfUrl: url, pdfKey: fileKey };
+  // Create temp files
+  const tempDir = os.tmpdir();
+  const tempHtmlPath = path.join(tempDir, `cards-${nanoid(8)}.html`);
+  const tempPdfPath = path.join(tempDir, `cards-${nanoid(8)}.pdf`);
+  
+  try {
+    // Write HTML to temp file
+    await writeFileAsync(tempHtmlPath, html, 'utf8');
+    
+    // Convert HTML to PDF using wkhtmltopdf
+    const wkhtmltopdfCmd = `wkhtmltopdf --page-size A4 --margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 --enable-local-file-access --print-media-type --no-stop-slow-scripts --javascript-delay 500 "${tempHtmlPath}" "${tempPdfPath}"`;
+    
+    try {
+      await execAsync(wkhtmltopdfCmd, { timeout: 60000 });
+    } catch (cmdError: any) {
+      // wkhtmltopdf often returns non-zero exit code but still produces valid PDF
+      // Check if PDF was created
+      if (!fs.existsSync(tempPdfPath)) {
+        console.error('[PDF] wkhtmltopdf failed, retrying once...');
+        // Retry once
+        try {
+          await execAsync(wkhtmltopdfCmd, { timeout: 60000 });
+        } catch (retryError) {
+          if (!fs.existsSync(tempPdfPath)) {
+            throw new Error('PDF generation failed after retry');
+          }
+        }
+      }
+    }
+    
+    // Read the generated PDF
+    const pdfBuffer = await readFileAsync(tempPdfPath);
+    
+    // Upload to S3 with .pdf extension
+    const fileName = `cards-${batch.batchId}-${nanoid(6)}.pdf`;
+    const fileKey = `pdf/${fileName}`;
+    const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
+    
+    console.log('[PDF] Real PDF generated and saved:', url);
+    
+    // Cache the result
+    pdfCache.set(cacheKey, { url, key: fileKey, timestamp: Date.now() });
+    
+    return { pdfUrl: url, pdfKey: fileKey };
+  } finally {
+    // Cleanup temp files
+    try {
+      if (fs.existsSync(tempHtmlPath)) await unlinkAsync(tempHtmlPath);
+      if (fs.existsSync(tempPdfPath)) await unlinkAsync(tempPdfPath);
+    } catch (cleanupError) {
+      console.warn('[PDF] Cleanup warning:', cleanupError);
+    }
+  }
 }
 
 // Legacy save function
