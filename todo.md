@@ -898,3 +898,12 @@
 - [x] Rename tab from "أدوات خاصة" to "اتصال API"
 - [x] Move MikroTik API settings to this tab (with network selector)
 - [x] Update tab icon to Wifi icon
+
+## Move API Settings to Dedicated Tab (Jan 9, 2026)
+- [x] Remove MikroTik API settings section from Create Network form
+- [x] Update "اتصال API" tab with full API management
+- [x] Add network selector dropdown with existing settings indicator
+- [x] Add API enable/disable checkbox
+- [x] Add "Test Connection" button (required before saving when API enabled)
+- [x] Add "Save Settings" button to save API config to selected network
+- [x] Load existing API settings when network is selected

@@ -423,109 +423,6 @@ export default function NasDevices() {
         />
       </div>
 
-      {/* MikroTik API Settings - Optional */}
-      <div className="p-4 rounded-lg border border-dashed border-blue-500/30 bg-blue-500/5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-blue-600">
-            <Settings className="h-4 w-4" />
-            <span className="font-medium text-sm">
-              {language === "ar" ? "إعدادات MikroTik API (اختياري)" : "MikroTik API Settings (Optional)"}
-            </span>
-          </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              name="apiEnabled"
-              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-muted-foreground">
-              {language === "ar" ? "تفعيل" : "Enable"}
-            </span>
-          </label>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {language === "ar" 
-            ? "تفعيل API يسمح بتغيير السرعة فوراً بدون انقطاع المستخدم. إذا لم يُفعّل، سيتم استخدام RADIUS (CoA + Disconnect)."
-            : "Enabling API allows instant speed changes without disconnecting the user. If disabled, RADIUS (CoA + Disconnect) will be used."
-          }
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="mikrotikApiPort">
-              {language === "ar" ? "منفذ API" : "API Port"}
-            </Label>
-            <Input 
-              id="mikrotikApiPort" 
-              name="mikrotikApiPort" 
-              type="number"
-              defaultValue="8728"
-              className="bg-background"
-              placeholder="8728"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="mikrotikApiUser">
-              {language === "ar" ? "اسم مستخدم API" : "API Username"}
-            </Label>
-            <Input 
-              id="mikrotikApiUser" 
-              name="mikrotikApiUser" 
-              className="bg-background"
-              placeholder="admin"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="mikrotikApiPassword">
-              {language === "ar" ? "كلمة مرور API" : "API Password"}
-            </Label>
-            <Input 
-              id="mikrotikApiPassword" 
-              name="mikrotikApiPassword" 
-              type="password"
-              className="bg-background"
-              placeholder="••••••••"
-            />
-          </div>
-        </div>
-        
-        {/* Test API Connection Button */}
-        <div className="flex items-center gap-3 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleTestApi}
-            disabled={isTestingApi}
-            className="gap-2"
-          >
-            {isTestingApi ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                {language === "ar" ? "جاري الاختبار..." : "Testing..."}
-              </>
-            ) : (
-              <>
-                <Wifi className="h-4 w-4" />
-                {language === "ar" ? "اختبار اتصال API" : "Test API Connection"}
-              </>
-            )}
-          </Button>
-          
-          {apiTestResult && (
-            <div className={`flex items-center gap-2 text-sm ${
-              apiTestResult.success ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {apiTestResult.success ? (
-                <CheckCircle className="h-4 w-4" />
-              ) : (
-                <XCircle className="h-4 w-4" />
-              )}
-              <span>{apiTestResult.message}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
       <div className="flex justify-center pt-4">
         <Button 
           type="submit" 
@@ -543,12 +440,34 @@ export default function NasDevices() {
 
   // API Connection Tab Content
   const SpecialToolsContent = () => {
-    const [selectedNas, setSelectedNas] = useState<string>("");
+    const [selectedNasId, setSelectedNasId] = useState<number | null>(null);
+    const [apiEnabled, setApiEnabled] = useState(false);
     const [apiPort, setApiPort] = useState("8728");
     const [apiUser, setApiUser] = useState("admin");
     const [apiPassword, setApiPassword] = useState("");
     const [testResult, setTestResult] = useState<{success: boolean; message: string} | null>(null);
     const [isTesting, setIsTesting] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [connectionTested, setConnectionTested] = useState(false);
+
+    // Get selected NAS device
+    const selectedNas = devices?.find(d => d.id === selectedNasId);
+
+    // Load existing API settings when network is selected
+    const handleNetworkSelect = (nasId: string) => {
+      const id = parseInt(nasId);
+      setSelectedNasId(id);
+      setTestResult(null);
+      setConnectionTested(false);
+      
+      const device = devices?.find(d => d.id === id);
+      if (device) {
+        setApiEnabled(device.apiEnabled || false);
+        setApiPort(device.mikrotikApiPort?.toString() || "8728");
+        setApiUser(device.mikrotikApiUser || "admin");
+        setApiPassword(""); // Don't load password for security
+      }
+    };
 
     const testApi = trpc.nas.testApiConnection.useMutation({
       onSuccess: (data) => {
@@ -556,14 +475,29 @@ export default function NasDevices() {
         setTestResult(result);
         setIsTesting(false);
         if (result.success) {
+          setConnectionTested(true);
           toast.success(language === "ar" ? "اتصال ناجح!" : "Connection successful!");
         } else {
+          setConnectionTested(false);
           toast.error(result.message);
         }
       },
       onError: (error) => {
         setTestResult({ success: false, message: error.message });
         setIsTesting(false);
+        setConnectionTested(false);
+        toast.error(error.message);
+      },
+    });
+
+    const saveApiSettings = trpc.nas.update.useMutation({
+      onSuccess: () => {
+        setIsSaving(false);
+        toast.success(language === "ar" ? "تم حفظ إعدادات API بنجاح" : "API settings saved successfully");
+        refetch();
+      },
+      onError: (error) => {
+        setIsSaving(false);
         toast.error(error.message);
       },
     });
@@ -579,11 +513,31 @@ export default function NasDevices() {
       }
       setIsTesting(true);
       setTestResult(null);
+      setConnectionTested(false);
       testApi.mutate({
-        nasIp: selectedNas,
+        nasIp: selectedNas.nasname,
         apiPort: parseInt(apiPort),
         apiUser,
         apiPassword,
+      });
+    };
+
+    const handleSave = () => {
+      if (!selectedNasId) {
+        toast.error(language === "ar" ? "يرجى اختيار شبكة" : "Please select a network");
+        return;
+      }
+      if (apiEnabled && !connectionTested) {
+        toast.error(language === "ar" ? "يرجى اختبار الاتصال أولاً" : "Please test the connection first");
+        return;
+      }
+      setIsSaving(true);
+      saveApiSettings.mutate({
+        id: selectedNasId,
+        apiEnabled,
+        mikrotikApiPort: parseInt(apiPort),
+        mikrotikApiUser: apiUser,
+        mikrotikApiPassword: apiPassword || undefined,
       });
     };
 
@@ -591,12 +545,12 @@ export default function NasDevices() {
       <div className="space-y-6 py-4">
         <div className="text-center mb-6">
           <h3 className="text-lg font-semibold mb-2">
-            {language === "ar" ? "اختبار اتصال MikroTik API" : "Test MikroTik API Connection"}
+            {language === "ar" ? "إعدادات MikroTik API" : "MikroTik API Settings"}
           </h3>
           <p className="text-sm text-muted-foreground">
             {language === "ar" 
-              ? "اختبر الاتصال بـ API لأي شبكة موجودة"
-              : "Test API connection to any existing network"
+              ? "إدارة إعدادات API للشبكات الموجودة"
+              : "Manage API settings for existing networks"
             }
           </p>
         </div>
@@ -605,89 +559,189 @@ export default function NasDevices() {
           {/* Select Network */}
           <div className="space-y-2">
             <Label>{language === "ar" ? "اختر الشبكة" : "Select Network"}</Label>
-            <Select value={selectedNas} onValueChange={setSelectedNas}>
+            <Select 
+              value={selectedNasId?.toString() || ""} 
+              onValueChange={handleNetworkSelect}
+            >
               <SelectTrigger className="bg-background">
                 <SelectValue placeholder={language === "ar" ? "اختر شبكة..." : "Select network..."} />
               </SelectTrigger>
               <SelectContent>
                 {devices?.filter(d => d.type === "mikrotik").map((device) => (
-                  <SelectItem key={device.id} value={device.nasname}>
+                  <SelectItem key={device.id} value={device.id.toString()}>
                     {device.shortname} ({device.nasname})
+                    {device.apiEnabled && " ✓"}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* API Port */}
-          <div className="space-y-2">
-            <Label>{language === "ar" ? "منفذ API" : "API Port"}</Label>
-            <Input
-              type="number"
-              value={apiPort}
-              onChange={(e) => setApiPort(e.target.value)}
-              placeholder="8728"
-              className="bg-background"
-            />
-          </div>
+          {selectedNasId && (
+            <>
+              {/* API Enabled Toggle */}
+              <div className="p-4 rounded-lg border border-dashed border-blue-500/30 bg-blue-500/5">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Wifi className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-sm">
+                      {language === "ar" ? "تفعيل API" : "Enable API"}
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={apiEnabled}
+                    onChange={(e) => {
+                      setApiEnabled(e.target.checked);
+                      setConnectionTested(false);
+                    }}
+                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </label>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {language === "ar" 
+                    ? "تفعيل API يسمح بتغيير السرعة فوراً بدون انقطاع المستخدم"
+                    : "Enabling API allows instant speed changes without disconnecting users"
+                  }
+                </p>
+              </div>
 
-          {/* API Username */}
-          <div className="space-y-2">
-            <Label>{language === "ar" ? "اسم مستخدم API" : "API Username"}</Label>
-            <Input
-              value={apiUser}
-              onChange={(e) => setApiUser(e.target.value)}
-              placeholder="admin"
-              className="bg-background"
-            />
-          </div>
+              {/* API Port */}
+              <div className="space-y-2">
+                <Label>{language === "ar" ? "منفذ API" : "API Port"}</Label>
+                <Input
+                  type="number"
+                  value={apiPort}
+                  onChange={(e) => {
+                    setApiPort(e.target.value);
+                    setConnectionTested(false);
+                  }}
+                  placeholder="8728"
+                  className="bg-background"
+                />
+              </div>
 
-          {/* API Password */}
-          <div className="space-y-2">
-            <Label>{language === "ar" ? "كلمة مرور API" : "API Password"}</Label>
-            <Input
-              type="password"
-              value={apiPassword}
-              onChange={(e) => setApiPassword(e.target.value)}
-              placeholder="••••••••"
-              className="bg-background"
-            />
-          </div>
+              {/* API Username */}
+              <div className="space-y-2">
+                <Label>{language === "ar" ? "اسم مستخدم API" : "API Username"}</Label>
+                <Input
+                  value={apiUser}
+                  onChange={(e) => {
+                    setApiUser(e.target.value);
+                    setConnectionTested(false);
+                  }}
+                  placeholder="admin"
+                  className="bg-background"
+                />
+              </div>
 
-          {/* Test Button */}
-          <Button
-            onClick={handleTest}
-            disabled={isTesting || !selectedNas}
-            className="w-full gap-2"
-          >
-            {isTesting ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                {language === "ar" ? "جاري الاختبار..." : "Testing..."}
-              </>
-            ) : (
-              <>
-                <Wifi className="h-4 w-4" />
-                {language === "ar" ? "اختبار الاتصال" : "Test Connection"}
-              </>
-            )}
-          </Button>
+              {/* API Password */}
+              <div className="space-y-2">
+                <Label>{language === "ar" ? "كلمة مرور API" : "API Password"}</Label>
+                <Input
+                  type="password"
+                  value={apiPassword}
+                  onChange={(e) => {
+                    setApiPassword(e.target.value);
+                    setConnectionTested(false);
+                  }}
+                  placeholder={selectedNas?.mikrotikApiPassword ? "•••••••• (محفوظة)" : "••••••••"}
+                  className="bg-background"
+                />
+                {selectedNas?.mikrotikApiPassword && (
+                  <p className="text-xs text-muted-foreground">
+                    {language === "ar" 
+                      ? "اترك فارغاً للإبقاء على كلمة المرور الحالية"
+                      : "Leave empty to keep current password"
+                    }
+                  </p>
+                )}
+              </div>
 
-          {/* Test Result */}
-          {testResult && (
-            <div className={`p-4 rounded-lg flex items-center gap-3 ${
-              testResult.success 
-                ? 'bg-green-500/10 border border-green-500/30' 
-                : 'bg-red-500/10 border border-red-500/30'
-            }`}>
-              {testResult.success ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
-              ) : (
-                <XCircle className="h-5 w-5 text-red-500" />
+              {/* Buttons */}
+              <div className="flex gap-3 pt-2">
+                {/* Test Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleTest}
+                  disabled={isTesting || !apiPassword}
+                  className="flex-1 gap-2"
+                >
+                  {isTesting ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      {language === "ar" ? "جاري..." : "Testing..."}
+                    </>
+                  ) : (
+                    <>
+                      <Wifi className="h-4 w-4" />
+                      {language === "ar" ? "اختبار" : "Test"}
+                    </>
+                  )}
+                </Button>
+
+                {/* Save Button */}
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving || (apiEnabled && !connectionTested)}
+                  className="flex-1 gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      {language === "ar" ? "جاري..." : "Saving..."}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      {language === "ar" ? "حفظ الإعدادات" : "Save Settings"}
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Test Result */}
+              {testResult && (
+                <div className={`p-4 rounded-lg flex items-center gap-3 ${
+                  testResult.success 
+                    ? 'bg-green-500/10 border border-green-500/30' 
+                    : 'bg-red-500/10 border border-red-500/30'
+                }`}>
+                  {testResult.success ? (
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-500" />
+                  )}
+                  <span className={testResult.success ? 'text-green-600' : 'text-red-600'}>
+                    {testResult.message}
+                  </span>
+                </div>
               )}
-              <span className={testResult.success ? 'text-green-600' : 'text-red-600'}>
-                {testResult.message}
-              </span>
+
+              {/* Info about test requirement */}
+              {apiEnabled && !connectionTested && (
+                <p className="text-xs text-amber-600 text-center">
+                  {language === "ar" 
+                    ? "يجب اختبار الاتصال بنجاح قبل الحفظ"
+                    : "Connection must be tested successfully before saving"
+                  }
+                </p>
+              )}
+            </>
+          )}
+
+          {/* No networks message */}
+          {devices?.filter(d => d.type === "mikrotik").length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <Router className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>{language === "ar" ? "لا توجد شبكات MikroTik" : "No MikroTik networks found"}</p>
+              <p className="text-sm mt-2">
+                {language === "ar" 
+                  ? "أنشئ شبكة جديدة أولاً"
+                  : "Create a new network first"
+                }
+              </p>
             </div>
           )}
         </div>
