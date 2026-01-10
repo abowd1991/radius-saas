@@ -151,6 +151,9 @@ importers:
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
+      core-decorators:
+        specifier: 0.20.0
+        version: 0.20.0
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -187,6 +190,9 @@ importers:
       lucide-react:
         specifier: ^0.453.0
         version: 0.453.0(react@19.2.1)
+      mikronode:
+        specifier: ^2.3.11
+        version: 2.3.11(core-decorators@0.20.0)(rxjs@5.5.12)
       multer:
         specifier: ^2.0.2
         version: 2.0.2
@@ -199,6 +205,9 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      node-routeros:
+        specifier: ^1.6.9
+        version: 1.6.9
       nodemailer:
         specifier: ^7.0.12
         version: 7.0.12
@@ -211,6 +220,9 @@ importers:
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
+      radius:
+        specifier: ^1.1.4
+        version: 1.1.4
       react:
         specifier: ^19.2.1
         version: 19.2.1
@@ -229,6 +241,12 @@ importers:
       recharts:
         specifier: ^2.15.4
         version: 2.15.4(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      routeros:
+        specifier: ^1.6.12
+        version: 1.6.12
+      routeros-client:
+        specifier: ^1.1.2
+        version: 1.1.2
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -3126,6 +3144,9 @@ packages:
     resolution: {integrity: sha512-yCEafptTtb4bk7GLEQoM8KVJpxAfdBJYaXyzQEgQQQgYrZiDp8SJmGKlYza6CYjEDNstAdNdKA3UuoULlEbS6w==}
     engines: {node: '>=12.13'}
 
+  core-decorators@0.20.0:
+    resolution: {integrity: sha512-7cp/Pz3AmQXjRwhAsFN+8ndRiBNyLxtZgC/fhKvrwQTf2ZlZma6LnimoJPrOqgxZ0tIeI9VvSs+QKe0OPJ0SuA==}
+
   core-js@3.47.0:
     resolution: {integrity: sha512-c3Q2VVkGAUyupsjRnaNX6u8Dq2vAdzm9iuPj5FW0fRxzlxgq9Q39MDq10IvmQSpLgHQNyQzQmOo6bgGHmH3NNg==}
 
@@ -3343,6 +3364,14 @@ packages:
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
+  debug@3.2.7:
+    resolution: {integrity: sha512-CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==}
     peerDependencies:
       supports-color: '*'
     peerDependenciesMeta:
@@ -4410,6 +4439,13 @@ packages:
   micromark@4.0.2:
     resolution: {integrity: sha512-zpe98Q6kvavpCr1NPVSCMebCKfD7CA2NqZ+rykeNhONIJBpc1tFKt9hucLGwha3jNTNI8lHpctWJWoimVF4PfA==}
 
+  mikronode@2.3.11:
+    resolution: {integrity: sha512-FRtWHZFPhyPEA+7qwGJK7clU8gjz+TdPy8JizuEGTroqiJ9J0vSoOLPu5kUocv2nTyMsljc44O9OzOT7eWI25Q==}
+    engines: {node: '>= 6'}
+    peerDependencies:
+      core-decorators: '>=0.12.3 && <1.0.0'
+      rxjs: ^5.3.0
+
   mime-db@1.52.0:
     resolution: {integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==}
     engines: {node: '>= 0.6'}
@@ -4510,6 +4546,10 @@ packages:
 
   node-releases@2.0.23:
     resolution: {integrity: sha512-cCmFDMSm26S6tQSDpBCg/NR8NENrVPhAJSf+XbxBG4rPFaaonlEoE9wHQmun+cls499TQGSb7ZyPBRlzgKfpeg==}
+
+  node-routeros@1.6.9:
+    resolution: {integrity: sha512-/dW1yDNvTxkd3KjTFgRYlVWPg3MHAcuPNKh9v0j+0ilK9G3/drgiAZ5NiKj3egHjNcxMxQ9L3KY8BKIfd3x75Q==}
+    deprecated: node-routeros has been discontinued
 
   nodemailer@7.0.12:
     resolution: {integrity: sha512-H+rnK5bX2Pi/6ms3sN4/jRQvYSMltV6vqup/0SFOrxYYY/qoNvhXPlYq3e+Pm9RFJRwrMGbMIwi81M4dxpomhA==}
@@ -4731,6 +4771,10 @@ packages:
   quansync@0.2.11:
     resolution: {integrity: sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA==}
 
+  radius@1.1.4:
+    resolution: {integrity: sha512-UWuzdF6xf3NpsXFZZmUEkxtEalDXj8hdmMXgbGzn7vOk6zXNsiIY2I6SJ1euHt7PTQuMoz2qDEJB+AfJDJgQYw==}
+    engines: {node: '>=0.8.0'}
+
   raf@3.4.1:
     resolution: {integrity: sha512-Sq4CW4QhwOHE8ucn6J34MqtZCeWFP2aQSmrlroYgqAV1PjStIhJXxYuTgUIfkEk7zTLjmIjLmU5q+fbD1NnOJA==}
 
@@ -4918,8 +4962,19 @@ packages:
   roughjs@4.6.6:
     resolution: {integrity: sha512-ZUz/69+SYpFN/g/lUlo2FXcIjRkSu3nDarreVdGGndHEBJ6cXPdKguS8JGxwj5HA5xIbVKSmLgr5b3AWxtRfvQ==}
 
+  routeros-client@1.1.2:
+    resolution: {integrity: sha512-Gh3j1IGINDjqYd6wnssHgOok8Ic7pQiszSDZ3T8V73FsX3M6vtQrH0QhWbDhg4NewVM6U1KmBYVaw3+vuYzwvA==}
+    deprecated: routeros-client has been discontinued
+
+  routeros@1.6.12:
+    resolution: {integrity: sha512-lzLw9RC2WHNBOqlqKvwmAIpmuCDUCHPjfgdqwOyR2V0ApDpLK2RPbhv/jpK80gnDrKGOr5llVE6KH2f+xa4Z+A==}
+
   rw@1.3.3:
     resolution: {integrity: sha512-PdhdWy89SiZogBLaw42zdeqtRJ//zFd2PgQavcICDUgJT5oW10QCRKbJ6bg4r0/UY2M6BWd5tkxuGFRvCkgfHQ==}
+
+  rxjs@5.5.12:
+    resolution: {integrity: sha512-xx2itnL5sBbqeeiVgNPVuQQ1nC8Jp2WfNJhXWHmElW9YmrpS9UVnNzhP3EH3HFqexO5Tlp8GhYY+WEcqcVMvGw==}
+    engines: {npm: '>=2.0.0'}
 
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
@@ -5087,6 +5142,10 @@ packages:
   svg-pathdata@6.0.3:
     resolution: {integrity: sha512-qsjeeq5YjBZ5eMdFuUa4ZosMLxgr5RZ+F+Y1OrDhuOCEInRMA3x74XdBtggJcj9kOeInz0WE+LgCPDkZFlBYJw==}
     engines: {node: '>=12.0.0'}
+
+  symbol-observable@1.0.1:
+    resolution: {integrity: sha512-Kb3PrPYz4HanVF1LVGuAdW6LoVgIwjUYJGzFe7NDrBLCN4lsV/5J0MFurV+ygS4bRVwrCEt2c7MQ1R2a72oJDw==}
+    engines: {node: '>=0.10.0'}
 
   tailwind-merge@3.3.1:
     resolution: {integrity: sha512-gBXpgUm/3rp1lMZZrM/w7D8GKqshif0zAymAhbCyIt8KMe+0v9DQ7cdYLR4FHH/cKpdTXb+A/tKKU3eolfsI+g==}
@@ -9012,6 +9071,8 @@ snapshots:
     dependencies:
       is-what: 4.1.16
 
+  core-decorators@0.20.0: {}
+
   core-js@3.47.0:
     optional: true
 
@@ -9252,6 +9313,10 @@ snapshots:
   debug@2.6.9:
     dependencies:
       ms: 2.0.0
+
+  debug@3.2.7:
+    dependencies:
+      ms: 2.1.3
 
   debug@4.3.1:
     dependencies:
@@ -10594,6 +10659,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  mikronode@2.3.11(core-decorators@0.20.0)(rxjs@5.5.12):
+    dependencies:
+      core-decorators: 0.20.0
+      rxjs: 5.5.12
+
   mime-db@1.52.0: {}
 
   mime-types@2.1.35:
@@ -10685,6 +10755,13 @@ snapshots:
   node-fetch@2.6.1: {}
 
   node-releases@2.0.23: {}
+
+  node-routeros@1.6.9:
+    dependencies:
+      debug: 4.4.3
+      iconv-lite: 0.7.0
+    transitivePeerDependencies:
+      - supports-color
 
   nodemailer@7.0.12: {}
 
@@ -10955,6 +11032,8 @@ snapshots:
 
   quansync@0.2.11: {}
 
+  radius@1.1.4: {}
+
   raf@3.4.1:
     dependencies:
       performance-now: 2.1.0
@@ -11218,7 +11297,26 @@ snapshots:
       points-on-curve: 0.2.0
       points-on-path: 0.2.1
 
+  routeros-client@1.1.2:
+    dependencies:
+      debug: 3.2.7
+      lodash: 4.17.21
+      node-routeros: 1.6.9
+    transitivePeerDependencies:
+      - supports-color
+
+  routeros@1.6.12:
+    dependencies:
+      debug: 4.4.3
+      iconv-lite: 0.7.0
+    transitivePeerDependencies:
+      - supports-color
+
   rw@1.3.3: {}
+
+  rxjs@5.5.12:
+    dependencies:
+      symbol-observable: 1.0.1
 
   safe-buffer@5.2.1: {}
 
@@ -11428,6 +11526,8 @@ snapshots:
 
   svg-pathdata@6.0.3:
     optional: true
+
+  symbol-observable@1.0.1: {}
 
   tailwind-merge@3.3.1: {}
 

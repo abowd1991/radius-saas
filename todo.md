@@ -982,3 +982,44 @@
 - [x] Each card shows unique username/password (no placeholders)
 - [x] QR disabled by default, size 50x50 when enabled
 - [x] Fast performance for bulk printing (50/100/1000 cards)
+
+
+## 🚨 Production Completion - CRITICAL (Jan 10, 2026)
+### Phase 1: RADIUS CoA + Disconnect-Request
+- [ ] Implement RADIUS Disconnect-Request (RFC 3576/5765)
+- [ ] Implement RADIUS CoA (Change of Authorization)
+- [ ] Disconnect session on card disable
+- [ ] Disconnect session on time expiry
+- [ ] Disconnect session on speed change (fallback)
+- [ ] Test with real MikroTik - MANDATORY
+
+### Phase 2: Auto Session Termination
+- [ ] Monitor radacct for session time
+- [ ] Auto-disconnect when time limit reached
+- [ ] Prevent reconnection after expiry
+
+### Phase 3: MikroTik API + Fallback
+- [ ] Complete MikroTik API integration
+- [ ] API optional per NAS
+- [ ] Fallback to RADIUS CoA/Disconnect on API failure
+- [ ] No service interruption on fallback
+
+### Phase 4: Static IP for Subscribers
+- [ ] Implement Framed-IP-Address RADIUS attribute
+- [ ] Test with Hotspot
+- [ ] Test with PPPoE
+
+### Phase 5: Connection Types Testing
+- [ ] Test SSTP connection with real MikroTik
+- [ ] Test PPTP connection with real MikroTik
+- [ ] Test Public IP connection with real MikroTik
+- [ ] Document all test results
+
+
+## Phase 1: RADIUS CoA + Disconnect - COMPLETED (Jan 10, 2026)
+- [x] Setup MikroTik with RADIUS Server (100.26.55.121)
+- [x] Enable RADIUS Incoming (CoA) on port 3799
+- [x] Create radiusCoA.ts service using 'radius' npm package
+- [x] Test Disconnect-Request with real MikroTik - SUCCESS
+- [x] Test CoA-Request with real MikroTik - SUCCESS
+- [ ] Test with real connected user (pending - user will provide tomorrow)
