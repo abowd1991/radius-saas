@@ -1,0 +1,14 @@
+{
+  "query": "\n-- First check if there's a plan\nSELECT id, name FROM plans LIMIT 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- First check if there's a plan\nSELECT id, name FROM plans LIMIT 1;\n",
+  "rows": [
+    {
+      "id": "1",
+      "name": "1m"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n1\t1m\n",
+  "stderr": "",
+  "execution_time_ms": 463
+}

@@ -542,3 +542,257 @@ export async function updateSubscriberLastLogin(id: number) {
     .set({ lastLoginAt: new Date() })
     .where(eq(subscribers.id, id));
 }
+
+// ============================================================================
+// VPN CONNECTIONS QUERIES
+// ============================================================================
+
+import { vpnConnections, vpnLogs, VpnConnection, InsertVpnConnection, VpnLog, InsertVpnLog } from "../drizzle/schema";
+
+// Get VPN connection by NAS ID
+export async function getVpnConnectionByNasId(nasId: number): Promise<VpnConnection | null> {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const [result] = await db.select()
+    .from(vpnConnections)
+    .where(eq(vpnConnections.nasId, nasId))
+    .limit(1);
+  
+  return result || null;
+}
+
+// Get all VPN connections with NAS info
+export async function getAllVpnConnections(ownerId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let query = db.select({
+    vpn: vpnConnections,
+    nas: {
+      id: nasDevices.id,
+      nasname: nasDevices.nasname,
+      shortname: nasDevices.shortname,
+      connectionType: nasDevices.connectionType,
+      vpnUsername: nasDevices.vpnUsername,
+      status: nasDevices.status,
+      ownerId: nasDevices.ownerId,
+    }
+  })
+  .from(vpnConnections)
+  .leftJoin(nasDevices, eq(vpnConnections.nasId, nasDevices.id));
+  
+  if (ownerId) {
+    query = query.where(eq(nasDevices.ownerId, ownerId)) as typeof query;
+  }
+  
+  return query.orderBy(desc(vpnConnections.updatedAt));
+}
+
+// Create or update VPN connection
+export async function upsertVpnConnection(data: InsertVpnConnection): Promise<VpnConnection> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Check if exists
+  const existing = await getVpnConnectionByNasId(data.nasId);
+  
+  if (existing) {
+    // Update
+    await db.update(vpnConnections)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(vpnConnections.nasId, data.nasId));
+    
+    return { ...existing, ...data } as VpnConnection;
+  } else {
+    // Insert
+    const [result] = await db.insert(vpnConnections)
+      .values(data)
+      .$returningId();
+    
+    return { id: result.id, ...data } as VpnConnection;
+  }
+}
+
+// Update VPN connection status
+export async function updateVpnConnectionStatus(
+  nasId: number, 
+  status: 'connected' | 'disconnected' | 'connecting' | 'error',
+  additionalData?: Partial<InsertVpnConnection>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const updateData: Partial<InsertVpnConnection> = {
+    status,
+    ...additionalData,
+  };
+  
+  if (status === 'connected') {
+    updateData.lastConnectedAt = new Date();
+  } else if (status === 'disconnected') {
+    updateData.lastDisconnectedAt = new Date();
+  }
+  
+  await db.update(vpnConnections)
+    .set(updateData)
+    .where(eq(vpnConnections.nasId, nasId));
+}
+
+// Increment disconnect count
+export async function incrementVpnDisconnectCount(nasId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(vpnConnections)
+    .set({
+      disconnectCount: sql`${vpnConnections.disconnectCount} + 1`,
+      lastDisconnectedAt: new Date(),
+    })
+    .where(eq(vpnConnections.nasId, nasId));
+}
+
+// ============================================================================
+// VPN LOGS QUERIES
+// ============================================================================
+
+// Add VPN log entry
+export async function addVpnLog(data: InsertVpnLog): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [result] = await db.insert(vpnLogs)
+    .values(data)
+    .$returningId();
+  
+  return result.id;
+}
+
+// Get VPN logs for a NAS
+export async function getVpnLogsByNasId(nasId: number, limit: number = 100): Promise<VpnLog[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select()
+    .from(vpnLogs)
+    .where(eq(vpnLogs.nasId, nasId))
+    .orderBy(desc(vpnLogs.createdAt))
+    .limit(limit);
+}
+
+// Get all VPN logs with filtering
+export async function getVpnLogs(options: {
+  nasId?: number;
+  eventType?: string;
+  startDate?: Date;
+  endDate?: Date;
+  limit?: number;
+  offset?: number;
+  ownerId?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { logs: [], total: 0 };
+  
+  const conditions = [];
+  
+  if (options.nasId) {
+    conditions.push(eq(vpnLogs.nasId, options.nasId));
+  }
+  
+  if (options.eventType) {
+    conditions.push(eq(vpnLogs.eventType, options.eventType as any));
+  }
+  
+  if (options.startDate) {
+    conditions.push(gte(vpnLogs.createdAt, options.startDate));
+  }
+  
+  if (options.endDate) {
+    conditions.push(lte(vpnLogs.createdAt, options.endDate));
+  }
+  
+  // Build query with NAS join for owner filtering
+  let baseQuery = db.select({
+    log: vpnLogs,
+    nas: {
+      id: nasDevices.id,
+      shortname: nasDevices.shortname,
+      ownerId: nasDevices.ownerId,
+    }
+  })
+  .from(vpnLogs)
+  .leftJoin(nasDevices, eq(vpnLogs.nasId, nasDevices.id));
+  
+  if (options.ownerId) {
+    conditions.push(eq(nasDevices.ownerId, options.ownerId));
+  }
+  
+  if (conditions.length > 0) {
+    baseQuery = baseQuery.where(and(...conditions)) as typeof baseQuery;
+  }
+  
+  // Get total count
+  const countResult = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(vpnLogs)
+    .leftJoin(nasDevices, eq(vpnLogs.nasId, nasDevices.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
+  
+  const total = Number(countResult[0]?.count || 0);
+  
+  // Get logs with pagination
+  const logs = await baseQuery
+    .orderBy(desc(vpnLogs.createdAt))
+    .limit(options.limit || 100)
+    .offset(options.offset || 0);
+  
+  return { logs, total };
+}
+
+// Get VPN connection stats
+export async function getVpnConnectionStats(ownerId?: number) {
+  const db = await getDb();
+  if (!db) return { total: 0, connected: 0, disconnected: 0, connecting: 0, error: 0 };
+  
+  let query = db.select({
+    status: vpnConnections.status,
+    count: sql<number>`COUNT(*)`,
+  })
+  .from(vpnConnections)
+  .leftJoin(nasDevices, eq(vpnConnections.nasId, nasDevices.id));
+  
+  if (ownerId) {
+    query = query.where(eq(nasDevices.ownerId, ownerId)) as typeof query;
+  }
+  
+  const result = await query.groupBy(vpnConnections.status);
+  
+  const stats = { total: 0, connected: 0, disconnected: 0, connecting: 0, error: 0 };
+  
+  for (const row of result) {
+    const count = Number(row.count);
+    stats.total += count;
+    if (row.status === 'connected') stats.connected = count;
+    else if (row.status === 'disconnected') stats.disconnected = count;
+    else if (row.status === 'connecting') stats.connecting = count;
+    else if (row.status === 'error') stats.error = count;
+  }
+  
+  return stats;
+}
+
+// Delete VPN connection and logs
+export async function deleteVpnConnectionByNasId(nasId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Delete logs first
+  await db.delete(vpnLogs)
+    .where(eq(vpnLogs.nasId, nasId));
+  
+  // Delete connection
+  await db.delete(vpnConnections)
+    .where(eq(vpnConnections.nasId, nasId));
+}

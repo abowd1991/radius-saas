@@ -1,0 +1,22 @@
+{
+  "query": "\nSELECT id, name FROM plans LIMIT 1;\nSELECT id, shortname FROM nas LIMIT 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \nSELECT id, name FROM plans LIMIT 1;\nSELECT id, shortname FROM nas LIMIT 1;\n",
+  "rows": [
+    {
+      "id": "1",
+      "name": "1m"
+    },
+    {
+      "id": "id",
+      "name": "shortname"
+    },
+    {
+      "id": "1",
+      "name": "Khaled"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n1\t1m\nid\tshortname\n1\tKhaled\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

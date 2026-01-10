@@ -1,0 +1,9 @@
+{
+  "query": "\nCREATE TABLE IF NOT EXISTS vpn_logs (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  nasId INT NOT NULL,\n  vpnConnectionId INT,\n  eventType ENUM('connected', 'disconnected', 'connection_failed', 'reconnecting', 'auth_failed', 'timeout', 'manual_disconnect', 'manual_restart', 'error', 'radius_error') NOT NULL,\n  message TEXT,\n  details JSON,\n  localIp VARCHAR(45),\n  remoteIp VARCHAR(45),\n  errorCode VARCHAR(50),\n  errorMessage TEXT,\n  triggeredBy INT,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  INDEX idx_nasId (nasId),\n  INDEX idx_eventType (eventType),\n  INDEX idx_createdAt (createdAt)\n);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \nCREATE TABLE IF NOT EXISTS vpn_logs (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  nasId INT NOT NULL,\n  vpnConnectionId INT,\n  eventType ENUM('connected', 'disconnected', 'connection_failed', 'reconnecting', 'auth_failed', 'timeout', 'manual_disconnect', 'manual_restart', 'error', 'radius_error') NOT NULL,\n  message TEXT,\n  details JSON,\n  localIp VARCHAR(45),\n  remoteIp VARCHAR(45),\n  errorCode VARCHAR(50),\n  errorMessage TEXT,\n  triggeredBy INT,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  INDEX idx_nasId (nasId),\n  INDEX idx_eventType (eventType),\n  INDEX idx_createdAt (createdAt)\n);\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 227
+}

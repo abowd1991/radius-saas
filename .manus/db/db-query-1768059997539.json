@@ -1,0 +1,20 @@
+{
+  "query": "SELECT radacctid, username, acctsessionid, nasipaddress, framedipaddress, callingstationid, acctstarttime, acctstoptime FROM radacct WHERE acctstoptime IS NULL ORDER BY acctstarttime DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT radacctid, username, acctsessionid, nasipaddress, framedipaddress, callingstationid, acctstarttime, acctstoptime FROM radacct WHERE acctstoptime IS NULL ORDER BY acctstarttime DESC LIMIT 5;",
+  "rows": [
+    {
+      "radacctid": "1",
+      "username": "testuser001",
+      "acctsessionid": "8020000b",
+      "nasipaddress": "10.0.0.8",
+      "framedipaddress": "172.16.8.3",
+      "callingstationid": "AE:10:D3:77:77:23",
+      "acctstarttime": "2026-01-10 15:33:53",
+      "acctstoptime": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "radacctid\tusername\tacctsessionid\tnasipaddress\tframedipaddress\tcallingstationid\tacctstarttime\tacctstoptime\n1\ttestuser001\t8020000b\t10.0.0.8\t172.16.8.3\tAE:10:D3:77:77:23\t2026-01-10 15:33:53\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

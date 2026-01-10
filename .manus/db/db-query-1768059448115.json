@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, username, attribute, op, value FROM radcheck LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, username, attribute, op, value FROM radcheck LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "username": "Abd",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "123456"
+    },
+    {
+      "id": "2",
+      "username": "Abd",
+      "attribute": "Expiration",
+      "op": ":=",
+      "value": "Mar 09 2026 02:16:01"
+    },
+    {
+      "id": "3",
+      "username": "Abd",
+      "attribute": "Auth-Type",
+      "op": ":=",
+      "value": "Accept"
+    },
+    {
+      "id": "4",
+      "username": "Abd",
+      "attribute": "Simultaneous-Use",
+      "op": ":=",
+      "value": "1"
+    },
+    {
+      "id": "5",
+      "username": "Abbdo",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "123456"
+    },
+    {
+      "id": "6",
+      "username": "Abbdo",
+      "attribute": "Expiration",
+      "op": ":=",
+      "value": "Feb 09 2026 02:20:25"
+    },
+    {
+      "id": "7",
+      "username": "Abbdo",
+      "attribute": "Auth-Type",
+      "op": ":=",
+      "value": "Accept"
+    },
+    {
+      "id": "8",
+      "username": "Abbdo",
+      "attribute": "Simultaneous-Use",
+      "op": ":=",
+      "value": "1"
+    },
+    {
+      "id": "9",
+      "username": "2474634",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "9932"
+    },
+    {
+      "id": "10",
+      "username": "2474634",
+      "attribute": "Simultaneous-Use",
+      "op": ":=",
+      "value": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tattribute\top\tvalue\n1\tAbd\tCleartext-Password\t:=\t123456\n2\tAbd\tExpiration\t:=\tMar 09 2026 02:16:01\n3\tAbd\tAuth-Type\t:=\tAccept\n4\tAbd\tSimultaneous-Use\t:=\t1\n5\tAbbdo\tCleartext-Password\t:=\t123456\n6\tAbbdo\tExpiration\t:=\tFeb 09 2026 02:20:25\n7\tAbbdo\tAuth-Type\t:=\tAccept\n8\tAbbdo\tSimultaneous-Use\t:=\t1\n9\t2474634\tCleartext-Password\t:=\t9932\n10\t2474634\tSimultaneous-Use\t:=\t1\n",
+  "stderr": "",
+  "execution_time_ms": 175
+}

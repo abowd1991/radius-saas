@@ -1,0 +1,45 @@
+{
+  "query": "SELECT * FROM radcheck LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT * FROM radcheck LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "username": "Abd",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "123456"
+    },
+    {
+      "id": "2",
+      "username": "Abd",
+      "attribute": "Expiration",
+      "op": ":=",
+      "value": "Mar 09 2026 02:16:01"
+    },
+    {
+      "id": "3",
+      "username": "Abd",
+      "attribute": "Auth-Type",
+      "op": ":=",
+      "value": "Accept"
+    },
+    {
+      "id": "4",
+      "username": "Abd",
+      "attribute": "Simultaneous-Use",
+      "op": ":=",
+      "value": "1"
+    },
+    {
+      "id": "5",
+      "username": "Abbdo",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "123456"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tattribute\top\tvalue\n1\tAbd\tCleartext-Password\t:=\t123456\n2\tAbd\tExpiration\t:=\tMar 09 2026 02:16:01\n3\tAbd\tAuth-Type\t:=\tAccept\n4\tAbd\tSimultaneous-Use\t:=\t1\n5\tAbbdo\tCleartext-Password\t:=\t123456\n",
+  "stderr": "",
+  "execution_time_ms": 70
+}

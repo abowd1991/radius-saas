@@ -746,3 +746,90 @@ export const subscriberSubscriptions = mysqlTable("subscriber_subscriptions", {
 
 export type SubscriberSubscription = typeof subscriberSubscriptions.$inferSelect;
 export type InsertSubscriberSubscription = typeof subscriberSubscriptions.$inferInsert;
+
+
+// ============================================================================
+// VPN CONNECTIONS STATUS (Real-time VPN monitoring)
+// ============================================================================
+
+export const vpnConnections = mysqlTable("vpn_connections", {
+  id: int("id").autoincrement().primaryKey(),
+  nasId: int("nasId").notNull().unique(), // Reference to nas table
+  
+  // Connection type (from NAS settings)
+  connectionType: mysqlEnum("connectionType", ["public_ip", "vpn_pptp", "vpn_sstp"]).notNull(),
+  
+  // Connection status
+  status: mysqlEnum("status", ["connected", "disconnected", "connecting", "error"]).default("disconnected").notNull(),
+  
+  // IP addresses
+  localVpnIp: varchar("localVpnIp", { length: 45 }), // VPN tunnel IP assigned to NAS
+  remoteIp: varchar("remoteIp", { length: 45 }), // Public IP of NAS
+  serverIp: varchar("serverIp", { length: 45 }), // VPN server IP
+  
+  // Connection metrics
+  uptime: int("uptime").default(0), // seconds since connection
+  lastConnectedAt: timestamp("lastConnectedAt"),
+  lastDisconnectedAt: timestamp("lastDisconnectedAt"),
+  disconnectCount: int("disconnectCount").default(0), // Total disconnections
+  
+  // Last error info
+  lastError: text("lastError"),
+  lastErrorAt: timestamp("lastErrorAt"),
+  
+  // Traffic stats (optional)
+  bytesIn: bigint("bytesIn", { mode: "number" }).default(0),
+  bytesOut: bigint("bytesOut", { mode: "number" }).default(0),
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VpnConnection = typeof vpnConnections.$inferSelect;
+export type InsertVpnConnection = typeof vpnConnections.$inferInsert;
+
+// ============================================================================
+// VPN LOGS (Connection history and events)
+// ============================================================================
+
+export const vpnLogs = mysqlTable("vpn_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  nasId: int("nasId").notNull(), // Reference to nas table
+  vpnConnectionId: int("vpnConnectionId"), // Reference to vpn_connections
+  
+  // Event type
+  eventType: mysqlEnum("eventType", [
+    "connected",           // VPN connected successfully
+    "disconnected",        // VPN disconnected
+    "connection_failed",   // Connection attempt failed
+    "reconnecting",        // Attempting to reconnect
+    "auth_failed",         // Authentication failed
+    "timeout",             // Connection timeout
+    "manual_disconnect",   // Manual disconnect by admin
+    "manual_restart",      // Manual restart by admin
+    "error",               // General error
+    "radius_error"         // RADIUS-related error
+  ]).notNull(),
+  
+  // Event details
+  message: text("message"),
+  details: json("details"), // Additional JSON data
+  
+  // IP info at time of event
+  localIp: varchar("localIp", { length: 45 }),
+  remoteIp: varchar("remoteIp", { length: 45 }),
+  
+  // Error info (if applicable)
+  errorCode: varchar("errorCode", { length: 50 }),
+  errorMessage: text("errorMessage"),
+  
+  // Who triggered (for manual actions)
+  triggeredBy: int("triggeredBy"), // User ID if manual action
+  
+  // Timestamp
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type VpnLog = typeof vpnLogs.$inferSelect;
+export type InsertVpnLog = typeof vpnLogs.$inferInsert;

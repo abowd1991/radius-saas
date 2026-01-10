@@ -1023,3 +1023,96 @@
 - [x] Test Disconnect-Request with real MikroTik - SUCCESS
 - [x] Test CoA-Request with real MikroTik - SUCCESS
 - [ ] Test with real connected user (pending - user will provide tomorrow)
+
+
+## Phase 2: VPN Management & Monitoring (Jan 10, 2026)
+
+### VPN Database Schema
+- [ ] Create vpn_connections table (nas_id, connection_type, status, local_ip, remote_ip, uptime, last_connected, disconnect_count)
+- [ ] Create vpn_logs table (connection_id, event_type, timestamp, details, error_message)
+- [ ] Add migration for new tables
+
+### VPN Connections Page
+- [ ] Display all NAS devices with VPN status
+- [ ] Show connection type (Public / PPTP / SSTP)
+- [ ] Show connection status (Connected / Disconnected)
+- [ ] Show Local VPN IP
+- [ ] Show Remote/NAS IP
+- [ ] Show connection uptime
+- [ ] Show last connection time
+- [ ] Show disconnect count
+
+### VPN Control Features
+- [ ] Restart VPN button (via MikroTik API)
+- [ ] Disconnect VPN button (via MikroTik API)
+- [ ] Real-time connection status check
+- [ ] Auto-refresh status every 30 seconds
+
+### VPN Logs Page
+- [ ] Display connection logs per NAS
+- [ ] Show connection time
+- [ ] Show disconnection time
+- [ ] Show disconnect reason (if available)
+- [ ] Show authentication errors
+- [ ] Show RADIUS-related errors
+- [ ] Filter logs by date/type/NAS
+- [ ] Export logs to CSV
+
+### VPN API Endpoints
+- [ ] GET /api/vpn/connections - List all VPN connections
+- [ ] GET /api/vpn/connections/:nasId - Get specific NAS VPN status
+- [ ] POST /api/vpn/connections/:nasId/restart - Restart VPN
+- [ ] POST /api/vpn/connections/:nasId/disconnect - Disconnect VPN
+- [ ] GET /api/vpn/logs - Get VPN logs
+- [ ] GET /api/vpn/logs/:nasId - Get logs for specific NAS
+
+### PPTP Testing
+- [ ] Test PPTP connection with Accounting
+- [ ] Test PPTP session tracking
+- [ ] Test PPTP CoA (Change of Authorization)
+- [ ] Test PPTP Disconnect
+- [ ] Test PPTP time expiry auto-disconnect
+
+### SSTP Testing
+- [ ] Test SSTP connection with Accounting
+- [ ] Test SSTP session tracking
+- [ ] Test SSTP CoA (Change of Authorization)
+- [ ] Test SSTP Disconnect
+- [ ] Test SSTP time expiry auto-disconnect
+
+
+## VPN Connection Management (Phase 2 - Jan 10, 2026)
+- [x] Database tables for VPN tracking
+  - [x] vpn_connections table (status, IPs, uptime, disconnect count)
+  - [x] vpn_logs table (connection events, errors, timestamps)
+- [x] Backend API for VPN control
+  - [x] vpnConnectionService.ts for MikroTik API integration
+  - [x] VPN status monitoring
+  - [x] VPN restart/disconnect/connect operations
+  - [x] VPN logs retrieval
+  - [x] Multi-tenancy support (owner filtering)
+- [x] VPN Router endpoints
+  - [x] list - Get all VPN connections with status
+  - [x] getByNasId - Get VPN connection by NAS ID
+  - [x] getStatus - Get real-time VPN status from MikroTik
+  - [x] restart - Restart VPN connection
+  - [x] disconnect - Disconnect VPN
+  - [x] connect - Connect VPN
+  - [x] syncAll - Sync all VPN statuses
+  - [x] logs - Get VPN logs with filtering
+  - [x] stats - Get VPN connection statistics
+- [x] VPN Connections Page (UI)
+  - [x] Stats cards (total, connected, disconnected, error)
+  - [x] Connections table with status badges
+  - [x] Action buttons (connect, disconnect, restart)
+  - [x] Logs dialog for each NAS
+  - [x] Search and filter functionality
+- [x] VPN Logs Page (UI)
+  - [x] Full logs table with pagination
+  - [x] Filter by NAS device
+  - [x] Filter by event type
+  - [x] Search functionality
+  - [x] Export to CSV
+- [x] Navigation updates
+  - [x] Added "اتصالات VPN" link to sidebar
+  - [x] Added "سجلات VPN" link to sidebar

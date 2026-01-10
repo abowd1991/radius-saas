@@ -1,0 +1,25 @@
+{
+  "query": "SELECT username, attribute, value FROM radcheck WHERE username = 'testuser001';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT username, attribute, value FROM radcheck WHERE username = 'testuser001';",
+  "rows": [
+    {
+      "username": "testuser001",
+      "attribute": "Cleartext-Password",
+      "value": "1234"
+    },
+    {
+      "username": "testuser001",
+      "attribute": "Simultaneous-Use",
+      "value": "1"
+    },
+    {
+      "username": "testuser001",
+      "attribute": "Session-Timeout",
+      "value": "3600"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tattribute\tvalue\ntestuser001\tCleartext-Password\t1234\ntestuser001\tSimultaneous-Use\t1\ntestuser001\tSession-Timeout\t3600\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

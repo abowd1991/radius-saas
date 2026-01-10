@@ -49,6 +49,7 @@ import {
   Database,
   UserCheck,
   Wifi,
+  History,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -97,6 +98,8 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
     { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
     { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
+    { icon: Globe, label: "اتصالات VPN", path: "/vpn" },
+    { icon: History, label: "سجلات VPN", path: "/vpn-logs" },
     { icon: MessageSquare, label: t("nav.support"), path: "/support" },
     { icon: Settings, label: t("nav.settings"), path: "/settings" },
     { icon: CreditCard, label: "إدارة الاشتراكات", path: "/tenant-subscriptions" },
@@ -123,6 +126,8 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
     { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
     { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
+    { icon: Globe, label: "اتصالات VPN", path: "/vpn" },
+    { icon: History, label: "سجلات VPN", path: "/vpn-logs" },
     { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
     { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },
     { icon: MessageSquare, label: t("nav.support"), path: "/support" },

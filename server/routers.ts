@@ -2885,6 +2885,144 @@ const subscribersRouter = router({
 });
 
 // ============================================================================
+// VPN CONNECTIONS ROUTER
+// ============================================================================
+import * as vpnConnectionService from "./services/vpnConnectionService";
+
+const vpnRouter = router({
+  // List all VPN connections with status
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const ownerId = ctx.user.role === 'super_admin' ? undefined : ctx.user.id;
+    const connections = await db.getAllVpnConnections(ownerId);
+    const stats = await db.getVpnConnectionStats(ownerId);
+    return { connections, stats };
+  }),
+
+  // Get VPN connection by NAS ID
+  getByNasId: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasById(input.nasId);
+      if (!nas) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+
+      const connection = await db.getVpnConnectionByNasId(input.nasId);
+      return connection;
+    }),
+
+  // Get VPN status from MikroTik
+  getStatus: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasById(input.nasId);
+      if (!nas) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+
+      return vpnConnectionService.getVpnStatus(input.nasId);
+    }),
+
+  // Restart VPN connection
+  restart: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasById(input.nasId);
+      if (!nas) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+
+      return vpnConnectionService.restartVpnConnection(input.nasId, ctx.user.id);
+    }),
+
+  // Disconnect VPN
+  disconnect: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasById(input.nasId);
+      if (!nas) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+
+      return vpnConnectionService.disconnectVpn(input.nasId, ctx.user.id);
+    }),
+
+  // Connect VPN
+  connect: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasById(input.nasId);
+      if (!nas) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+
+      return vpnConnectionService.connectVpn(input.nasId, ctx.user.id);
+    }),
+
+  // Sync all VPN statuses
+  syncAll: protectedProcedure.mutation(async ({ ctx }) => {
+    const ownerId = ctx.user.role === 'super_admin' ? undefined : ctx.user.id;
+    return vpnConnectionService.syncAllVpnStatuses(ownerId);
+  }),
+
+  // Get VPN logs
+  logs: protectedProcedure
+    .input(z.object({
+      nasId: z.number().optional(),
+      eventType: z.string().optional(),
+      startDate: z.date().optional(),
+      endDate: z.date().optional(),
+      limit: z.number().min(1).max(500).optional(),
+      offset: z.number().min(0).optional(),
+    }))
+    .query(async ({ input, ctx }) => {
+      const ownerId = ctx.user.role === 'super_admin' ? undefined : ctx.user.id;
+      
+      // If specific NAS requested, check ownership
+      if (input.nasId) {
+        const nas = await nasDb.getNasById(input.nasId);
+        if (!nas) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
+        }
+        if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+
+      return db.getVpnLogs({
+        ...input,
+        ownerId,
+      });
+    }),
+
+  // Get VPN stats
+  stats: protectedProcedure.query(async ({ ctx }) => {
+    const ownerId = ctx.user.role === 'super_admin' ? undefined : ctx.user.id;
+    return db.getVpnConnectionStats(ownerId);
+  }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -2908,6 +3046,7 @@ export const appRouter = router({
   backups: backupsRouter,
   internalNotifications: internalNotificationsRouter,
   subscribers: subscribersRouter,
+  vpn: vpnRouter,
 });
 
 export type AppRouter = typeof appRouter;
