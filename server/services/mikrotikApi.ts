@@ -17,6 +17,7 @@ interface MikroTikResponse {
   success: boolean;
   data?: any;
   error?: string;
+  method?: string; // 'api' | 'coa_fallback'
 }
 
 // Active session interface

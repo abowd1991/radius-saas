@@ -833,3 +833,44 @@ export const vpnLogs = mysqlTable("vpn_logs", {
 
 export type VpnLog = typeof vpnLogs.$inferSelect;
 export type InsertVpnLog = typeof vpnLogs.$inferInsert;
+
+
+// ============================================================================
+// AUDIT LOGS (Security and compliance tracking)
+// ============================================================================
+
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Who performed the action
+  userId: int("userId").notNull(),
+  userRole: varchar("userRole", { length: 50 }).notNull(),
+  
+  // What action was performed
+  action: varchar("action", { length: 100 }).notNull(),
+  
+  // Target of the action
+  targetType: varchar("targetType", { length: 50 }).notNull(), // session, nas, card, subscriber, user, vpn
+  targetId: varchar("targetId", { length: 100 }), // ID of the target (username, session ID, etc.)
+  targetName: varchar("targetName", { length: 255 }), // Human-readable name
+  
+  // NAS context (if applicable)
+  nasId: int("nasId"),
+  nasIp: varchar("nasIp", { length: 45 }),
+  
+  // Additional details (JSON)
+  details: json("details"),
+  
+  // Result of the action
+  result: mysqlEnum("result", ["success", "failure", "partial"]).notNull(),
+  errorMessage: text("errorMessage"),
+  
+  // Request context
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  
+  // Timestamp
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;

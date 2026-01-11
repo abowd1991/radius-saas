@@ -1126,3 +1126,15 @@
 - [x] تحديث واجهة الجلسات لدعم تغيير السرعة الفوري
 - [x] جعل MikroTik API هو الحل الافتراضي لتغيير السرعة
 - [x] اختبار النظام الكامل (تم اختباره على 185.202.239.188:8728)
+
+## Multi-Tenant Permissions Fix (Jan 11, 2026)
+- [x] تحويل coaDisconnect إلى protectedProcedure مع تحقق ملكية NAS
+- [x] تحويل coaDisconnectUser إلى protectedProcedure مع تحقق ملكية Card
+- [x] تحويل coaUpdateSession إلى protectedProcedure مع تحقق ملكية NAS
+- [x] تحويل changeUserSpeed إلى protectedProcedure مع تحقق ملكية Card
+- [x] تحويل mikrotikChangeSpeed إلى protectedProcedure مع تحقق ملكية NAS + Fallback
+- [x] تحويل mikrotikDisconnect إلى protectedProcedure مع تحقق ملكية NAS + Fallback
+- [x] تحويل mikrotikGetActiveUsers إلى protectedProcedure مع تحقق ملكية NAS
+- [x] إضافة Audit Log لكل عملية CoA/API (auditLogService.ts + audit_logs table)
+- [x] إضافة Fallback تلقائي (API → CoA) إذا فشل MikroTik API
+- [x] كتابة اختبارات للتحقق من الصلاحيات (12 اختبار - جميعها نجحت)

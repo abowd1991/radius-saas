@@ -27,6 +27,7 @@ import { getDb } from "./db";
 import { radcheck } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import * as radiusSubscribers from "./db/radiusSubscribers";
+import { logAudit } from "./services/auditLogService";
 
 // ============================================================================
 // AUTH ROUTER
@@ -1836,31 +1837,81 @@ const sessionsRouter = router({
   // ============================================
   
   // Disconnect a specific session using CoA
-  coaDisconnect: superAdminProcedure
+  coaDisconnect: protectedProcedure
     .input(z.object({
       username: z.string(),
       nasIp: z.string(),
       sessionId: z.string().optional(),
       framedIp: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
-      return coaService.disconnectSession(
+    .mutation(async ({ ctx, input }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasByIp(input.nasIp);
+      if (!nas) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
+      }
+      
+      const result = await coaService.disconnectSession(
         input.username,
         input.nasIp,
         input.sessionId,
         input.framedIp
       );
+      
+      // Log audit
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'session_disconnect_coa',
+        targetType: 'session',
+        targetId: input.sessionId || input.username,
+        targetName: input.username,
+        nasId: nas.id,
+        nasIp: input.nasIp,
+        details: { sessionId: input.sessionId, framedIp: input.framedIp },
+        result: result.success ? 'success' : 'failure',
+        errorMessage: result.success ? undefined : result.error,
+      });
+      
+      return result;
     }),
 
   // Disconnect all sessions for a user using CoA
-  coaDisconnectUser: superAdminProcedure
+  coaDisconnectUser: protectedProcedure
     .input(z.object({ username: z.string() }))
-    .mutation(async ({ input }) => {
-      return coaService.disconnectUserAllSessions(input.username);
+    .mutation(async ({ ctx, input }) => {
+      // Check card ownership
+      const card = await cardDb.getCardByUsername(input.username);
+      if (!card) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      if (ctx.user.role !== 'super_admin' && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this user" });
+      }
+      
+      const result = await coaService.disconnectUserAllSessions(input.username);
+      
+      // Log audit
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'session_disconnect_coa',
+        targetType: 'session',
+        targetId: input.username,
+        targetName: input.username,
+        details: { allSessions: true },
+        result: result.success ? 'success' : 'failure',
+        errorMessage: result.success ? undefined : result.error,
+      });
+      
+      return result;
     }),
 
   // Update session attributes (speed, timeout) using CoA
-  coaUpdateSession: superAdminProcedure
+  coaUpdateSession: protectedProcedure
     .input(z.object({
       username: z.string(),
       nasIp: z.string(),
@@ -1870,8 +1921,17 @@ const sessionsRouter = router({
       uploadSpeed: z.number().optional(),
       sessionTimeout: z.number().optional(),
     }))
-    .mutation(async ({ input }) => {
-      return coaService.updateSessionAttributes(
+    .mutation(async ({ ctx, input }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasByIp(input.nasIp);
+      if (!nas) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
+      }
+      
+      const result = await coaService.updateSessionAttributes(
         input.username,
         input.nasIp,
         input.sessionId,
@@ -1882,21 +1942,62 @@ const sessionsRouter = router({
           sessionTimeout: input.sessionTimeout,
         }
       );
+      
+      // Log audit
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'speed_change_coa',
+        targetType: 'session',
+        targetId: input.sessionId,
+        targetName: input.username,
+        nasId: nas.id,
+        nasIp: input.nasIp,
+        details: { downloadSpeed: input.downloadSpeed, uploadSpeed: input.uploadSpeed, sessionTimeout: input.sessionTimeout },
+        result: result.success ? 'success' : 'failure',
+        errorMessage: result.success ? undefined : result.error,
+      });
+      
+      return result;
     }),
 
   // Change user speed with fallback to disconnect
-  changeUserSpeed: superAdminProcedure
+  changeUserSpeed: protectedProcedure
     .input(z.object({
       username: z.string(),
       uploadSpeedMbps: z.number(),
       downloadSpeedMbps: z.number(),
     }))
-    .mutation(async ({ input }) => {
-      return coaService.changeUserSpeed(
+    .mutation(async ({ ctx, input }) => {
+      // Check card ownership
+      const card = await cardDb.getCardByUsername(input.username);
+      if (!card) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      if (ctx.user.role !== 'super_admin' && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this user" });
+      }
+      
+      const result = await coaService.changeUserSpeed(
         input.username,
         input.uploadSpeedMbps,
         input.downloadSpeedMbps
       );
+      
+      // Log audit
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'speed_change',
+        targetType: 'session',
+        targetId: input.username,
+        targetName: input.username,
+        details: { uploadSpeedMbps: input.uploadSpeedMbps, downloadSpeedMbps: input.downloadSpeedMbps },
+        result: result.success ? 'success' : 'failure',
+        errorMessage: result.success ? undefined : result.error,
+      });
+      
+      return result;
     }),
 
   // Test CoA connectivity to a NAS
@@ -1994,39 +2095,124 @@ const sessionsRouter = router({
   // ============================================
   
   // Change user speed via MikroTik API (without disconnecting)
-  mikrotikChangeSpeed: superAdminProcedure
+  mikrotikChangeSpeed: protectedProcedure
     .input(z.object({
       nasIp: z.string(),
       username: z.string(),
       uploadSpeedKbps: z.number(),
       downloadSpeedKbps: z.number(),
     }))
-    .mutation(async ({ input }) => {
-      return mikrotikApi.changeUserSpeedViaMikroTikApi(
+    .mutation(async ({ ctx, input }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasByIp(input.nasIp);
+      if (!nas) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
+      }
+      
+      // Try MikroTik API first
+      let result = await mikrotikApi.changeUserSpeedViaMikroTikApi(
         input.nasIp,
         input.username,
         input.uploadSpeedKbps,
         input.downloadSpeedKbps
       );
+      
+      // Fallback to CoA if API fails
+      let method = 'api';
+      if (!result.success && nas.apiEnabled) {
+        console.log(`[MikroTik API] Failed, falling back to CoA for ${input.username}`);
+        const coaResult = await coaService.changeUserSpeed(
+          input.username,
+          input.uploadSpeedKbps / 1000, // Convert Kbps to Mbps
+          input.downloadSpeedKbps / 1000
+        );
+        result = { ...coaResult, method: 'coa_fallback' };
+        method = 'coa_fallback';
+      }
+      
+      // Log audit
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'speed_change_api',
+        targetType: 'session',
+        targetId: input.username,
+        targetName: input.username,
+        nasId: nas.id,
+        nasIp: input.nasIp,
+        details: { uploadSpeedKbps: input.uploadSpeedKbps, downloadSpeedKbps: input.downloadSpeedKbps, method },
+        result: result.success ? 'success' : 'failure',
+        errorMessage: result.success ? undefined : result.error,
+      });
+      
+      return result;
     }),
 
   // Disconnect user via MikroTik API
-  mikrotikDisconnect: superAdminProcedure
+  mikrotikDisconnect: protectedProcedure
     .input(z.object({
       nasIp: z.string(),
       username: z.string(),
     }))
-    .mutation(async ({ input }) => {
-      return mikrotikApi.disconnectUserViaMikroTikApi(
+    .mutation(async ({ ctx, input }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasByIp(input.nasIp);
+      if (!nas) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
+      }
+      
+      // Try MikroTik API first
+      let result = await mikrotikApi.disconnectUserViaMikroTikApi(
         input.nasIp,
         input.username
       );
+      
+      // Fallback to CoA if API fails
+      let method = 'api';
+      if (!result.success && nas.apiEnabled) {
+        console.log(`[MikroTik API] Failed, falling back to CoA for ${input.username}`);
+        const coaResult = await coaService.disconnectUserAllSessions(input.username);
+        result = { ...coaResult, method: 'coa_fallback' };
+        method = 'coa_fallback';
+      }
+      
+      // Log audit
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'session_disconnect_api',
+        targetType: 'session',
+        targetId: input.username,
+        targetName: input.username,
+        nasId: nas.id,
+        nasIp: input.nasIp,
+        details: { method },
+        result: result.success ? 'success' : 'failure',
+        errorMessage: result.success ? undefined : result.error,
+      });
+      
+      return result;
     }),
 
   // Get active users from MikroTik via API
-  mikrotikGetActiveUsers: superAdminProcedure
+  mikrotikGetActiveUsers: protectedProcedure
     .input(z.object({ nasIp: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasByIp(input.nasIp);
+      if (!nas) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
+      }
+      
       return mikrotikApi.getActiveUsersViaMikroTikApi(input.nasIp);
     }),
 

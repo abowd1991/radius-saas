@@ -15,6 +15,13 @@
       "when": 1767567296578,
       "tag": "0001_productive_oracle",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1768091183669,
+      "tag": "0002_greedy_scourge",
+      "breakpoints": true
     }
   ]
 }
