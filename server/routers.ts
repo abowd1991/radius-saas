@@ -3149,6 +3149,10 @@ const vpnRouter = router({
           sessionName: session?.sessionName || null,
           sourceHost: session?.sourceHost || null,
           transferBytes: session?.transferBytes || null,
+          localVpnIp: session?.localIp || null,
+          lastConnectedAt: session?.connectedAt || null,
+          clientIp: session?.clientIp || null,
+          protocol: session?.protocol || null,
           updatedAt: new Date(),
         },
         nas: {

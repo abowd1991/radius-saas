@@ -7,6 +7,7 @@
 import * as db from "../db";
 import * as nasDb from "../db/nas";
 import { RouterOSAPI } from "node-routeros";
+import * as sshVpn from "./sshVpnService";
 
 interface VpnControlResult {
   success: boolean;
@@ -229,7 +230,7 @@ export async function restartVpnConnection(nasId: number, triggeredBy?: number):
 }
 
 /**
- * Disconnect VPN connection on MikroTik
+ * Disconnect VPN connection - tries SoftEther API first, then MikroTik API
  */
 export async function disconnectVpn(nasId: number, triggeredBy?: number): Promise<VpnControlResult> {
   const nas = await nasDb.getNasById(nasId);
@@ -241,6 +242,27 @@ export async function disconnectVpn(nasId: number, triggeredBy?: number): Promis
     return { success: false, message: "Cannot disconnect VPN for Public IP connection" };
   }
 
+  // Try to disconnect via SoftEther API first (server-side disconnect)
+  if (nas.vpnUsername) {
+    try {
+      console.log(`[VPN] Attempting to disconnect ${nas.vpnUsername} via SoftEther API`);
+      const result = await sshVpn.disconnectUserSessions(nas.vpnUsername);
+      if (result.success) {
+        // Log the disconnect
+        await db.addVpnLog({
+          nasId,
+          eventType: "disconnected",
+          message: `VPN disconnected via SoftEther API - ${result.message}`,
+          triggeredBy,
+        });
+        return { success: true, message: result.message || "VPN disconnected via SoftEther" };
+      }
+    } catch (error: any) {
+      console.error(`[VPN] SoftEther disconnect failed:`, error.message);
+    }
+  }
+
+  // Fall back to MikroTik API if SoftEther fails
   if (!nas.apiEnabled) {
     return { success: false, message: "MikroTik API not enabled for this NAS" };
   }

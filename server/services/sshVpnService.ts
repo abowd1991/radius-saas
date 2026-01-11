@@ -246,3 +246,37 @@ export async function disconnectSession(sessionName: string): Promise<VPNResult>
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Disconnect all sessions for a user
+ */
+export async function disconnectUserSessions(username: string): Promise<VPNResult> {
+  try {
+    const result = await apiRequest(`/api/vpn/user/${encodeURIComponent(username)}/disconnect`, 'POST');
+    
+    if (result.success) {
+      return { success: true, message: result.message };
+    }
+    return { success: false, error: result.error };
+  } catch (error: any) {
+    console.error('[VPN API] Error disconnecting user sessions:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get sessions for a specific user
+ */
+export async function getUserSessions(username: string): Promise<VPNResult & { sessions?: any[], connected?: boolean }> {
+  try {
+    const result = await apiRequest(`/api/vpn/user/${encodeURIComponent(username)}/sessions`, 'GET');
+    
+    if (result.success) {
+      return { success: true, sessions: result.sessions || [], connected: result.connected };
+    }
+    return { success: false, error: result.error, sessions: [], connected: false };
+  } catch (error: any) {
+    console.error('[VPN API] Error getting user sessions:', error.message);
+    return { success: false, error: error.message, sessions: [], connected: false };
+  }
+}
