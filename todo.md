@@ -1211,3 +1211,11 @@
 
 ## Skip API Test for VPN Networks (Jan 11, 2026)
 - [x] إزالة شرط اختبار الاتصال قبل حفظ إعدادات API للشبكات VPN
+
+
+## Fix NAS Registration in FreeRADIUS (Jan 11, 2026)
+- [ ] تفعيل Dynamic Clients في FreeRADIUS من قاعدة البيانات
+- [ ] إعداد read_clients = yes في SQL module
+- [ ] إعداد queries لقراءة NAS من جدول nas (فقط Active)
+- [ ] إعداد Firewall (UFW) للسماح فقط لـ 192.168.30.0/24
+- [ ] اختبار: NAS جديد يعمل فوراً بدون restart
