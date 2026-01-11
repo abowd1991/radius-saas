@@ -3117,11 +3117,61 @@ const subscribersRouter = router({
 import * as vpnConnectionService from "./services/vpnConnectionService";
 
 const vpnRouter = router({
-  // List all VPN connections with status
+  // List all VPN connections with status (from SoftEther)
   list: protectedProcedure.query(async ({ ctx }) => {
-    const ownerId = ctx.user.role === 'super_admin' ? undefined : ctx.user.id;
-    const connections = await db.getAllVpnConnections(ownerId);
-    const stats = await db.getVpnConnectionStats(ownerId);
+    // Only super_admin can see VPN connections
+    if (ctx.user.role !== 'super_admin') {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Only administrators can view VPN connections' });
+    }
+    
+    // Get active sessions from SoftEther
+    const sessionsResult = await sshVpn.getVpnSessionsFromServer();
+    const sessions = sessionsResult.sessions || [];
+    
+    // Get all VPN NAS devices
+    const allNasDevices = await nasDb.getAllNasDevices();
+    const vpnNasDevices = allNasDevices.filter((nas: any) => 
+      nas.connectionType && nas.connectionType !== 'public_ip'
+    );
+    
+    // Map sessions to NAS devices
+    const connections = vpnNasDevices.map((nas: any) => {
+      const session = sessions.find((s: any) => 
+        s.username && nas.vpnUsername && 
+        s.username.toLowerCase() === nas.vpnUsername.toLowerCase()
+      );
+      
+      return {
+        vpn: {
+          id: nas.id,
+          nasId: nas.id,
+          status: session ? 'connected' : 'disconnected',
+          sessionName: session?.sessionName || null,
+          sourceHost: session?.sourceHost || null,
+          transferBytes: session?.transferBytes || null,
+          updatedAt: new Date(),
+        },
+        nas: {
+          id: nas.id,
+          nasname: nas.nasname,
+          shortname: nas.shortname,
+          connectionType: nas.connectionType,
+          vpnUsername: nas.vpnUsername,
+          status: nas.status,
+          ownerId: nas.ownerId,
+        }
+      };
+    });
+    
+    // Calculate stats
+    const stats = {
+      total: connections.length,
+      connected: connections.filter((c: any) => c.vpn.status === 'connected').length,
+      disconnected: connections.filter((c: any) => c.vpn.status === 'disconnected').length,
+      connecting: 0,
+      error: 0,
+    };
+    
     return { connections, stats };
   }),
 
@@ -3212,34 +3262,39 @@ const vpnRouter = router({
     return vpnConnectionService.syncAllVpnStatuses(ownerId);
   }),
 
-  // Get VPN logs
+  // Get VPN logs from SoftEther server
   logs: protectedProcedure
     .input(z.object({
       nasId: z.number().optional(),
       eventType: z.string().optional(),
-      startDate: z.date().optional(),
-      endDate: z.date().optional(),
       limit: z.number().min(1).max(500).optional(),
-      offset: z.number().min(0).optional(),
     }))
     .query(async ({ input, ctx }) => {
-      const ownerId = ctx.user.role === 'super_admin' ? undefined : ctx.user.id;
-      
-      // If specific NAS requested, check ownership
-      if (input.nasId) {
-        const nas = await nasDb.getNasById(input.nasId);
-        if (!nas) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
-        }
-        if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
+      // Only super_admin can see VPN logs
+      if (ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only administrators can view VPN logs' });
       }
-
-      return db.getVpnLogs({
-        ...input,
-        ownerId,
-      });
+      
+      // Get logs from SoftEther API
+      const result = await sshVpn.getVpnLogs();
+      
+      if (!result.success) {
+        console.error('[VPN] Failed to get logs:', result.error);
+        return { logs: [], total: 0 };
+      }
+      
+      let logs = result.logs || [];
+      
+      // Filter by event type if specified
+      if (input.eventType && input.eventType !== 'all') {
+        logs = logs.filter((log: any) => log.eventType === input.eventType);
+      }
+      
+      // Limit results
+      const limit = input.limit || 100;
+      logs = logs.slice(-limit).reverse();
+      
+      return { logs, total: logs.length };
     }),
 
   // Get VPN stats

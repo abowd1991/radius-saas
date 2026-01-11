@@ -127,8 +127,6 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
     { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
     { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
-    { icon: Globe, label: "اتصالات VPN", path: "/vpn" },
-    { icon: History, label: "سجلات VPN", path: "/vpn-logs" },
     { icon: History, label: "سجل العمليات", path: "/audit-log" },
     { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
     { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },

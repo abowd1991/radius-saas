@@ -174,3 +174,75 @@ export async function userExists(username: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Get active VPN sessions
+ */
+export async function getVpnSessionsFromServer(): Promise<VPNResult & { sessions?: any[], count?: number }> {
+  try {
+    const result = await apiRequest('/api/vpn/sessions', 'GET');
+    
+    if (result.success) {
+      // Filter out local bridge sessions
+      const userSessions = (result.sessions || []).filter(
+        (s: any) => s.username && s.username !== 'Local Bridge'
+      );
+      return { success: true, sessions: userSessions, count: userSessions.length };
+    }
+    return { success: false, error: result.error, sessions: [], count: 0 };
+  } catch (error: any) {
+    console.error('[VPN API] Error getting sessions:', error.message);
+    return { success: false, error: error.message, sessions: [], count: 0 };
+  }
+}
+
+/**
+ * Get VPN connection logs
+ */
+export async function getVpnLogs(): Promise<VPNResult & { logs?: any[] }> {
+  try {
+    const result = await apiRequest('/api/vpn/logs', 'GET');
+    
+    if (result.success) {
+      return { success: true, logs: result.logs || [] };
+    }
+    return { success: false, error: result.error, logs: [] };
+  } catch (error: any) {
+    console.error('[VPN API] Error getting logs:', error.message);
+    return { success: false, error: error.message, logs: [] };
+  }
+}
+
+/**
+ * Get VPN server status
+ */
+export async function getVpnStatus(): Promise<VPNResult & { status?: any }> {
+  try {
+    const result = await apiRequest('/api/vpn/status', 'GET');
+    
+    if (result.success) {
+      return { success: true, status: result.status };
+    }
+    return { success: false, error: result.error };
+  } catch (error: any) {
+    console.error('[VPN API] Error getting status:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Disconnect a VPN session
+ */
+export async function disconnectSession(sessionName: string): Promise<VPNResult> {
+  try {
+    const result = await apiRequest(`/api/vpn/sessions/${encodeURIComponent(sessionName)}`, 'DELETE');
+    
+    if (result.success) {
+      return { success: true, message: result.message };
+    }
+    return { success: false, error: result.error };
+  } catch (error: any) {
+    console.error('[VPN API] Error disconnecting session:', error.message);
+    return { success: false, error: error.message };
+  }
+}

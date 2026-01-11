@@ -1186,3 +1186,8 @@
 
 ## Fix Auto VPN User Creation (Jan 11, 2026)
 - [x] إصلاح عدم إنشاء VPN User تلقائياً عند إضافة NAS جديد (تم إنشاء VPN API)
+
+## Fix VPN Connections Page (Jan 11, 2026)
+- [x] جلب سجلات اتصال VPN من SoftEther وعرضها
+- [x] إخفاء صفحة اتصالات VPN عن العملاء (للمدير فقط)
+- [x] عرض حالة الاتصال الحالية لكل NAS
