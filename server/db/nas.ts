@@ -44,7 +44,7 @@ export async function createNas(data: {
   ipAddress: string;
   secret: string;
   type?: string;
-  connectionType?: "public_ip" | "vpn_pptp" | "vpn_sstp";
+  connectionType?: "public_ip" | "vpn_l2tp" | "vpn_sstp";
   description?: string;
   location?: string;
   ports?: number;
@@ -90,7 +90,7 @@ export async function updateNas(id: number, data: {
   location?: string;
   ports?: number;
   status?: "active" | "inactive";
-  connectionType?: "public_ip" | "vpn_pptp" | "vpn_sstp";
+  connectionType?: "public_ip" | "vpn_l2tp" | "vpn_sstp";
   mikrotikApiPort?: number;
   mikrotikApiUser?: string;
   mikrotikApiPassword?: string;

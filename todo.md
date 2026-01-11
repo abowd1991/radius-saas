@@ -1116,3 +1116,13 @@
 - [x] Navigation updates
   - [x] Added "اتصالات VPN" link to sidebar
   - [x] Added "سجلات VPN" link to sidebar
+
+## MikroTik API Integration - Speed Change without Disconnect (Jan 11, 2026)
+- [x] تحديث خدمة MikroTik API لدعم الاتصال المباشر (MikroTikApiClient class)
+- [x] إضافة endpoint لتغيير السرعة عبر MikroTik API (sessions.mikrotikChangeSpeed)
+- [x] إضافة endpoint لعرض المستخدمين النشطين من MikroTik (sessions.mikrotikGetActiveUsers)
+- [x] إضافة endpoint لفصل المستخدم عبر MikroTik API (sessions.mikrotikDisconnect)
+- [x] حقول API credentials في صفحة NAS (موجودة مسبقاً)
+- [x] تحديث واجهة الجلسات لدعم تغيير السرعة الفوري
+- [x] جعل MikroTik API هو الحل الافتراضي لتغيير السرعة
+- [x] اختبار النظام الكامل (تم اختباره على 185.202.239.188:8728)

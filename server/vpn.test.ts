@@ -52,7 +52,7 @@ describe('VPN Connection Service', () => {
       const mockConnection = {
         id: 1,
         nasId: 1,
-        connectionType: 'vpn_pptp',
+        connectionType: 'vpn_l2tp',
         status: 'connected',
         localVpnIp: '192.168.30.10',
       };
@@ -232,7 +232,7 @@ describe('VPN Connection Service', () => {
         id: 1,
         nasname: '192.168.1.1',
         shortname: 'TestNAS',
-        connectionType: 'vpn_pptp',
+        connectionType: 'vpn_l2tp',
         ownerId: 5,
         apiEnabled: true,
       };
@@ -243,7 +243,7 @@ describe('VPN Connection Service', () => {
       
       expect(nas).toBeDefined();
       expect(nas?.ownerId).toBe(5);
-      expect(nas?.connectionType).toBe('vpn_pptp');
+      expect(nas?.connectionType).toBe('vpn_l2tp');
     });
 
     it('should return null for non-existent NAS', async () => {
@@ -256,7 +256,7 @@ describe('VPN Connection Service', () => {
 
     it('should get NAS devices by owner', async () => {
       const mockNasList = [
-        { id: 1, shortname: 'NAS1', connectionType: 'vpn_pptp', ownerId: 5 },
+        { id: 1, shortname: 'NAS1', connectionType: 'vpn_l2tp', ownerId: 5 },
         { id: 2, shortname: 'NAS2', connectionType: 'vpn_sstp', ownerId: 5 },
       ];
       
@@ -275,8 +275,8 @@ describe('VPN Connection Service', () => {
     });
 
     it('should identify PPTP VPN connections', () => {
-      const connectionType = 'vpn_pptp';
-      expect(connectionType).toBe('vpn_pptp');
+      const connectionType = 'vpn_l2tp';
+      expect(connectionType).toBe('vpn_l2tp');
     });
 
     it('should identify SSTP VPN connections', () => {

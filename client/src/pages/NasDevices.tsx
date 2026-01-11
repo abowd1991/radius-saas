@@ -63,7 +63,7 @@ import { useState, useRef } from "react";
 // Connection type options
 const connectionTypes = [
   { value: "public_ip", labelAr: "اي بي عالمي", labelEn: "Public IP", icon: Globe },
-  { value: "vpn_pptp", labelAr: "اتصال VPN PPTP", labelEn: "VPN PPTP", icon: Shield },
+  { value: "vpn_l2tp", labelAr: "اتصال VPN L2TP", labelEn: "VPN L2TP", icon: Shield },
   { value: "vpn_sstp", labelAr: "اتصال VPN SSTP", labelEn: "VPN SSTP", icon: Link2 },
 ];
 
@@ -247,7 +247,7 @@ export default function NasDevices() {
       ipAddress: ipAddress,
       secret: formData.get("secret") as string,
       type: formData.get("type") as "mikrotik" | "cisco" | "other",
-      connectionType: connectionType as "public_ip" | "vpn_pptp" | "vpn_sstp",
+      connectionType: connectionType as "public_ip" | "vpn_l2tp" | "vpn_sstp",
       description: formData.get("description") as string || undefined,
       // VPN credentials will be auto-generated on the server
       vpnUsername: undefined,

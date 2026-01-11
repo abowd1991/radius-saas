@@ -121,6 +121,42 @@ export default function Sessions() {
     },
   });
 
+  // MikroTik API - Change Speed Instantly (without disconnect)
+  const mikrotikChangeSpeed = trpc.sessions.mikrotikChangeSpeed.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(language === "ar" ? "تم تغيير السرعة فوراً عبر MikroTik API" : "Speed changed instantly via MikroTik API");
+      } else {
+        toast.error(result.error || (language === "ar" ? "فشل تغيير السرعة" : "Failed to change speed"));
+      }
+      setIsSpeedDialogOpen(false);
+      setSelectedSession(null);
+      setNewDownloadSpeed("");
+      setNewUploadSpeed("");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // MikroTik API - Disconnect User
+  const mikrotikDisconnect = trpc.sessions.mikrotikDisconnect.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(language === "ar" ? "تم قطع الاتصال عبر MikroTik API" : "Disconnected via MikroTik API");
+      } else {
+        toast.error(result.error || (language === "ar" ? "فشل قطع الاتصال" : "Failed to disconnect"));
+      }
+      setIsDisconnectDialogOpen(false);
+      setSelectedSession(null);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   // Legacy CoA Update (kept for compatibility)
   const coaUpdateSession = trpc.sessions.coaUpdateSession.useMutation({
     onSuccess: (result) => {
@@ -202,13 +238,32 @@ export default function Sessions() {
     }
   };
 
-  const confirmSpeedChange = () => {
+  const confirmSpeedChange = (useMikrotikApi: boolean = true) => {
     if (selectedSession && newDownloadSpeed && newUploadSpeed) {
-      // Use new changeUserSpeed API with fallback
-      changeUserSpeed.mutate({
+      if (useMikrotikApi) {
+        // Use MikroTik API for instant speed change (recommended)
+        mikrotikChangeSpeed.mutate({
+          nasIp: selectedSession.nasIpAddress,
+          username: selectedSession.username,
+          uploadSpeedKbps: parseInt(newUploadSpeed) * 1000,
+          downloadSpeedKbps: parseInt(newDownloadSpeed) * 1000,
+        });
+      } else {
+        // Fallback to CoA/RADIUS method
+        changeUserSpeed.mutate({
+          username: selectedSession.username,
+          uploadSpeedMbps: parseInt(newUploadSpeed),
+          downloadSpeedMbps: parseInt(newDownloadSpeed),
+        });
+      }
+    }
+  };
+
+  const confirmDisconnectMikrotik = () => {
+    if (selectedSession) {
+      mikrotikDisconnect.mutate({
+        nasIp: selectedSession.nasIpAddress,
         username: selectedSession.username,
-        uploadSpeedMbps: parseInt(newUploadSpeed),
-        downloadSpeedMbps: parseInt(newDownloadSpeed),
       });
     }
   };
@@ -300,21 +355,21 @@ export default function Sessions() {
         </Card>
       </div>
 
-      {/* CoA Info Banner */}
-      <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
+      {/* MikroTik API Info Banner */}
+      <Card className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/20">
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-500/20 rounded-lg">
-              <Zap className="h-6 w-6 text-blue-500" />
+            <div className="p-3 bg-green-500/20 rounded-lg">
+              <Zap className="h-6 w-6 text-green-500" />
             </div>
             <div>
               <h3 className="font-semibold">
-                {language === "ar" ? "دعم CoA (Change of Authorization)" : "CoA Support Enabled"}
+                {language === "ar" ? "تغيير السرعة الفوري عبر MikroTik API" : "Instant Speed Change via MikroTik API"}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {language === "ar" 
-                  ? "يمكنك الآن قطع الجلسات وتغيير السرعة فوراً للمستخدمين المتصلين"
-                  : "You can now disconnect sessions and change speed instantly for connected users"}
+                  ? "يمكنك تغيير سرعة المستخدم فوراً بدون فصل الاتصال - يتم التطبيق مباشرة على Queue"
+                  : "Change user speed instantly without disconnecting - applied directly to Queue"}
               </p>
             </div>
           </div>
@@ -473,18 +528,25 @@ export default function Sessions() {
 
       {/* Change Speed Dialog */}
       <Dialog open={isSpeedDialogOpen} onOpenChange={setIsSpeedDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {language === "ar" ? "تغيير السرعة (CoA)" : "Change Speed (CoA)"}
+              {language === "ar" ? "تغيير السرعة الفوري" : "Instant Speed Change"}
             </DialogTitle>
             <DialogDescription>
               {language === "ar" 
-                ? `تغيير سرعة المستخدم "${selectedSession?.username}" فوراً`
-                : `Change speed for user "${selectedSession?.username}" instantly`}
+                ? `تغيير سرعة المستخدم "${selectedSession?.username}" فوراً بدون فصل الاتصال`
+                : `Change speed for user "${selectedSession?.username}" instantly without disconnecting`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <p className="text-sm text-green-600 dark:text-green-400">
+                {language === "ar" 
+                  ? "✨ سيتم تطبيق السرعة الجديدة فوراً عبر MikroTik API"
+                  : "✨ New speed will be applied instantly via MikroTik API"}
+              </p>
+            </div>
             <div className="space-y-2">
               <Label>
                 {language === "ar" ? "سرعة التنزيل (Mbps)" : "Download Speed (Mbps)"}
@@ -508,20 +570,21 @@ export default function Sessions() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setIsSpeedDialogOpen(false)}>
               {language === "ar" ? "إلغاء" : "Cancel"}
             </Button>
             <Button 
-              onClick={confirmSpeedChange}
-              disabled={!newDownloadSpeed || !newUploadSpeed || coaUpdateSession.isPending}
+              onClick={() => confirmSpeedChange(true)}
+              disabled={!newDownloadSpeed || !newUploadSpeed || mikrotikChangeSpeed.isPending}
+              className="bg-green-600 hover:bg-green-700"
             >
-              {coaUpdateSession.isPending ? (
+              {mikrotikChangeSpeed.isPending ? (
                 <RefreshCw className="h-4 w-4 animate-spin me-2" />
               ) : (
                 <Zap className="h-4 w-4 me-2" />
               )}
-              {language === "ar" ? "تطبيق" : "Apply"}
+              {language === "ar" ? "تطبيق فوري" : "Apply Instantly"}
             </Button>
           </DialogFooter>
         </DialogContent>

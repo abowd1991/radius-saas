@@ -57,7 +57,7 @@ import { ar, enUS } from "date-fns/locale";
 // Connection type icons
 const connectionTypeIcons: Record<string, any> = {
   public_ip: Globe,
-  vpn_pptp: Shield,
+  vpn_l2tp: Shield,
   vpn_sstp: Link2,
 };
 
@@ -173,7 +173,7 @@ export default function VpnConnections() {
     const Icon = connectionTypeIcons[type] || Globe;
     const labels: Record<string, { ar: string; en: string }> = {
       public_ip: { ar: "IP عام", en: "Public IP" },
-      vpn_pptp: { ar: "PPTP", en: "PPTP" },
+      vpn_l2tp: { ar: "L2TP", en: "L2TP" },
       vpn_sstp: { ar: "SSTP", en: "SSTP" },
     };
     const label = labels[type] || labels.public_ip;

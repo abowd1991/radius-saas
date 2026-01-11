@@ -136,7 +136,7 @@ export default function MikrotikSetup() {
                 {language === 'ar'
                   ? `أوامر إعداد ${selectedNas?.shortname} - نوع الاتصال: ${
                       connectionType === 'public_ip' ? 'اي بي عالمي' :
-                      connectionType === 'vpn_pptp' ? 'VPN PPTP' : 'VPN SSTP'
+                      connectionType === 'vpn_l2tp' ? 'VPN L2TP' : 'VPN SSTP'
                     }`
                   : `Setup commands for ${selectedNas?.shortname} - Connection type: ${connectionType}`}
               </CardDescription>

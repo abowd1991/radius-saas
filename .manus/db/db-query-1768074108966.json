@@ -1,0 +1,31 @@
+{
+  "query": "SELECT * FROM radreply WHERE username = '20850';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT * FROM radreply WHERE username = '20850';",
+  "rows": [
+    {
+      "id": "4076",
+      "username": "20850",
+      "attribute": "Mikrotik-Rate-Limit",
+      "op": "=",
+      "value": "5000k/5000k"
+    },
+    {
+      "id": "4077",
+      "username": "20850",
+      "attribute": "Session-Timeout",
+      "op": "=",
+      "value": "18000"
+    },
+    {
+      "id": "4078",
+      "username": "20850",
+      "attribute": "Max-All-Session",
+      "op": ":=",
+      "value": "18000"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tattribute\top\tvalue\n4076\t20850\tMikrotik-Rate-Limit\t=\t5000k/5000k\n4077\t20850\tSession-Timeout\t=\t18000\n4078\t20850\tMax-All-Session\t:=\t18000\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

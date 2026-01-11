@@ -77,7 +77,7 @@ export async function getVpnStatus(nasId: number): Promise<VpnControlResult> {
     let remoteIp = "";
     let uptime = 0;
 
-    if (nas.connectionType === "vpn_pptp") {
+    if (nas.connectionType === "vpn_l2tp") {
       // Check PPTP client interface
       const pptpClients = await api.write("/interface/pptp-client/print");
       const client = pptpClients.find((c: any) => c.name?.includes(nas.vpnUsername || ""));
@@ -165,7 +165,7 @@ export async function restartVpnConnection(nasId: number, triggeredBy?: number):
 
     let interfaceName = "";
 
-    if (nas.connectionType === "vpn_pptp") {
+    if (nas.connectionType === "vpn_l2tp") {
       // Find and restart PPTP client
       const pptpClients = await api.write("/interface/pptp-client/print");
       const client = pptpClients.find((c: any) => c.name?.includes(nas.vpnUsername || ""));
@@ -261,13 +261,13 @@ export async function disconnectVpn(nasId: number, triggeredBy?: number): Promis
 
     let interfaceName = "";
 
-    if (nas.connectionType === "vpn_pptp") {
-      // Find and disable PPTP client
-      const pptpClients = await api.write("/interface/pptp-client/print");
-      const client = pptpClients.find((c: any) => c.name?.includes(nas.vpnUsername || ""));
+    if (nas.connectionType === "vpn_l2tp") {
+      // Find and disable L2TP client
+      const l2tpClients = await api.write("/interface/l2tp-client/print");
+      const client = l2tpClients.find((c: any) => c.name?.includes(nas.vpnUsername || ""));
       if (client) {
         interfaceName = client.name;
-        await api.write("/interface/pptp-client/disable", [`=.id=${client[".id"]}`]);
+        await api.write("/interface/l2tp-client/disable", [`=.id=${client[".id"]}`]);
       }
     } else if (nas.connectionType === "vpn_sstp") {
       // Find and disable SSTP client
@@ -342,13 +342,13 @@ export async function connectVpn(nasId: number, triggeredBy?: number): Promise<V
 
     let interfaceName = "";
 
-    if (nas.connectionType === "vpn_pptp") {
-      // Find and enable PPTP client
-      const pptpClients = await api.write("/interface/pptp-client/print");
-      const client = pptpClients.find((c: any) => c.name?.includes(nas.vpnUsername || ""));
+    if (nas.connectionType === "vpn_l2tp") {
+      // Find and enable L2TP client
+      const l2tpClients = await api.write("/interface/l2tp-client/print");
+      const client = l2tpClients.find((c: any) => c.name?.includes(nas.vpnUsername || ""));
       if (client) {
         interfaceName = client.name;
-        await api.write("/interface/pptp-client/enable", [`=.id=${client[".id"]}`]);
+        await api.write("/interface/l2tp-client/enable", [`=.id=${client[".id"]}`]);
       }
     } else if (nas.connectionType === "vpn_sstp") {
       // Find and enable SSTP client
@@ -435,7 +435,7 @@ export async function syncAllVpnStatuses(ownerId?: number) {
 /**
  * Initialize VPN connection record for a NAS
  */
-export async function initializeVpnConnection(nasId: number, connectionType: "public_ip" | "vpn_pptp" | "vpn_sstp") {
+export async function initializeVpnConnection(nasId: number, connectionType: "public_ip" | "vpn_sstp" | "vpn_l2tp") {
   if (connectionType === "public_ip") {
     return null;
   }

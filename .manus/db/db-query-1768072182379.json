@@ -1,0 +1,26 @@
+{
+  "query": "SELECT id, shortname, nasname, connectionType, vpnUsername, vpnPassword FROM nas LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, shortname, nasname, connectionType, vpnUsername, vpnPassword FROM nas LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "shortname": "Khaled",
+      "nasname": "vpn-khaled-mk6ch65m",
+      "connectionType": "vpn_sstp",
+      "vpnUsername": "khaled-mk6ch65m",
+      "vpnPassword": "6cds04vbntbqjyrnat81a"
+    },
+    {
+      "id": "2",
+      "shortname": "Twix Market",
+      "nasname": "vpn-twix-market-mk6ck4mc",
+      "connectionType": "vpn_sstp",
+      "vpnUsername": "twix-market-mk6ck4mc",
+      "vpnPassword": "9s94gqce1iarox8oggwuh"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tshortname\tnasname\tconnectionType\tvpnUsername\tvpnPassword\n1\tKhaled\tvpn-khaled-mk6ch65m\tvpn_sstp\tkhaled-mk6ch65m\t6cds04vbntbqjyrnat81a\n2\tTwix Market\tvpn-twix-market-mk6ck4mc\tvpn_sstp\ttwix-market-mk6ck4mc\t9s94gqce1iarox8oggwuh\n",
+  "stderr": "",
+  "execution_time_ms": 120
+}

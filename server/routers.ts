@@ -368,7 +368,7 @@ const nasRouter = router({
       ipAddress: z.string().min(1),
       secret: z.string().min(1),
       type: z.enum(['mikrotik', 'cisco', 'other']).default('mikrotik'),
-      connectionType: z.enum(['public_ip', 'vpn_pptp', 'vpn_sstp']).default('public_ip'),
+      connectionType: z.enum(['public_ip', 'vpn_l2tp', 'vpn_sstp']).default('public_ip'),
       description: z.string().optional(),
       location: z.string().optional(),
       ports: z.number().optional(),
@@ -479,7 +479,7 @@ const nasRouter = router({
       }> = [];
       
       // VPN Setup Scripts (only for VPN connection types)
-      if (nas.connectionType === 'vpn_pptp') {
+      if (nas.connectionType === 'vpn_l2tp') {
         if (!vpnServerAddress) {
           // Warning: VPN server address not configured
           scripts.push({
@@ -494,12 +494,12 @@ const nasRouter = router({
           });
         } else {
           scripts.push({
-            id: 'pptp-client',
-            title: 'Create PPTP Client',
-            titleAr: 'إنشاء اتصال PPTP',
-            description: `Create PPTP VPN tunnel to RADIUS server (${vpnServerAddress})`,
-            descriptionAr: `إنشاء نفق VPN PPTP للاتصال بخادم RADIUS (${vpnServerAddress})`,
-            command: `/interface pptp-client add name=radius-vpn connect-to=${vpnServerAddress} user=${nas.vpnUsername || 'nas-user'}@VPN password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no add-default-route=no`,
+            id: 'l2tp-client',
+            title: 'Create L2TP/IPSec Client',
+            titleAr: 'إنشاء اتصال L2TP/IPSec',
+            description: `Create L2TP/IPSec VPN tunnel to RADIUS server (${vpnServerAddress})`,
+            descriptionAr: `إنشاء نفق VPN L2TP/IPSec للاتصال بخادم RADIUS (${vpnServerAddress})`,
+            command: `/interface l2tp-client add name=radius-vpn connect-to=${vpnServerAddress} user=${nas.vpnUsername || 'nas-user'}@VPN password=${nas.vpnPassword || 'nas-pass'} use-ipsec=yes ipsec-secret=softether disabled=no add-default-route=no`,
             category: 'vpn',
             required: true,
           });
@@ -645,7 +645,7 @@ const nasRouter = router({
       description: z.string().optional(),
       location: z.string().optional(),
       status: z.enum(['active', 'inactive']).optional(),
-      connectionType: z.enum(['public_ip', 'vpn_pptp', 'vpn_sstp']).optional(),
+      connectionType: z.enum(['public_ip', 'vpn_l2tp', 'vpn_sstp']).optional(),
       // MikroTik API settings (optional - for instant speed changes)
       apiEnabled: z.boolean().optional(),
       mikrotikApiPort: z.number().optional(),
@@ -1987,6 +1987,47 @@ const sessionsRouter = router({
     .mutation(async () => {
       sessionMonitor.stopMonitor();
       return { success: true, message: 'Session monitor stopped' };
+    }),
+
+  // ============================================
+  // MikroTik API Direct Control Endpoints
+  // ============================================
+  
+  // Change user speed via MikroTik API (without disconnecting)
+  mikrotikChangeSpeed: superAdminProcedure
+    .input(z.object({
+      nasIp: z.string(),
+      username: z.string(),
+      uploadSpeedKbps: z.number(),
+      downloadSpeedKbps: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      return mikrotikApi.changeUserSpeedViaMikroTikApi(
+        input.nasIp,
+        input.username,
+        input.uploadSpeedKbps,
+        input.downloadSpeedKbps
+      );
+    }),
+
+  // Disconnect user via MikroTik API
+  mikrotikDisconnect: superAdminProcedure
+    .input(z.object({
+      nasIp: z.string(),
+      username: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      return mikrotikApi.disconnectUserViaMikroTikApi(
+        input.nasIp,
+        input.username
+      );
+    }),
+
+  // Get active users from MikroTik via API
+  mikrotikGetActiveUsers: superAdminProcedure
+    .input(z.object({ nasIp: z.string() }))
+    .query(async ({ input }) => {
+      return mikrotikApi.getActiveUsersViaMikroTikApi(input.nasIp);
     }),
 
   // Check user time status (Max-All-Session + Expiration)

@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, nasname, shortname, connectionType, vpnUsername, vpnPassword, mikrotikApiUser, mikrotikApiPassword FROM nas WHERE connectionType != 'public_ip' OR vpnUsername IS NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, connectionType, vpnUsername, vpnPassword, mikrotikApiUser, mikrotikApiPassword FROM nas WHERE connectionType != 'public_ip' OR vpnUsername IS NOT NULL;",
+  "rows": [
+    {
+      "id": "1",
+      "nasname": "vpn-khaled-mk6ch65m",
+      "shortname": "Khaled",
+      "connectionType": "vpn_sstp",
+      "vpnUsername": "khaled-mk6ch65m",
+      "vpnPassword": "6cds04vbntbqjyrnat81a",
+      "mikrotikApiUser": "NULL",
+      "mikrotikApiPassword": "NULL"
+    },
+    {
+      "id": "2",
+      "nasname": "vpn-twix-market-mk6ck4mc",
+      "shortname": "Twix Market",
+      "connectionType": "vpn_pptp",
+      "vpnUsername": "twix-market-mk6ck4mc",
+      "vpnPassword": "9s94gqce1iarox8oggwuh",
+      "mikrotikApiUser": "NULL",
+      "mikrotikApiPassword": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tconnectionType\tvpnUsername\tvpnPassword\tmikrotikApiUser\tmikrotikApiPassword\n1\tvpn-khaled-mk6ch65m\tKhaled\tvpn_sstp\tkhaled-mk6ch65m\t6cds04vbntbqjyrnat81a\tNULL\tNULL\n2\tvpn-twix-market-mk6ck4mc\tTwix Market\tvpn_pptp\ttwix-market-mk6ck4mc\t9s94gqce1iarox8oggwuh\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 72
+}

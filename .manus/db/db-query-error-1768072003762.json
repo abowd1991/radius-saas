@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE nas MODIFY COLUMN connectionType ENUM('public_ip', 'vpn_sstp', 'vpn_l2tp') DEFAULT 'public_ip';\nALTER TABLE vpn_connections MODIFY COLUMN connectionType ENUM('public_ip', 'vpn_sstp', 'vpn_l2tp') NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute ALTER TABLE nas MODIFY COLUMN connectionType ENUM('public_ip', 'vpn_sstp', 'vpn_l2tp') DEFAULT 'public_ip';\nALTER TABLE vpn_connections MODIFY COLUMN connectionType ENUM('public_ip', 'vpn_sstp', 'vpn_l2tp') NOT NULL;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1265 (01000) at line 1: Data truncated for column 'connectionType', value is 'vpn_pptp'"
+  ]
+}

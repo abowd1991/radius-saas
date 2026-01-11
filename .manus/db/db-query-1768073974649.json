@@ -1,0 +1,38 @@
+{
+  "query": "SELECT * FROM radcheck WHERE username = '20850' OR username LIKE '%20850%' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT * FROM radcheck WHERE username = '20850' OR username LIKE '%20850%' LIMIT 5;",
+  "rows": [
+    {
+      "id": "5104",
+      "username": "20850",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "5181"
+    },
+    {
+      "id": "5105",
+      "username": "20850",
+      "attribute": "Simultaneous-Use",
+      "op": ":=",
+      "value": "1"
+    },
+    {
+      "id": "5106",
+      "username": "20850",
+      "attribute": "Auth-Type",
+      "op": ":=",
+      "value": "Accept"
+    },
+    {
+      "id": "5107",
+      "username": "20850",
+      "attribute": "Expiration",
+      "op": ":=",
+      "value": "Jan 01 2099 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tattribute\top\tvalue\n5104\t20850\tCleartext-Password\t:=\t5181\n5105\t20850\tSimultaneous-Use\t:=\t1\n5106\t20850\tAuth-Type\t:=\tAccept\n5107\t20850\tExpiration\t:=\tJan 01 2099 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 87
+}

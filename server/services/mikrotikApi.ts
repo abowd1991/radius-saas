@@ -440,3 +440,511 @@ client ${nasName} {
 }
 `;
 }
+
+
+// ============================================
+// MikroTik RouterOS API Direct Connection
+// ============================================
+
+import net from 'net';
+
+interface MikroTikApiConnection {
+  socket: net.Socket;
+  buffer: Buffer;
+}
+
+/**
+ * MikroTik RouterOS API Client for direct connection
+ */
+export class MikroTikApiClient {
+  private host: string;
+  private port: number;
+  private username: string;
+  private password: string;
+  private socket: net.Socket | null = null;
+  private buffer: Buffer = Buffer.alloc(0);
+  private connected: boolean = false;
+
+  constructor(host: string, port: number = 8728, username: string, password: string) {
+    this.host = host;
+    this.port = port;
+    this.username = username;
+    this.password = password;
+  }
+
+  /**
+   * Connect to MikroTik Router
+   */
+  async connect(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      this.socket = new net.Socket();
+      this.socket.setTimeout(10000);
+
+      this.socket.connect(this.port, this.host, async () => {
+        try {
+          await this.login();
+          this.connected = true;
+          resolve(true);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      this.socket.on('error', (err) => {
+        this.connected = false;
+        reject(err);
+      });
+
+      this.socket.on('timeout', () => {
+        this.connected = false;
+        reject(new Error('Connection timeout'));
+      });
+    });
+  }
+
+  /**
+   * Disconnect from MikroTik Router
+   */
+  disconnect(): void {
+    if (this.socket) {
+      this.socket.destroy();
+      this.socket = null;
+      this.connected = false;
+    }
+  }
+
+  /**
+   * Encode word length for RouterOS API protocol
+   */
+  private encodeLength(length: number): Buffer {
+    if (length < 0x80) {
+      return Buffer.from([length]);
+    } else if (length < 0x4000) {
+      return Buffer.from([((length >> 8) | 0x80), (length & 0xFF)]);
+    } else if (length < 0x200000) {
+      return Buffer.from([
+        ((length >> 16) | 0xC0),
+        ((length >> 8) & 0xFF),
+        (length & 0xFF)
+      ]);
+    } else {
+      return Buffer.from([
+        ((length >> 24) | 0xE0),
+        ((length >> 16) & 0xFF),
+        ((length >> 8) & 0xFF),
+        (length & 0xFF)
+      ]);
+    }
+  }
+
+  /**
+   * Send a word to the router
+   */
+  private sendWord(word: string): void {
+    if (!this.socket) throw new Error('Not connected');
+    const wordBuffer = Buffer.from(word, 'utf8');
+    const lengthBuffer = this.encodeLength(wordBuffer.length);
+    this.socket.write(Buffer.concat([lengthBuffer, wordBuffer]));
+  }
+
+  /**
+   * Send a sentence (array of words) to the router
+   */
+  private sendSentence(words: string[]): void {
+    for (const word of words) {
+      this.sendWord(word);
+    }
+    this.socket?.write(Buffer.from([0]));
+  }
+
+  /**
+   * Read response from router
+   */
+  private async readResponse(): Promise<string[][]> {
+    return new Promise((resolve) => {
+      const sentences: string[][] = [];
+      let currentSentence: string[] = [];
+      let timeout: NodeJS.Timeout;
+
+      const processBuffer = () => {
+        while (this.buffer.length > 0) {
+          let length = 0;
+          let offset = 0;
+
+          if (this.buffer[0] < 0x80) {
+            length = this.buffer[0];
+            offset = 1;
+          } else if (this.buffer[0] < 0xC0) {
+            if (this.buffer.length < 2) return;
+            length = ((this.buffer[0] & 0x3F) << 8) + this.buffer[1];
+            offset = 2;
+          } else if (this.buffer[0] < 0xE0) {
+            if (this.buffer.length < 3) return;
+            length = ((this.buffer[0] & 0x1F) << 16) + (this.buffer[1] << 8) + this.buffer[2];
+            offset = 3;
+          } else {
+            if (this.buffer.length < 4) return;
+            length = ((this.buffer[0] & 0x0F) << 24) + (this.buffer[1] << 16) + (this.buffer[2] << 8) + this.buffer[3];
+            offset = 4;
+          }
+
+          if (this.buffer.length < offset + length) return;
+
+          if (length === 0) {
+            if (currentSentence.length > 0) {
+              sentences.push([...currentSentence]);
+              if (currentSentence.includes('!done') || currentSentence.some(w => w.startsWith('!trap'))) {
+                clearTimeout(timeout);
+                this.socket?.removeListener('data', onData);
+                resolve(sentences);
+                return;
+              }
+              currentSentence = [];
+            }
+          } else {
+            const word = this.buffer.slice(offset, offset + length).toString('utf8');
+            currentSentence.push(word);
+          }
+
+          this.buffer = this.buffer.slice(offset + length);
+        }
+      };
+
+      const onData = (data: Buffer) => {
+        this.buffer = Buffer.concat([this.buffer, data]);
+        processBuffer();
+      };
+
+      timeout = setTimeout(() => {
+        this.socket?.removeListener('data', onData);
+        resolve(sentences);
+      }, 5000);
+
+      this.socket?.on('data', onData);
+      processBuffer();
+    });
+  }
+
+  /**
+   * Login to the router
+   */
+  private async login(): Promise<void> {
+    this.sendSentence(['/login', `=name=${this.username}`, `=password=${this.password}`]);
+    const response = await this.readResponse();
+    const flatResponse = response.flat();
+    if (!flatResponse.includes('!done')) {
+      throw new Error('Login failed: ' + JSON.stringify(response));
+    }
+  }
+
+  /**
+   * Execute a command on the router
+   */
+  async execute(command: string, params?: Record<string, string>): Promise<MikroTikResponse> {
+    if (!this.connected || !this.socket) {
+      return { success: false, error: 'Not connected' };
+    }
+
+    try {
+      const words = [command];
+      if (params) {
+        for (const [key, value] of Object.entries(params)) {
+          words.push(`=${key}=${value}`);
+        }
+      }
+
+      this.sendSentence(words);
+      const response = await this.readResponse();
+
+      const data: any[] = [];
+      let error: string | undefined;
+
+      for (const sentence of response) {
+        if (sentence.includes('!trap')) {
+          const msgWord = sentence.find(w => w.startsWith('=message='));
+          error = msgWord ? msgWord.substring(9) : 'Unknown error';
+        } else if (sentence.includes('!re')) {
+          const item: Record<string, string> = {};
+          for (const word of sentence) {
+            if (word.startsWith('=') && word !== '!re') {
+              const eqIndex = word.indexOf('=', 1);
+              if (eqIndex > 0) {
+                const key = word.substring(1, eqIndex);
+                const value = word.substring(eqIndex + 1);
+                item[key] = value;
+              }
+            }
+          }
+          if (Object.keys(item).length > 0) {
+            data.push(item);
+          }
+        }
+      }
+
+      return { success: !error, data, error };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
+  }
+
+  /**
+   * Get active hotspot users
+   */
+  async getHotspotActiveUsers(): Promise<any[]> {
+    const result = await this.execute('/ip/hotspot/active/print');
+    return result.success ? (result.data || []) : [];
+  }
+
+  /**
+   * Get simple queues
+   */
+  async getSimpleQueues(): Promise<any[]> {
+    const result = await this.execute('/queue/simple/print');
+    return result.success ? (result.data || []) : [];
+  }
+
+  /**
+   * Get PPP active connections
+   */
+  async getPPPActiveConnections(): Promise<any[]> {
+    const result = await this.execute('/ppp/active/print');
+    return result.success ? (result.data || []) : [];
+  }
+
+  /**
+   * Change user speed by updating queue
+   */
+  async changeUserSpeedByQueue(username: string, uploadSpeed: string, downloadSpeed: string): Promise<MikroTikResponse> {
+    // Find queue for this user
+    const queues = await this.getSimpleQueues();
+    const userQueue = queues.find((q: any) => 
+      q.name?.toLowerCase().includes(username.toLowerCase()) ||
+      q.name?.includes(`<hotspot-${username}>`) ||
+      q.name === username
+    );
+
+    if (userQueue) {
+      return await this.execute('/queue/simple/set', {
+        'numbers': userQueue['.id'],
+        'max-limit': `${uploadSpeed}/${downloadSpeed}`
+      });
+    }
+
+    // Try to find by target IP from hotspot active
+    const activeUsers = await this.getHotspotActiveUsers();
+    const activeUser = activeUsers.find((u: any) => u.user === username);
+
+    if (activeUser) {
+      const queueByIp = queues.find((q: any) => q.target?.includes(activeUser.address));
+      if (queueByIp) {
+        return await this.execute('/queue/simple/set', {
+          'numbers': queueByIp['.id'],
+          'max-limit': `${uploadSpeed}/${downloadSpeed}`
+        });
+      }
+
+      // Create new queue
+      return await this.execute('/queue/simple/add', {
+        'name': `speed-${username}`,
+        'target': activeUser.address,
+        'max-limit': `${uploadSpeed}/${downloadSpeed}`
+      });
+    }
+
+    // Try PPP connections
+    const pppConnections = await this.getPPPActiveConnections();
+    const pppUser = pppConnections.find((c: any) => c.name === username);
+
+    if (pppUser && pppUser.address) {
+      const queueByIp = queues.find((q: any) => q.target?.includes(pppUser.address));
+      if (queueByIp) {
+        return await this.execute('/queue/simple/set', {
+          'numbers': queueByIp['.id'],
+          'max-limit': `${uploadSpeed}/${downloadSpeed}`
+        });
+      }
+
+      // Create new queue
+      return await this.execute('/queue/simple/add', {
+        'name': `ppp-${username}`,
+        'target': pppUser.address,
+        'max-limit': `${uploadSpeed}/${downloadSpeed}`
+      });
+    }
+
+    return { success: false, error: 'User not found in active sessions' };
+  }
+
+  /**
+   * Disconnect hotspot user
+   */
+  async disconnectHotspotUser(username: string): Promise<MikroTikResponse> {
+    const activeUsers = await this.getHotspotActiveUsers();
+    const user = activeUsers.find((u: any) => u.user === username);
+
+    if (!user) {
+      return { success: false, error: 'User not found in active hotspot sessions' };
+    }
+
+    return await this.execute('/ip/hotspot/active/remove', {
+      'numbers': user['.id']
+    });
+  }
+
+  /**
+   * Disconnect PPP user
+   */
+  async disconnectPPPUser(username: string): Promise<MikroTikResponse> {
+    const connections = await this.getPPPActiveConnections();
+    const connection = connections.find((c: any) => c.name === username);
+
+    if (!connection) {
+      return { success: false, error: 'User not found in active PPP connections' };
+    }
+
+    return await this.execute('/ppp/active/remove', {
+      'numbers': connection['.id']
+    });
+  }
+}
+
+/**
+ * Helper function to execute MikroTik API commands
+ */
+export async function withMikroTikApi<T>(
+  host: string,
+  port: number,
+  username: string,
+  password: string,
+  callback: (api: MikroTikApiClient) => Promise<T>
+): Promise<T> {
+  const api = new MikroTikApiClient(host, port, username, password);
+  try {
+    await api.connect();
+    return await callback(api);
+  } finally {
+    api.disconnect();
+  }
+}
+
+/**
+ * Change user speed via MikroTik API (without disconnecting)
+ */
+export async function changeUserSpeedViaMikroTikApi(
+  nasIp: string,
+  username: string,
+  uploadSpeedKbps: number,
+  downloadSpeedKbps: number
+): Promise<MikroTikResponse> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  // Get NAS credentials
+  const nas = await getNasByIp(nasIp);
+  if (!nas) {
+    return { success: false, error: "NAS device not found" };
+  }
+
+  if (!nas.mikrotikApiUser || !nas.mikrotikApiPassword) {
+    return { success: false, error: "NAS API credentials not configured" };
+  }
+
+  const uploadSpeed = `${uploadSpeedKbps}k`;
+  const downloadSpeed = `${downloadSpeedKbps}k`;
+
+  try {
+    return await withMikroTikApi(
+      nasIp,
+      nas.mikrotikApiPort || 8728,
+      nas.mikrotikApiUser,
+      nas.mikrotikApiPassword,
+      async (api) => {
+        return await api.changeUserSpeedByQueue(username, uploadSpeed, downloadSpeed);
+      }
+    );
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to change speed" };
+  }
+}
+
+/**
+ * Disconnect user via MikroTik API
+ */
+export async function disconnectUserViaMikroTikApi(
+  nasIp: string,
+  username: string
+): Promise<MikroTikResponse> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  const nas = await getNasByIp(nasIp);
+  if (!nas) {
+    return { success: false, error: "NAS device not found" };
+  }
+
+  if (!nas.mikrotikApiUser || !nas.mikrotikApiPassword) {
+    return { success: false, error: "NAS API credentials not configured" };
+  }
+
+  try {
+    return await withMikroTikApi(
+      nasIp,
+      nas.mikrotikApiPort || 8728,
+      nas.mikrotikApiUser,
+      nas.mikrotikApiPassword,
+      async (api) => {
+        // Try hotspot first
+        let result = await api.disconnectHotspotUser(username);
+        if (result.success) return result;
+
+        // Try PPP
+        result = await api.disconnectPPPUser(username);
+        return result;
+      }
+    );
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to disconnect user" };
+  }
+}
+
+/**
+ * Get active users from MikroTik via API
+ */
+export async function getActiveUsersViaMikroTikApi(nasIp: string): Promise<MikroTikResponse> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  const nas = await getNasByIp(nasIp);
+  if (!nas) {
+    return { success: false, error: "NAS device not found" };
+  }
+
+  if (!nas.mikrotikApiUser || !nas.mikrotikApiPassword) {
+    return { success: false, error: "NAS API credentials not configured" };
+  }
+
+  try {
+    return await withMikroTikApi(
+      nasIp,
+      nas.mikrotikApiPort || 8728,
+      nas.mikrotikApiUser,
+      nas.mikrotikApiPassword,
+      async (api) => {
+        const hotspotUsers = await api.getHotspotActiveUsers();
+        const pppUsers = await api.getPPPActiveConnections();
+        const queues = await api.getSimpleQueues();
+
+        return {
+          success: true,
+          data: {
+            hotspotUsers,
+            pppUsers,
+            queues
+          }
+        };
+      }
+    );
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to get active users" };
+  }
+}

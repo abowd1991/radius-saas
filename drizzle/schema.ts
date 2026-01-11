@@ -128,8 +128,8 @@ export const nasDevices = mysqlTable("nas", {
   server: varchar("server", { length: 64 }),
   community: varchar("community", { length: 50 }),
   description: varchar("description", { length: 200 }),
-  connectionType: mysqlEnum("connectionType", ["public_ip", "vpn_pptp", "vpn_sstp"]).default("public_ip"),
-  // VPN credentials for PPTP/SSTP connections
+  connectionType: mysqlEnum("connectionType", ["public_ip", "vpn_sstp", "vpn_l2tp"]).default("public_ip"),
+  // VPN credentials for SSTP/L2TP connections
   vpnUsername: varchar("vpnUsername", { length: 64 }),
   vpnPassword: varchar("vpnPassword", { length: 128 }),
   vpnTunnelIp: varchar("vpnTunnelIp", { length: 45 }), // Assigned IP after VPN connects
@@ -757,7 +757,7 @@ export const vpnConnections = mysqlTable("vpn_connections", {
   nasId: int("nasId").notNull().unique(), // Reference to nas table
   
   // Connection type (from NAS settings)
-  connectionType: mysqlEnum("connectionType", ["public_ip", "vpn_pptp", "vpn_sstp"]).notNull(),
+  connectionType: mysqlEnum("connectionType", ["public_ip", "vpn_sstp", "vpn_l2tp"]).notNull(),
   
   // Connection status
   status: mysqlEnum("status", ["connected", "disconnected", "connecting", "error"]).default("disconnected").notNull(),
