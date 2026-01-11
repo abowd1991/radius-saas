@@ -579,7 +579,9 @@ export default function NasDevices() {
         toast.error(language === "ar" ? "يرجى اختيار شبكة" : "Please select a network");
         return;
       }
-      if (apiEnabled && !connectionTested) {
+      // Skip connection test requirement for VPN networks (they can't be tested directly)
+      const isVpnNetwork = selectedNas?.connectionType === 'vpn_l2tp' || selectedNas?.connectionType === 'vpn_sstp';
+      if (apiEnabled && !connectionTested && !isVpnNetwork) {
         toast.error(language === "ar" ? "يرجى اختبار الاتصال أولاً" : "Please test the connection first");
         return;
       }

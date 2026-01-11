@@ -1207,3 +1207,7 @@
 
 ## Fix MikroTik API Connection (Jan 11, 2026)
 - [x] إصلاح اختبار اتصال MikroTik API - استخدام IP المحلي من VPN بدلاً من اسم المستخدم
+
+
+## Skip API Test for VPN Networks (Jan 11, 2026)
+- [x] إزالة شرط اختبار الاتصال قبل حفظ إعدادات API للشبكات VPN
