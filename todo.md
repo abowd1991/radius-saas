@@ -1183,3 +1183,6 @@
 - [x] إصلاح عدم إنشاء VPN User في SoftEther عند إنشاء NAS جديد
 - [x] التحقق من أن VPN API تعمل بشكل صحيح (تم التحول لـ vpncmd)
 - [x] اختبار إنشاء NAS جديد مع VPN
+
+## Fix Auto VPN User Creation (Jan 11, 2026)
+- [x] إصلاح عدم إنشاء VPN User تلقائياً عند إضافة NAS جديد (تم إنشاء VPN API)
