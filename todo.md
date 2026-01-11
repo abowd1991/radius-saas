@@ -1138,3 +1138,30 @@
 - [x] إضافة Audit Log لكل عملية CoA/API (auditLogService.ts + audit_logs table)
 - [x] إضافة Fallback تلقائي (API → CoA) إذا فشل MikroTik API
 - [x] كتابة اختبارات للتحقق من الصلاحيات (12 اختبار - جميعها نجحت)
+## Production Testing & Audit Log Page (Jan 11, 2026)
+### 1. اختبارات واقعية للأدوار
+- [x] اختبار Reseller يفصل جلسة على NAS تبعه فقط (sessions.production.test.ts)
+- [x] اختبار Reseller يغيّر سرعة على NAS تبعه فقط (sessions.production.test.ts)
+- [x] اختبار Client يفصل/يغير سرعة ضمن صلاحياته (sessions.production.test.ts)
+- [x] اختبار فاشل: Reseller على NAS مش تبعه → FORBIDDEN + Audit Log (sessions.production.test.ts)
+
+### 2. صفحة Audit Log
+- [x] إنشاء صفحة عرض Audit Log في لوحة التحكم (AuditLog.tsx)
+- [x] فلتر حسب User
+- [x] فلتر حسب NAS
+- [x] فلتر حسب Action
+- [x] فلتر حسب Status (success/failure)
+- [x] فلتر حسب Date Range
+
+### 3. تحسين Audit Log
+- [x] إضافة حقل method (api/coa/coa_fallback) - مضاف في auditLogService.ts
+- [x] إضافة حقل executionTime (مدة التنفيذ) - مضاف في auditLogService.ts
+- [x] تسجيل Fallback events بوضوح - يسجل method: 'coa_fallback' في Audit Log
+
+### 4. اختبار Fallback
+- [x] اختبار API timeout → CoA fallback (sessions.production.test.ts)
+- [x] اختبار API auth fail → CoA fallback (sessions.production.test.ts)
+- [x] التأكد من عدم تكرار العمليات (double actions) - تم الاختبار
+
+### 5. نتائج الاختبارات
+- [x] جميع الاختبارات نجحت (278 اختبار في 18 ملف)

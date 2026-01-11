@@ -28,6 +28,7 @@ import Subscribers from "./pages/Subscribers";
 import OnlineUsers from "./pages/OnlineUsers";
 import VpnConnections from "./pages/VpnConnections";
 import VpnLogs from "./pages/VpnLogs";
+import AuditLog from "./pages/AuditLog";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -112,6 +113,11 @@ function Router() {
       <Route path="/vpn-logs">
         <DashboardLayout>
           <VpnLogs />
+        </DashboardLayout>
+      </Route>
+      <Route path="/audit-log">
+        <DashboardLayout>
+          <AuditLog />
         </DashboardLayout>
       </Route>
       <Route path="/reports">

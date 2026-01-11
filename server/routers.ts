@@ -3250,6 +3250,132 @@ const vpnRouter = router({
 });
 
 // ============================================================================
+// AUDIT LOG ROUTER
+// ============================================================================
+import * as auditLogService from "./services/auditLogService";
+
+const auditRouter = router({
+  // List audit logs with filters
+  list: protectedProcedure
+    .input(z.object({
+      userId: z.number().optional(),
+      action: z.string().optional(),
+      targetType: z.string().optional(),
+      nasId: z.number().optional(),
+      result: z.enum(['success', 'failure', 'partial']).optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      limit: z.number().min(1).max(500).default(100),
+      offset: z.number().min(0).default(0),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      // Super Admin sees all, others see only their own logs
+      const filters: any = {
+        limit: input?.limit || 100,
+        offset: input?.offset || 0,
+      };
+      
+      if (ctx.user.role !== 'super_admin') {
+        filters.userId = ctx.user.id;
+      } else if (input?.userId) {
+        filters.userId = input.userId;
+      }
+      
+      if (input?.action) filters.action = input.action as any;
+      if (input?.targetType) filters.targetType = input.targetType;
+      if (input?.nasId) filters.nasId = input.nasId;
+      if (input?.startDate) filters.startDate = new Date(input.startDate);
+      if (input?.endDate) filters.endDate = new Date(input.endDate);
+      
+      const logs = await auditLogService.getAuditLogs(filters);
+      
+      // Parse details JSON
+      return logs.map(log => ({
+        ...log,
+        details: log.details ? JSON.parse(log.details as string) : null,
+      }));
+    }),
+
+  // Get audit logs for a specific NAS
+  byNas: protectedProcedure
+    .input(z.object({
+      nasId: z.number(),
+      limit: z.number().min(1).max(100).default(50),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasById(input.nasId);
+      if (!nas) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS not found' });
+      }
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      
+      const logs = await auditLogService.getAuditLogsByNas(input.nasId, input.limit);
+      return logs.map(log => ({
+        ...log,
+        details: log.details ? JSON.parse(log.details as string) : null,
+      }));
+    }),
+
+  // Get recent actions by current user
+  myActions: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+    .query(async ({ ctx, input }) => {
+      const logs = await auditLogService.getRecentActionsByUser(ctx.user.id, input?.limit || 20);
+      return logs.map(log => ({
+        ...log,
+        details: log.details ? JSON.parse(log.details as string) : null,
+      }));
+    }),
+
+  // Get audit statistics (Super Admin only)
+  stats: superAdminProcedure
+    .input(z.object({ days: z.number().min(1).max(90).default(7) }).optional())
+    .query(async ({ input }) => {
+      return auditLogService.getAuditStats(input?.days || 7);
+    }),
+
+  // Get available action types for filter dropdown
+  actionTypes: protectedProcedure.query(() => {
+    return [
+      { value: 'session_disconnect', label: 'فصل جلسة' },
+      { value: 'session_disconnect_coa', label: 'فصل جلسة (CoA)' },
+      { value: 'session_disconnect_api', label: 'فصل جلسة (API)' },
+      { value: 'speed_change', label: 'تغيير سرعة' },
+      { value: 'speed_change_coa', label: 'تغيير سرعة (CoA)' },
+      { value: 'speed_change_api', label: 'تغيير سرعة (API)' },
+      { value: 'nas_create', label: 'إنشاء NAS' },
+      { value: 'nas_update', label: 'تحديث NAS' },
+      { value: 'nas_delete', label: 'حذف NAS' },
+      { value: 'card_create', label: 'إنشاء كرت' },
+      { value: 'card_suspend', label: 'تعطيل كرت' },
+      { value: 'card_activate', label: 'تفعيل كرت' },
+      { value: 'subscriber_create', label: 'إنشاء مشترك' },
+      { value: 'subscriber_suspend', label: 'تعطيل مشترك' },
+      { value: 'subscriber_activate', label: 'تفعيل مشترك' },
+      { value: 'vpn_connect', label: 'اتصال VPN' },
+      { value: 'vpn_disconnect', label: 'قطع VPN' },
+      { value: 'login', label: 'تسجيل دخول' },
+      { value: 'logout', label: 'تسجيل خروج' },
+    ];
+  }),
+
+  // Get available target types for filter dropdown
+  targetTypes: protectedProcedure.query(() => {
+    return [
+      { value: 'session', label: 'جلسة' },
+      { value: 'nas', label: 'جهاز NAS' },
+      { value: 'card', label: 'كرت' },
+      { value: 'subscriber', label: 'مشترك' },
+      { value: 'user', label: 'مستخدم' },
+      { value: 'vpn', label: 'VPN' },
+    ];
+  }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -3274,6 +3400,7 @@ export const appRouter = router({
   internalNotifications: internalNotificationsRouter,
   subscribers: subscribersRouter,
   vpn: vpnRouter,
+  audit: auditRouter,
 });
 
 export type AppRouter = typeof appRouter;

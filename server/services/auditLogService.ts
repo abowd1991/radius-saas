@@ -30,6 +30,8 @@ export type AuditAction =
 
 export type AuditResult = 'success' | 'failure' | 'partial';
 
+export type AuditMethod = 'api' | 'coa' | 'coa_fallback' | 'direct';
+
 export interface AuditLogEntry {
   userId: number;
   userRole: string;
@@ -39,6 +41,8 @@ export interface AuditLogEntry {
   targetName?: string;
   nasId?: number;
   nasIp?: string;
+  method?: AuditMethod; // api, coa, coa_fallback, direct
+  executionTimeMs?: number; // Time taken to execute the operation
   details?: Record<string, any>;
   result: AuditResult;
   errorMessage?: string;
@@ -56,6 +60,13 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
       return;
     }
     
+    // Include method and executionTime in details
+    const detailsWithMeta = {
+      ...entry.details,
+      method: entry.method,
+      executionTime: entry.executionTimeMs,
+    };
+    
     await db.insert(auditLogs).values({
       userId: entry.userId,
       userRole: entry.userRole,
@@ -65,7 +76,7 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
       targetName: entry.targetName,
       nasId: entry.nasId,
       nasIp: entry.nasIp,
-      details: entry.details ? JSON.stringify(entry.details) : null,
+      details: JSON.stringify(detailsWithMeta),
       result: entry.result,
       errorMessage: entry.errorMessage,
       ipAddress: entry.ipAddress,
