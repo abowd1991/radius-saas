@@ -1219,3 +1219,24 @@
 - [ ] إعداد queries لقراءة NAS من جدول nas (فقط Active)
 - [ ] إعداد Firewall (UFW) للسماح فقط لـ 192.168.30.0/24
 - [ ] اختبار: NAS جديد يعمل فوراً بدون restart
+
+
+## VPN IP Auto-Sync System (Jan 12, 2026)
+- [x] Fix nasname issue: store VPN Local IP instead of VPN username
+- [x] Add `getVpnStatus` endpoint to check VPN connection status
+- [x] Add `syncVpnIp` endpoint to manually sync VPN IP
+- [x] Add `autoSyncVpnIp` endpoint with retry logic
+- [x] Add `updateVpnIp` endpoint for manual IP update
+- [x] Add VPN Status Dialog in NAS management page
+  - [x] Show VPN connection status (Connected/Disconnected)
+  - [x] Show VPN Username
+  - [x] Show VPN Local IP (RADIUS Source)
+  - [x] Show current nasname
+  - [x] Show sync status warning when nasname doesn't match VPN IP
+  - [x] Add "Sync VPN IP" button with loading state
+- [x] Add Auto-sync on NAS creation
+  - [x] Background task starts after VPN NAS creation
+  - [x] Retries 12 times over 60 seconds
+  - [x] Automatically updates nasname when VPN connects
+- [x] Add unit tests for VPN sync endpoints
+- [x] Remove Max-All-Session (non-standard) - use Simultaneous-Use instead

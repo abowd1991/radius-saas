@@ -24,7 +24,7 @@ import * as accountingService from "./services/accountingService";
 import * as sessionMonitor from "./services/sessionMonitor";
 import * as authService from "./services/authService";
 import { getDb } from "./db";
-import { radcheck } from "../drizzle/schema";
+import { radcheck, nasDevices } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import * as radiusSubscribers from "./db/radiusSubscribers";
 import { logAudit } from "./services/auditLogService";
@@ -396,9 +396,12 @@ const nasRouter = router({
           input.vpnPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         }
         // For VPN, IP will be assigned when connection is established
-        // Use unique identifier based on vpnUsername to avoid duplicate nasname
-        if (input.ipAddress === 'pending' || input.ipAddress === 'سيتم تعيينه تلقائي' || !input.ipAddress) {
-          input.ipAddress = `vpn-${input.vpnUsername}`;
+        // Use placeholder - will be updated when VPN connects via syncVpnIp endpoint
+        // The nasname MUST be the actual VPN local IP for FreeRADIUS to work
+        if (input.ipAddress === 'pending' || input.ipAddress === 'سيتم تعيينه تلقائي' || !input.ipAddress || input.ipAddress.startsWith('vpn-')) {
+          // Use a temporary placeholder that will be replaced when VPN connects
+          // Format: pending-vpn-{timestamp} to ensure uniqueness
+          input.ipAddress = `pending-vpn-${Date.now()}`;
         }
         
         // Create VPN user in SoftEther automatically via SSH (for SSTP/PPTP connections)
@@ -447,7 +450,53 @@ const nasRouter = router({
           console.error('Failed to create RADIUS entry in database:', error);
         }
       }
-      return nasDb.createNas({ ...input, ownerId });
+      
+      // Create NAS first
+      const newNas = await nasDb.createNas({ ...input, ownerId });
+      
+      // For VPN connections, start auto-sync in background
+      // This will retry multiple times to get the VPN IP once connected
+      if (input.connectionType === 'vpn_l2tp' || input.connectionType === 'vpn_sstp') {
+        // Start background sync task (non-blocking)
+        (async () => {
+          const maxRetries = 12; // 12 attempts over 60 seconds
+          const retryDelay = 5000; // 5 seconds between attempts
+          
+          console.log(`[Auto-Sync] Starting background sync for NAS ${newNas.id} (${input.vpnUsername})`);
+          
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            // Wait before checking (give time for VPN to connect)
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            
+            try {
+              // Check if VPN is connected and get local IP
+              const vpnLocalIp = await sshVpn.getVpnUserLocalIp(input.vpnUsername || '');
+              
+              if (vpnLocalIp) {
+                // Update nasname with actual VPN IP
+                await nasDb.updateNas(newNas.id, { ipAddress: vpnLocalIp });
+                
+                // Also update vpnTunnelIp field
+                const database = await getDb();
+                if (database) {
+                  await database.update(nasDevices)
+                    .set({ vpnTunnelIp: vpnLocalIp })
+                    .where(eq(nasDevices.id, newNas.id));
+                }
+                
+                console.log(`[Auto-Sync] Success for NAS ${newNas.id}: ${input.ipAddress} -> ${vpnLocalIp} (attempt ${attempt})`);
+                break; // Success, exit loop
+              } else {
+                console.log(`[Auto-Sync] Attempt ${attempt}/${maxRetries} for NAS ${newNas.id}: VPN not connected yet`);
+              }
+            } catch (error) {
+              console.error(`[Auto-Sync] Error on attempt ${attempt}:`, error);
+            }
+          }
+        })().catch(err => console.error('[Auto-Sync] Background task error:', err));
+      }
+      
+      return newNas;
     }),
 
   // Get setup scripts for a NAS device - check ownership
@@ -715,6 +764,100 @@ const nasRouter = router({
       return { success: true };
     }),
 
+  // Sync VPN IP - Updates nasname with actual VPN local IP from SoftEther
+  // This MUST be called after VPN connects to make RADIUS work
+  syncVpnIp: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      // Get NAS device
+      const nas = await nasDb.getNasById(input.id);
+      if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
+      
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      
+      // Only for VPN connection types
+      if (nas.connectionType === 'public_ip') {
+        return { success: false, message: 'هذا الجهاز يستخدم IP عام، لا يحتاج مزامنة VPN' };
+      }
+      
+      // Get VPN username
+      if (!nas.vpnUsername) {
+        return { success: false, message: 'لم يتم العثور على اسم مستخدم VPN' };
+      }
+      
+      // Get local IP from SoftEther
+      const vpnLocalIp = await sshVpn.getVpnUserLocalIp(nas.vpnUsername);
+      
+      if (!vpnLocalIp) {
+        return { 
+          success: false, 
+          message: 'الجهاز غير متصل عبر VPN. تأكد من اتصال VPN أولاً ثم أعد المحاولة.',
+          currentNasname: nas.nasname
+        };
+      }
+      
+      // Update nasname with actual VPN IP
+      await nasDb.updateNas(input.id, { ipAddress: vpnLocalIp });
+      
+      // Also update vpnTunnelIp field
+      const database = await getDb();
+      if (database) {
+        await database.update(nasDevices)
+          .set({ vpnTunnelIp: vpnLocalIp })
+          .where(eq(nasDevices.id, input.id));
+      }
+      
+      console.log(`[NAS Sync] Updated nasname for NAS ${input.id}: ${nas.nasname} -> ${vpnLocalIp}`);
+      
+      return { 
+        success: true, 
+        message: `تم تحديث عنوان IP بنجاح: ${vpnLocalIp}`,
+        previousNasname: nas.nasname,
+        newNasname: vpnLocalIp,
+        vpnUsername: nas.vpnUsername
+      };
+    }),
+
+  // Manual update of VPN IP - allows user to set IP manually if auto-sync fails
+  updateVpnIp: protectedProcedure
+    .input(z.object({ 
+      id: z.number(),
+      vpnLocalIp: z.string().regex(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, 'Invalid IPv4 address')
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Get NAS device
+      const nas = await nasDb.getNasById(input.id);
+      if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
+      
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      
+      // Update nasname with provided IP
+      await nasDb.updateNas(input.id, { ipAddress: input.vpnLocalIp });
+      
+      // Also update vpnTunnelIp field
+      const database = await getDb();
+      if (database) {
+        await database.update(nasDevices)
+          .set({ vpnTunnelIp: input.vpnLocalIp })
+          .where(eq(nasDevices.id, input.id));
+      }
+      
+      console.log(`[NAS Update] Manual IP update for NAS ${input.id}: ${nas.nasname} -> ${input.vpnLocalIp}`);
+      
+      return { 
+        success: true, 
+        message: `تم تحديث عنوان IP بنجاح: ${input.vpnLocalIp}`,
+        previousNasname: nas.nasname,
+        newNasname: input.vpnLocalIp
+      };
+    }),
+
   // Test MikroTik API connection - any authenticated user can test
   testApiConnection: protectedProcedure
     .input(z.object({
@@ -872,6 +1015,132 @@ const nasRouter = router({
           }
         }, 15000);
       });
+    }),
+
+  // Get VPN status for a NAS device
+  getVpnStatus: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      // Get NAS device
+      const nas = await nasDb.getNasById(input.id);
+      if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
+      
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      
+      // Only for VPN connection types
+      if (nas.connectionType === 'public_ip') {
+        return {
+          isVpn: false,
+          connected: null,
+          vpnLocalIp: null,
+          nasname: nas.nasname,
+          vpnUsername: null,
+          needsSync: false,
+          message: 'هذا الجهاز يستخدم IP عام'
+        };
+      }
+      
+      // Get VPN session info
+      let vpnLocalIp: string | null = null;
+      let connected = false;
+      
+      if (nas.vpnUsername) {
+        vpnLocalIp = await sshVpn.getVpnUserLocalIp(nas.vpnUsername);
+        connected = !!vpnLocalIp;
+      }
+      
+      // Check if nasname needs sync (is placeholder or doesn't match VPN IP)
+      const isPlaceholder = nas.nasname.startsWith('pending-vpn-') || nas.nasname.startsWith('vpn-');
+      const needsSync = connected && vpnLocalIp && (isPlaceholder || nas.nasname !== vpnLocalIp);
+      
+      return {
+        isVpn: true,
+        connected,
+        vpnLocalIp,
+        nasname: nas.nasname,
+        vpnUsername: nas.vpnUsername,
+        vpnTunnelIp: nas.vpnTunnelIp,
+        needsSync,
+        isPlaceholder,
+        message: connected 
+          ? (needsSync ? 'متصل - يحتاج مزامنة IP' : 'متصل - IP متزامن')
+          : 'غير متصل'
+      };
+    }),
+
+  // Auto-sync VPN IP with retry logic
+  autoSyncVpnIp: protectedProcedure
+    .input(z.object({ 
+      id: z.number(),
+      maxRetries: z.number().default(3),
+      retryDelayMs: z.number().default(5000)
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Get NAS device
+      const nas = await nasDb.getNasById(input.id);
+      if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
+      
+      // Check ownership for non-super_admin
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      
+      // Only for VPN connection types
+      if (nas.connectionType === 'public_ip') {
+        return { success: false, message: 'هذا الجهاز يستخدم IP عام' };
+      }
+      
+      if (!nas.vpnUsername) {
+        return { success: false, message: 'لم يتم العثور على اسم مستخدم VPN' };
+      }
+      
+      // Retry logic
+      let vpnLocalIp: string | null = null;
+      let attempts = 0;
+      
+      while (attempts < input.maxRetries && !vpnLocalIp) {
+        attempts++;
+        console.log(`[Auto-Sync] Attempt ${attempts}/${input.maxRetries} for NAS ${input.id}`);
+        
+        vpnLocalIp = await sshVpn.getVpnUserLocalIp(nas.vpnUsername);
+        
+        if (!vpnLocalIp && attempts < input.maxRetries) {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, input.retryDelayMs));
+        }
+      }
+      
+      if (!vpnLocalIp) {
+        return { 
+          success: false, 
+          message: `فشل المزامنة بعد ${attempts} محاولات. تأكد من اتصال VPN.`,
+          attempts
+        };
+      }
+      
+      // Update nasname with actual VPN IP
+      await nasDb.updateNas(input.id, { ipAddress: vpnLocalIp });
+      
+      // Also update vpnTunnelIp field
+      const database = await getDb();
+      if (database) {
+        await database.update(nasDevices)
+          .set({ vpnTunnelIp: vpnLocalIp })
+          .where(eq(nasDevices.id, input.id));
+      }
+      
+      console.log(`[Auto-Sync] Success for NAS ${input.id}: ${nas.nasname} -> ${vpnLocalIp} (${attempts} attempts)`);
+      
+      return { 
+        success: true, 
+        message: `تم المزامنة بنجاح: ${vpnLocalIp}`,
+        previousNasname: nas.nasname,
+        newNasname: vpnLocalIp,
+        attempts
+      };
     }),
 });
 

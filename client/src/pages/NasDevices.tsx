@@ -57,6 +57,9 @@ import {
   Link2,
   Eye,
   EyeOff,
+  Loader2,
+  WifiOff,
+  ArrowRightLeft,
 } from "lucide-react";
 import { useState, useRef } from "react";
 
@@ -108,6 +111,8 @@ export default function NasDevices() {
     }
   };
   const [isTestingApi, setIsTestingApi] = useState(false);
+  const [vpnStatusDevice, setVpnStatusDevice] = useState<any>(null);
+  const [isSyncingVpn, setIsSyncingVpn] = useState(false);
   // VPN credentials are auto-generated on the server, no need for state
 
   // Fetch NAS devices
@@ -145,6 +150,53 @@ export default function NasDevices() {
       toast.error(error.message);
     },
   });
+
+  // VPN Status Query
+  const vpnStatusQuery = trpc.nas.getVpnStatus.useQuery(
+    { id: vpnStatusDevice?.id || 0 },
+    { enabled: !!vpnStatusDevice }
+  );
+
+  // Sync VPN IP Mutation
+  const syncVpnIp = trpc.nas.syncVpnIp.useMutation({
+    onSuccess: (result: any) => {
+      setIsSyncingVpn(false);
+      if (result.success) {
+        toast.success(result.message);
+        vpnStatusQuery.refetch();
+        refetch();
+      } else {
+        toast.error(result.message);
+      }
+    },
+    onError: (error: any) => {
+      setIsSyncingVpn(false);
+      toast.error(error.message);
+    },
+  });
+
+  // Auto-sync VPN IP Mutation with retry
+  const autoSyncVpnIp = trpc.nas.autoSyncVpnIp.useMutation({
+    onSuccess: (result: any) => {
+      setIsSyncingVpn(false);
+      if (result.success) {
+        toast.success(`${result.message} (محاولة ${result.attempts})`);
+        vpnStatusQuery.refetch();
+        refetch();
+      } else {
+        toast.error(result.message);
+      }
+    },
+    onError: (error: any) => {
+      setIsSyncingVpn(false);
+      toast.error(error.message);
+    },
+  });
+
+  const handleSyncVpnIp = (nasId: number) => {
+    setIsSyncingVpn(true);
+    autoSyncVpnIp.mutate({ id: nasId, maxRetries: 3, retryDelayMs: 5000 });
+  };
 
   const testApiConnection = trpc.nas.testApiConnection.useMutation({
     onSuccess: (result: any) => {
@@ -968,6 +1020,13 @@ export default function NasDevices() {
                             <Edit className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
                             {t("common.edit")}
                           </DropdownMenuItem>
+                          {/* VPN Status option - only for VPN connection types */}
+                          {((device as any).connectionType === 'vpn_l2tp' || (device as any).connectionType === 'vpn_sstp') && (
+                            <DropdownMenuItem onClick={() => setVpnStatusDevice(device)}>
+                              <Wifi className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+                              {language === "ar" ? "حالة VPN" : "VPN Status"}
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             className="text-destructive"
@@ -1127,6 +1186,149 @@ export default function NasDevices() {
               </DialogFooter>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* VPN Status Dialog */}
+      <Dialog open={!!vpnStatusDevice} onOpenChange={(open) => !open && setVpnStatusDevice(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wifi className="h-5 w-5" />
+              {language === "ar" ? "حالة VPN" : "VPN Status"}
+            </DialogTitle>
+            <DialogDescription>
+              {vpnStatusDevice?.shortname || vpnStatusDevice?.nasname}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {vpnStatusQuery.isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : vpnStatusQuery.data ? (
+            <div className="space-y-4">
+              {/* VPN Connection Status */}
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-3">
+                  {vpnStatusQuery.data.connected ? (
+                    <div className="p-2 rounded-full bg-green-500/10">
+                      <Wifi className="h-5 w-5 text-green-500" />
+                    </div>
+                  ) : (
+                    <div className="p-2 rounded-full bg-red-500/10">
+                      <WifiOff className="h-5 w-5 text-red-500" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium">
+                      {language === "ar" ? "حالة الاتصال" : "Connection Status"}
+                    </p>
+                    <p className={`text-sm ${vpnStatusQuery.data.connected ? 'text-green-500' : 'text-red-500'}`}>
+                      {vpnStatusQuery.data.message}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant={vpnStatusQuery.data.connected ? "default" : "destructive"}>
+                  {vpnStatusQuery.data.connected 
+                    ? (language === "ar" ? "متصل" : "Connected")
+                    : (language === "ar" ? "غير متصل" : "Disconnected")
+                  }
+                </Badge>
+              </div>
+
+              {/* IP Information */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-muted-foreground">
+                    {language === "ar" ? "اسم مستخدم VPN" : "VPN Username"}
+                  </span>
+                  <span className="font-mono text-sm">{vpnStatusQuery.data.vpnUsername || '-'}</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-muted-foreground">
+                    {language === "ar" ? "VPN Local IP (مصدر RADIUS)" : "VPN Local IP (RADIUS Source)"}
+                  </span>
+                  <span className={`font-mono text-sm ${vpnStatusQuery.data.vpnLocalIp ? 'text-green-500' : 'text-muted-foreground'}`}>
+                    {vpnStatusQuery.data.vpnLocalIp || (language === "ar" ? "غير متوفر" : "Not available")}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-muted-foreground">
+                    {language === "ar" ? "nasname الحالي" : "Current nasname"}
+                  </span>
+                  <span className={`font-mono text-sm ${
+                    vpnStatusQuery.data.isPlaceholder ? 'text-yellow-500' : 
+                    (vpnStatusQuery.data.nasname === vpnStatusQuery.data.vpnLocalIp ? 'text-green-500' : 'text-orange-500')
+                  }`}>
+                    {vpnStatusQuery.data.nasname}
+                  </span>
+                </div>
+
+                {/* Sync Status */}
+                {vpnStatusQuery.data.needsSync && (
+                  <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                      {language === "ar" 
+                        ? "⚠️ nasname لا يتطابق مع VPN IP. يجب المزامنة ليعمل RADIUS."
+                        : "⚠️ nasname doesn't match VPN IP. Sync required for RADIUS to work."
+                      }
+                    </p>
+                  </div>
+                )}
+
+                {/* Success Status */}
+                {vpnStatusQuery.data.connected && !vpnStatusQuery.data.needsSync && (
+                  <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4" />
+                      {language === "ar" 
+                        ? "✅ النظام جاهز - RADIUS سيعمل بشكل صحيح"
+                        : "✅ System ready - RADIUS will work correctly"
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Sync Button */}
+              {vpnStatusQuery.data.connected && vpnStatusQuery.data.needsSync && (
+                <Button 
+                  onClick={() => handleSyncVpnIp(vpnStatusDevice.id)}
+                  disabled={isSyncingVpn}
+                  className="w-full"
+                >
+                  {isSyncingVpn ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      {language === "ar" ? "جاري المزامنة..." : "Syncing..."}
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRightLeft className="h-4 w-4 mr-2" />
+                      {language === "ar" ? "مزامنة VPN IP" : "Sync VPN IP"}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              {language === "ar" ? "فشل تحميل البيانات" : "Failed to load data"}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => vpnStatusQuery.refetch()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              {language === "ar" ? "تحديث" : "Refresh"}
+            </Button>
+            <Button variant="secondary" onClick={() => setVpnStatusDevice(null)}>
+              {language === "ar" ? "إغلاق" : "Close"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
