@@ -1,0 +1,64 @@
+{
+  "query": "SELECT * FROM system_settings;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT * FROM system_settings;",
+  "rows": [
+    {
+      "id": "1",
+      "key": "vpn_server_address",
+      "value": "37.60.228.5",
+      "type": "string",
+      "description": "عنوان خادم VPN (SoftEther)",
+      "createdAt": "2026-01-11 00:56:38",
+      "updatedAt": "2026-01-11 00:56:38"
+    },
+    {
+      "id": "2",
+      "key": "radius_server_address",
+      "value": "37.60.228.5",
+      "type": "string",
+      "description": "عنوان خادم RADIUS",
+      "createdAt": "2026-01-11 00:56:38",
+      "updatedAt": "2026-01-11 00:56:38"
+    },
+    {
+      "id": "3",
+      "key": "radius_server_port",
+      "value": "1812",
+      "type": "number",
+      "description": "منفذ RADIUS للمصادقة",
+      "createdAt": "2026-01-11 00:56:38",
+      "updatedAt": "2026-01-11 00:56:38"
+    },
+    {
+      "id": "4",
+      "key": "radius_accounting_port",
+      "value": "1813",
+      "type": "number",
+      "description": "منفذ RADIUS للمحاسبة",
+      "createdAt": "2026-01-11 00:56:38",
+      "updatedAt": "2026-01-11 00:56:38"
+    },
+    {
+      "id": "5",
+      "key": "coa_port",
+      "value": "3799",
+      "type": "number",
+      "description": "منفذ CoA (Change of Authorization)",
+      "createdAt": "2026-01-11 00:56:38",
+      "updatedAt": "2026-01-11 00:56:38"
+    },
+    {
+      "id": "6",
+      "key": "vpn_tunnel_network",
+      "value": "192.168.30.0/24",
+      "type": "string",
+      "description": "شبكة VPN Tunnel",
+      "createdAt": "2026-01-11 00:56:38",
+      "updatedAt": "2026-01-11 00:56:38"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tkey\tvalue\ttype\tdescription\tcreatedAt\tupdatedAt\n1\tvpn_server_address\t37.60.228.5\tstring\tعنوان خادم VPN (SoftEther)\t2026-01-11 00:56:38\t2026-01-11 00:56:38\n2\tradius_server_address\t37.60.228.5\tstring\tعنوان خادم RADIUS\t2026-01-11 00:56:38\t2026-01-11 00:56:38\n3\tradius_server_port\t1812\tnumber\tمنفذ RADIUS للمصادقة\t2026-01-11 00:56:38\t2026-01-11 00:56:38\n4\tradius_accounting_port\t1813\tnumber\tمنفذ RADIUS للمحاسبة\t2026-01-11 00:56:38\t2026-01-11 00:56:38\n5\tcoa_port\t3799\tnumber\tمنفذ CoA (Change of Authorization)\t2026-01-11 00:56:38\t2026-01-11 00:56:38\n6\tvpn_tunnel_network\t192.168.30.0/24\tstring\tشبكة VPN Tunnel\t2026-01-11 00:56:38\t2026-01-11 00:56:38\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

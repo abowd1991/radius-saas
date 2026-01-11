@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO system_settings (`key`, `value`, `type`, `description`) VALUES \n('vpn_server_address', '37.60.228.5', 'string', 'عنوان خادم VPN (SoftEther)'),\n('radius_server_address', '37.60.228.5', 'string', 'عنوان خادم RADIUS'),\n('radius_server_port', '1812', 'number', 'منفذ RADIUS للمصادقة'),\n('radius_accounting_port', '1813', 'number', 'منفذ RADIUS للمحاسبة'),\n('coa_port', '3799', 'number', 'منفذ CoA (Change of Authorization)'),\n('vpn_tunnel_network', '192.168.30.0/24', 'string', 'شبكة VPN Tunnel');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute INSERT INTO system_settings (`key`, `value`, `type`, `description`) VALUES \n('vpn_server_address', '37.60.228.5', 'string', 'عنوان خادم VPN (SoftEther)'),\n('radius_server_address', '37.60.228.5', 'string', 'عنوان خادم RADIUS'),\n('radius_server_port', '1812', 'number', 'منفذ RADIUS للمصادقة'),\n('radius_accounting_port', '1813', 'number', 'منفذ RADIUS للمحاسبة'),\n('coa_port', '3799', 'number', 'منفذ CoA (Change of Authorization)'),\n('vpn_tunnel_network', '192.168.30.0/24', 'string', 'شبكة VPN Tunnel');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 69
+}
