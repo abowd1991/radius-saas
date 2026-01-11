@@ -1172,3 +1172,8 @@
 - [x] إضافة radius_server_vpn_ip (192.168.30.1)
 - [x] التأكد من أن الأوامر جاهزة للنسخ واللصق مباشرة
 - [x] اختبار صفحة اتصال ميكروتك
+
+
+## Fix MikroTik Setup Commands (Jan 11, 2026)
+- [x] إصلاح SSTP connect-to: إزالة :443 من العنوان (فقط IP بدون port)
+- [x] إصلاح RADIUS Incoming port: تغيير من 1700 إلى 3799

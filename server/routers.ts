@@ -466,7 +466,7 @@ const nasRouter = router({
       const radiusPublicIp = settings.radius_server_public_ip || '';
       const radiusVpnIp = settings.radius_server_vpn_ip || '192.168.30.1';
       const vpnServerAddress = settings.vpn_server_address || '';
-      const coaPort = '1700';
+      const coaPort = '3799';
       
       const scripts: Array<{
         id: string;
@@ -536,7 +536,7 @@ const nasRouter = router({
             titleAr: 'إنشاء اتصال SSTP',
             description: `Create SSTP VPN tunnel to RADIUS server (${vpnServerAddress})`,
             descriptionAr: `إنشاء نفق VPN SSTP للاتصال بخادم RADIUS (${vpnServerAddress})`,
-            command: `/interface sstp-client add name=radius-vpn connect-to=${vpnServerAddress}:443 user=${nas.vpnUsername || 'nas-user'}@VPN password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no verify-server-certificate=no`,
+            command: `/interface sstp-client add name=radius-vpn connect-to=${vpnServerAddress} user=${nas.vpnUsername || 'nas-user'}@VPN password=${nas.vpnPassword || 'nas-pass'} profile=default-encryption disabled=no verify-server-certificate=no`,
             category: 'vpn',
             required: true,
           });
