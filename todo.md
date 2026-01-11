@@ -1177,3 +1177,9 @@
 ## Fix MikroTik Setup Commands (Jan 11, 2026)
 - [x] إصلاح SSTP connect-to: إزالة :443 من العنوان (فقط IP بدون port)
 - [x] إصلاح RADIUS Incoming port: تغيير من 1700 إلى 3799
+
+
+## Fix VPN User Creation (Jan 11, 2026)
+- [x] إصلاح عدم إنشاء VPN User في SoftEther عند إنشاء NAS جديد
+- [x] التحقق من أن VPN API تعمل بشكل صحيح (تم التحول لـ vpncmd)
+- [x] اختبار إنشاء NAS جديد مع VPN

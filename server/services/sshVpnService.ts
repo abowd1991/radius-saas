@@ -2,10 +2,10 @@
  * SSH VPN Service
  * 
  * This service executes VPN commands directly on the RADIUS server via SSH
- * to ensure reliable VPN user creation and management.
+ * using vpncmd to manage SoftEther VPN users.
  */
 
-import { exec, spawn } from 'child_process';
+import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
@@ -14,7 +14,8 @@ const execAsync = promisify(exec);
 const SSH_HOST = '37.60.228.5';
 const SSH_USER = 'root';
 const SSH_PASSWORD = '!@Abowd329324';
-const API_KEY = 'radius_api_key_2024_secure';
+const VPNCMD_PATH = '/opt/vpnserver/vpncmd';
+const VPN_HUB = 'VPN';
 
 interface VPNResult {
   success: boolean;
@@ -37,7 +38,7 @@ async function executeSSH(command: string, timeout: number = 30000): Promise<{ s
         reject(error);
         return;
       }
-      console.log('[SSH] Command output:', stdout.substring(0, 200));
+      console.log('[SSH] Command output:', stdout.substring(0, 500));
       resolve({ stdout, stderr });
     });
   });
@@ -45,41 +46,44 @@ async function executeSSH(command: string, timeout: number = 30000): Promise<{ s
 
 /**
  * Create a VPN user in SoftEther with Password authentication
- * Uses curl to localhost API on the server for reliable creation
+ * Uses vpncmd directly on the server
  */
 export async function createVpnUser(username: string, password: string): Promise<VPNResult> {
   try {
     console.log(`[SSH VPN] Creating VPN user: ${username}`);
     
-    // Escape username and password for JSON
-    const safeUsername = username.replace(/['"\\]/g, '');
-    const safePassword = password.replace(/['"\\]/g, '');
+    // Escape username and password for shell
+    const safeUsername = username.replace(/['"\\$`]/g, '');
+    const safePassword = password.replace(/['"\\$`]/g, '');
     
-    // Use curl to call the API from localhost on the server
-    // API now requires password for Password Authentication
-    const createCommand = `curl -s -X POST -H 'Content-Type: application/json' -H 'X-API-Key: ${API_KEY}' -d '{"username":"${safeUsername}","password":"${safePassword}","realname":"NAS","note":"Auto-created"}' http://localhost:8080/api/vpn/users`;
+    // Step 1: Create user with vpncmd
+    const createCommand = `${VPNCMD_PATH} localhost /SERVER /HUB:${VPN_HUB} /CMD UserCreate ${safeUsername} /GROUP:none /REALNAME:NAS /NOTE:Auto-created`;
     
     console.log('[SSH VPN] Running create command via SSH...');
-    const { stdout, stderr } = await executeSSH(createCommand, 60000);
-    console.log(`[SSH VPN] Create response: ${stdout}`);
+    const { stdout: createOutput } = await executeSSH(createCommand, 60000);
+    console.log(`[SSH VPN] Create response: ${createOutput}`);
     
-    if (stderr) {
-      console.log(`[SSH VPN] stderr: ${stderr}`);
+    // Check if user was created or already exists
+    if (createOutput.includes('Error occurred') && !createOutput.includes('already exists')) {
+      console.error('[SSH VPN] User creation failed:', createOutput);
+      return { success: false, error: 'Failed to create user' };
     }
     
-    // Parse response
-    try {
-      const response = JSON.parse(stdout.trim());
-      if (response.success) {
-        console.log(`[SSH VPN] User ${username} created successfully`);
-        return { success: true, message: `User ${username} created successfully` };
-      }
-      console.error(`[SSH VPN] API returned error: ${response.error}`);
-      return { success: false, error: response.error || 'Unknown error' };
-    } catch (parseError) {
-      console.error('[SSH VPN] Failed to parse response:', stdout);
-      return { success: false, error: 'Failed to parse API response' };
+    // Step 2: Set password for the user
+    const passwordCommand = `${VPNCMD_PATH} localhost /SERVER /HUB:${VPN_HUB} /CMD UserPasswordSet ${safeUsername} /PASSWORD:${safePassword}`;
+    
+    console.log('[SSH VPN] Setting password...');
+    const { stdout: passwordOutput } = await executeSSH(passwordCommand, 60000);
+    console.log(`[SSH VPN] Password response: ${passwordOutput}`);
+    
+    if (passwordOutput.includes('Error occurred')) {
+      console.error('[SSH VPN] Password set failed:', passwordOutput);
+      return { success: false, error: 'Failed to set password' };
     }
+    
+    console.log(`[SSH VPN] User ${username} created successfully with password auth`);
+    return { success: true, message: `User ${username} created successfully` };
+    
   } catch (error: any) {
     console.error('[SSH VPN] Error creating user:', error.message);
     return { success: false, error: error.message || 'Failed to create VPN user' };
@@ -93,21 +97,17 @@ export async function deleteVpnUser(username: string): Promise<VPNResult> {
   try {
     console.log(`[SSH VPN] Deleting VPN user: ${username}`);
     
-    const safeUsername = username.replace(/['"\\]/g, '');
-    const deleteCommand = `curl -s -X DELETE -H 'X-API-Key: ${API_KEY}' http://localhost:8080/api/vpn/users/${safeUsername}`;
+    const safeUsername = username.replace(/['"\\$`]/g, '');
+    const deleteCommand = `${VPNCMD_PATH} localhost /SERVER /HUB:${VPN_HUB} /CMD UserDelete ${safeUsername}`;
     
     const { stdout } = await executeSSH(deleteCommand, 30000);
     console.log(`[SSH VPN] Delete response: ${stdout}`);
     
-    try {
-      const response = JSON.parse(stdout.trim());
-      if (response.success) {
-        return { success: true, message: `User ${username} deleted` };
-      }
-      return { success: false, error: response.error || 'Unknown error' };
-    } catch {
-      return { success: false, error: 'Failed to parse response' };
+    if (stdout.includes('Error occurred') && !stdout.includes('not found')) {
+      return { success: false, error: 'Failed to delete user' };
     }
+    
+    return { success: true, message: `User ${username} deleted` };
   } catch (error: any) {
     console.error('[SSH VPN] Error deleting user:', error.message);
     return { success: false, error: error.message || 'Failed to delete VPN user' };
@@ -119,20 +119,32 @@ export async function deleteVpnUser(username: string): Promise<VPNResult> {
  */
 export async function listVpnUsers(): Promise<VPNResult & { users?: string[] }> {
   try {
-    const listCommand = `curl -s -H 'X-API-Key: ${API_KEY}' http://localhost:8080/api/vpn/users`;
+    const listCommand = `${VPNCMD_PATH} localhost /SERVER /HUB:${VPN_HUB} /CMD UserList`;
     
     const { stdout } = await executeSSH(listCommand, 30000);
     
-    try {
-      const response = JSON.parse(stdout.trim());
-      if (response.success) {
-        return { success: true, users: response.users || [] };
+    // Parse user list from vpncmd output
+    const users: string[] = [];
+    const lines = stdout.split('\n');
+    let inUserSection = false;
+    
+    for (const line of lines) {
+      if (line.includes('User Name')) {
+        inUserSection = true;
+        continue;
       }
-      return { success: false, error: response.error || 'Unknown error' };
-    } catch {
-      console.error('[SSH VPN] Failed to parse response:', stdout);
-      return { success: false, error: 'Failed to parse API response' };
+      if (inUserSection && line.includes('|')) {
+        const parts = line.split('|');
+        if (parts.length >= 2) {
+          const userName = parts[1]?.trim();
+          if (userName && userName !== 'Value' && !userName.includes('-')) {
+            users.push(userName);
+          }
+        }
+      }
     }
+    
+    return { success: true, users };
   } catch (error: any) {
     console.error('[SSH VPN] Error listing users:', error.message);
     return { success: false, error: error.message || 'Failed to list VPN users' };
@@ -146,11 +158,27 @@ export async function disconnectVpnSession(username: string): Promise<VPNResult>
   try {
     console.log(`[SSH VPN] Disconnecting session for: ${username}`);
     
-    const safeUsername = username.replace(/['"\\]/g, '');
-    const disconnectCommand = `/opt/vpn-scripts/disconnect_vpn_user.sh ${safeUsername}`;
+    const safeUsername = username.replace(/['"\\$`]/g, '');
     
-    await executeSSH(disconnectCommand, 30000);
-    console.log(`[SSH VPN] Session disconnected for ${username}`);
+    // Get session list first
+    const sessionListCommand = `${VPNCMD_PATH} localhost /SERVER /HUB:${VPN_HUB} /CMD SessionList`;
+    const { stdout: sessionList } = await executeSSH(sessionListCommand, 30000);
+    
+    // Find session for this user and disconnect
+    const lines = sessionList.split('\n');
+    for (const line of lines) {
+      if (line.includes(safeUsername)) {
+        // Extract session name
+        const match = line.match(/Session Name\s*\|\s*(\S+)/);
+        if (match) {
+          const sessionName = match[1];
+          const disconnectCommand = `${VPNCMD_PATH} localhost /SERVER /HUB:${VPN_HUB} /CMD SessionDisconnect ${sessionName}`;
+          await executeSSH(disconnectCommand, 30000);
+          console.log(`[SSH VPN] Session ${sessionName} disconnected for ${username}`);
+        }
+      }
+    }
+    
     return { success: true, message: `Session disconnected for ${username}` };
   } catch (error: any) {
     console.error('[SSH VPN] Error disconnecting session:', error.message);
@@ -163,20 +191,41 @@ export async function disconnectVpnSession(username: string): Promise<VPNResult>
  */
 export async function getVpnSessions(): Promise<VPNResult & { sessions?: Array<{ session_name: string; username: string; source_ip: string }> }> {
   try {
-    const sessionsCommand = `curl -s -H 'X-API-Key: ${API_KEY}' http://localhost:8080/api/vpn/sessions`;
+    const sessionsCommand = `${VPNCMD_PATH} localhost /SERVER /HUB:${VPN_HUB} /CMD SessionList`;
     
     const { stdout } = await executeSSH(sessionsCommand, 30000);
     
-    try {
-      const response = JSON.parse(stdout.trim());
-      if (response.success) {
-        return { success: true, sessions: response.sessions || [] };
+    // Parse session list from vpncmd output
+    const sessions: Array<{ session_name: string; username: string; source_ip: string }> = [];
+    const lines = stdout.split('\n');
+    let currentSession: any = {};
+    
+    for (const line of lines) {
+      if (line.includes('Session Name') && line.includes('|')) {
+        const parts = line.split('|');
+        if (parts.length >= 2) {
+          currentSession.session_name = parts[1]?.trim();
+        }
       }
-      return { success: false, error: response.error || 'Unknown error' };
-    } catch {
-      console.error('[SSH VPN] Failed to parse response:', stdout);
-      return { success: false, error: 'Failed to parse API response' };
+      if (line.includes('User Name') && line.includes('|')) {
+        const parts = line.split('|');
+        if (parts.length >= 2) {
+          currentSession.username = parts[1]?.trim();
+        }
+      }
+      if (line.includes('Source IP') && line.includes('|')) {
+        const parts = line.split('|');
+        if (parts.length >= 2) {
+          currentSession.source_ip = parts[1]?.trim();
+        }
+      }
+      if (line.includes('---') && currentSession.session_name) {
+        sessions.push({ ...currentSession });
+        currentSession = {};
+      }
     }
+    
+    return { success: true, sessions };
   } catch (error: any) {
     console.error('[SSH VPN] Error getting sessions:', error.message);
     return { success: false, error: error.message || 'Failed to get VPN sessions' };
@@ -195,5 +244,22 @@ export async function checkConnection(): Promise<VPNResult> {
     return { success: false, error: 'SSH connection failed' };
   } catch (error: any) {
     return { success: false, error: error.message || 'SSH connection failed' };
+  }
+}
+
+/**
+ * Check if a VPN user exists
+ */
+export async function userExists(username: string): Promise<boolean> {
+  try {
+    const safeUsername = username.replace(/['"\\$`]/g, '');
+    const checkCommand = `${VPNCMD_PATH} localhost /SERVER /HUB:${VPN_HUB} /CMD UserGet ${safeUsername}`;
+    
+    const { stdout } = await executeSSH(checkCommand, 30000);
+    
+    // If we get user info without error, user exists
+    return !stdout.includes('Error occurred');
+  } catch (error) {
+    return false;
   }
 }
