@@ -280,3 +280,34 @@ export async function getUserSessions(username: string): Promise<VPNResult & { s
     return { success: false, error: error.message, sessions: [], connected: false };
   }
 }
+
+/**
+ * Get the local IP address for a VPN user (the IP they got from DHCP)
+ * This is used to connect to MikroTik API via VPN tunnel
+ */
+export async function getVpnUserLocalIp(username: string): Promise<string | null> {
+  try {
+    const result = await getVpnSessionsFromServer();
+    
+    if (result.success && result.sessions) {
+      // Find the session for this username
+      const session = result.sessions.find(
+        (s: any) => s.username?.toLowerCase() === username.toLowerCase()
+      );
+      
+      if (session && session.localIp) {
+        // Filter out IPv6 addresses (fe80::...)
+        if (!session.localIp.startsWith('fe80:')) {
+          console.log(`[VPN API] Found local IP for ${username}: ${session.localIp}`);
+          return session.localIp;
+        }
+      }
+    }
+    
+    console.log(`[VPN API] No local IP found for ${username}`);
+    return null;
+  } catch (error: any) {
+    console.error('[VPN API] Error getting user local IP:', error.message);
+    return null;
+  }
+}

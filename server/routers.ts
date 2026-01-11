@@ -722,9 +722,34 @@ const nasRouter = router({
       apiPort: z.number().default(8728),
       apiUser: z.string(),
       apiPassword: z.string(),
+      nasId: z.number().optional(), // Optional NAS ID to get VPN local IP
     }))
     .mutation(async ({ input }) => {
       const mikrotikApi = await import('./services/mikrotikApiService');
+      
+      // Determine the actual IP to connect to
+      let connectIp = input.nasIp;
+      
+      // If nasId is provided, check if this NAS is connected via VPN
+      if (input.nasId) {
+        const nas = await nasDb.getNasById(input.nasId);
+        if (nas && (nas.connectionType === 'vpn_l2tp' || nas.connectionType === 'vpn_sstp') && nas.vpnUsername) {
+          // Try to get the local IP from VPN session
+          const vpnLocalIp = await sshVpn.getVpnUserLocalIp(nas.vpnUsername);
+          if (vpnLocalIp) {
+            console.log(`[MikroTik API Test] Using VPN local IP: ${vpnLocalIp} instead of ${input.nasIp}`);
+            connectIp = vpnLocalIp;
+          } else {
+            return {
+              success: false,
+              message: 'الجهاز غير متصل عبر VPN. تأكد من اتصال VPN أولاً.',
+              error: 'VPN_NOT_CONNECTED'
+            };
+          }
+        }
+      }
+      
+      console.log(`[MikroTik API Test] Connecting to ${connectIp}:${input.apiPort}`);
       
       // Create a temporary test connection
       const net = await import('net');
@@ -760,7 +785,7 @@ const nasRouter = router({
           }
         });
         
-        socket.connect(input.apiPort, input.nasIp, async () => {
+        socket.connect(input.apiPort, connectIp, async () => {
           try {
             // Try to login
             const encodeWord = (word: string): Buffer => {

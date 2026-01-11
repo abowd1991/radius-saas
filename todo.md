@@ -1204,3 +1204,6 @@
 - [x] عرض آخر وقت اتصال
 - [x] تفعيل زر قطع الاتصال (عبر SoftEther API)
 - [x] تفعيل زر إعادة التشغيل (يحتاج MikroTik API)
+
+## Fix MikroTik API Connection (Jan 11, 2026)
+- [x] إصلاح اختبار اتصال MikroTik API - استخدام IP المحلي من VPN بدلاً من اسم المستخدم

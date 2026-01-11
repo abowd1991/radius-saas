@@ -189,7 +189,14 @@ export default function NasDevices() {
     
     setIsTestingApi(true);
     setApiTestResult(null);
-    testApiConnection.mutate({ nasIp, apiPort, apiUser, apiPassword });
+    // Include nasId if editing an existing device (for VPN IP resolution)
+    testApiConnection.mutate({ 
+      nasIp, 
+      apiPort, 
+      apiUser, 
+      apiPassword,
+      nasId: editingDevice?.id 
+    });
   };
 
   const formatDate = (date: Date | string | null) => {
@@ -563,6 +570,7 @@ export default function NasDevices() {
         apiPort: parseInt(apiPort),
         apiUser,
         apiPassword,
+        nasId: selectedNas.id, // Send NAS ID to get VPN local IP
       });
     };
 
