@@ -874,3 +874,52 @@ export const auditLogs = mysqlTable("audit_logs", {
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+
+// ============================================================================
+// VPN IP POOL (Static IP allocation for VPN NAS devices)
+// ============================================================================
+
+export const vpnIpPool = mysqlTable("vpn_ip_pool", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Pool configuration
+  name: varchar("name", { length: 100 }).notNull().default("Default VPN Pool"),
+  startIp: varchar("startIp", { length: 45 }).notNull(), // e.g., 192.168.30.10
+  endIp: varchar("endIp", { length: 45 }).notNull(), // e.g., 192.168.30.250
+  gateway: varchar("gateway", { length: 45 }).notNull().default("192.168.30.1"), // RADIUS server IP
+  subnet: varchar("subnet", { length: 45 }).notNull().default("255.255.255.0"),
+  
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VpnIpPool = typeof vpnIpPool.$inferSelect;
+export type InsertVpnIpPool = typeof vpnIpPool.$inferInsert;
+
+// ============================================================================
+// ALLOCATED VPN IPS (Track which IPs are assigned to which NAS)
+// ============================================================================
+
+export const allocatedVpnIps = mysqlTable("allocated_vpn_ips", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Pool reference
+  poolId: int("poolId").notNull(),
+  
+  // Allocated IP
+  ipAddress: varchar("ipAddress", { length: 45 }).notNull().unique(),
+  
+  // NAS assignment
+  nasId: int("nasId").notNull().unique(), // One IP per NAS
+  
+  // Timestamps
+  allocatedAt: timestamp("allocatedAt").defaultNow().notNull(),
+});
+
+export type AllocatedVpnIp = typeof allocatedVpnIps.$inferSelect;
+export type InsertAllocatedVpnIp = typeof allocatedVpnIps.$inferInsert;

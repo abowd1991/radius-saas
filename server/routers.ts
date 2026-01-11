@@ -28,6 +28,7 @@ import { radcheck, nasDevices } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import * as radiusSubscribers from "./db/radiusSubscribers";
 import { logAudit } from "./services/auditLogService";
+import * as vpnIpPool from "./db/vpnIpPool";
 
 // ============================================================================
 // AUTH ROUTER
@@ -395,13 +396,13 @@ const nasRouter = router({
         if (!input.vpnPassword || input.vpnPassword.trim() === '') {
           input.vpnPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         }
-        // For VPN, IP will be assigned when connection is established
-        // Use placeholder - will be updated when VPN connects via syncVpnIp endpoint
-        // The nasname MUST be the actual VPN local IP for FreeRADIUS to work
-        if (input.ipAddress === 'pending' || input.ipAddress === 'سيتم تعيينه تلقائي' || !input.ipAddress || input.ipAddress.startsWith('vpn-')) {
-          // Use a temporary placeholder that will be replaced when VPN connects
-          // Format: pending-vpn-{timestamp} to ensure uniqueness
-          input.ipAddress = `pending-vpn-${Date.now()}`;
+        // For VPN connections, allocate a static IP from the pool
+        // This ensures FreeRADIUS can always identify the NAS by IP
+        // No more placeholders or sync needed - IP is fixed at creation time
+        if (input.ipAddress === 'pending' || input.ipAddress === 'سيتم تعيينه تلقائي' || !input.ipAddress || input.ipAddress.startsWith('vpn-') || input.ipAddress.startsWith('pending-')) {
+          // IP will be allocated after NAS creation (need nasId first)
+          // Set a temporary value that will be replaced immediately
+          input.ipAddress = 'allocating';
         }
         
         // Create VPN user in SoftEther automatically via SSH (for SSTP/PPTP connections)
@@ -451,49 +452,38 @@ const nasRouter = router({
         }
       }
       
-      // Create NAS first
+      // Create NAS first (with temporary IP if VPN)
       const newNas = await nasDb.createNas({ ...input, ownerId });
       
-      // For VPN connections, start auto-sync in background
-      // This will retry multiple times to get the VPN IP once connected
+      // For VPN connections, allocate a static IP from the pool immediately
+      // This replaces the old auto-sync approach - IP is fixed at creation time
       if (input.connectionType === 'vpn_l2tp' || input.connectionType === 'vpn_sstp') {
-        // Start background sync task (non-blocking)
-        (async () => {
-          const maxRetries = 12; // 12 attempts over 60 seconds
-          const retryDelay = 5000; // 5 seconds between attempts
+        try {
+          const allocation = await vpnIpPool.allocateIpForNas(newNas.id);
           
-          console.log(`[Auto-Sync] Starting background sync for NAS ${newNas.id} (${input.vpnUsername})`);
-          
-          for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            // Wait before checking (give time for VPN to connect)
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
+          if (allocation) {
+            // Update nasname with the allocated static IP
+            await nasDb.updateNas(newNas.id, { ipAddress: allocation.ip });
             
-            try {
-              // Check if VPN is connected and get local IP
-              const vpnLocalIp = await sshVpn.getVpnUserLocalIp(input.vpnUsername || '');
-              
-              if (vpnLocalIp) {
-                // Update nasname with actual VPN IP
-                await nasDb.updateNas(newNas.id, { ipAddress: vpnLocalIp });
-                
-                // Also update vpnTunnelIp field
-                const database = await getDb();
-                if (database) {
-                  await database.update(nasDevices)
-                    .set({ vpnTunnelIp: vpnLocalIp })
-                    .where(eq(nasDevices.id, newNas.id));
-                }
-                
-                console.log(`[Auto-Sync] Success for NAS ${newNas.id}: ${input.ipAddress} -> ${vpnLocalIp} (attempt ${attempt})`);
-                break; // Success, exit loop
-              } else {
-                console.log(`[Auto-Sync] Attempt ${attempt}/${maxRetries} for NAS ${newNas.id}: VPN not connected yet`);
-              }
-            } catch (error) {
-              console.error(`[Auto-Sync] Error on attempt ${attempt}:`, error);
+            // Also update vpnTunnelIp field
+            const database = await getDb();
+            if (database) {
+              await database.update(nasDevices)
+                .set({ vpnTunnelIp: allocation.ip })
+                .where(eq(nasDevices.id, newNas.id));
             }
+            
+            console.log(`[VPN IP Pool] Allocated static IP ${allocation.ip} for NAS ${newNas.id}`);
+            
+            // Return NAS with updated IP
+            return { ...newNas, nasname: allocation.ip, vpnTunnelIp: allocation.ip, allocatedVpnIp: allocation.ip };
+          } else {
+            console.error(`[VPN IP Pool] Failed to allocate IP for NAS ${newNas.id} - pool might be exhausted`);
+            // NAS is created but without allocated IP - admin needs to expand pool
           }
-        })().catch(err => console.error('[Auto-Sync] Background task error:', err));
+        } catch (error) {
+          console.error(`[VPN IP Pool] Error allocating IP for NAS ${newNas.id}:`, error);
+        }
       }
       
       return newNas;
@@ -565,6 +555,21 @@ const nasRouter = router({
             category: 'vpn',
             required: true,
           });
+          
+          // Add static IP assignment for VPN interface
+          // This ensures the NAS always gets the same IP that's registered in RADIUS
+          if (nas.nasname && !nas.nasname.startsWith('pending-') && !nas.nasname.startsWith('allocating')) {
+            scripts.push({
+              id: 'vpn-static-ip',
+              title: 'Assign Static VPN IP',
+              titleAr: 'تعيين IP ثابت للـ VPN',
+              description: `Assign static IP ${nas.nasname} to VPN interface (required for RADIUS)`,
+              descriptionAr: `تعيين عنوان IP ثابت ${nas.nasname} لواجهة VPN (مطلوب لـ RADIUS)`,
+              command: `/ip address add address=${nas.nasname}/24 interface=radius-vpn comment="Static RADIUS IP"`,
+              category: 'vpn',
+              required: true,
+            });
+          }
         }
       } else if (nas.connectionType === 'vpn_sstp') {
         if (!vpnServerAddress) {
@@ -601,6 +606,21 @@ const nasRouter = router({
             category: 'vpn',
             required: true,
           });
+          
+          // Add static IP assignment for VPN interface
+          // This ensures the NAS always gets the same IP that's registered in RADIUS
+          if (nas.nasname && !nas.nasname.startsWith('pending-') && !nas.nasname.startsWith('allocating')) {
+            scripts.push({
+              id: 'vpn-static-ip',
+              title: 'Assign Static VPN IP',
+              titleAr: 'تعيين IP ثابت للـ VPN',
+              description: `Assign static IP ${nas.nasname} to VPN interface (required for RADIUS)`,
+              descriptionAr: `تعيين عنوان IP ثابت ${nas.nasname} لواجهة VPN (مطلوب لـ RADIUS)`,
+              command: `/ip address add address=${nas.nasname}/24 interface=radius-vpn comment="Static RADIUS IP"`,
+              category: 'vpn',
+              required: true,
+            });
+          }
         }
       }
       
@@ -1140,6 +1160,46 @@ const nasRouter = router({
         previousNasname: nas.nasname,
         newNasname: vpnLocalIp,
         attempts
+      };
+    }),
+
+  // Get VPN IP Pool statistics
+  getVpnIpPoolStats: superAdminProcedure
+    .query(async () => {
+      const stats = await vpnIpPool.getPoolStats();
+      if (!stats) {
+        return {
+          hasPool: false,
+          message: 'لا يوجد IP Pool نشط'
+        };
+      }
+      return {
+        hasPool: true,
+        totalIps: stats.totalIps,
+        allocatedCount: stats.allocatedCount,
+        availableCount: stats.availableCount,
+        pool: stats.pool
+      };
+    }),
+
+  // Get allocated IP for a specific NAS
+  getAllocatedVpnIp: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const nas = await nasDb.getNasById(input.nasId);
+      if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
+      
+      // Check ownership
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      
+      const allocatedIp = await vpnIpPool.getAllocatedIpForNas(input.nasId);
+      return {
+        nasId: input.nasId,
+        allocatedIp,
+        nasname: nas.nasname,
+        isVpn: nas.connectionType !== 'public_ip'
       };
     }),
 });

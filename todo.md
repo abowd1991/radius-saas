@@ -1240,3 +1240,15 @@
   - [x] Automatically updates nasname when VPN connects
 - [x] Add unit tests for VPN sync endpoints
 - [x] Remove Max-All-Session (non-standard) - use Simultaneous-Use instead
+
+
+## VPN Static IP Pool System (Jan 12, 2026)
+- [x] Add vpnIpPool table to schema (startIp, endIp, networkId)
+- [x] Add allocatedVpnIps table (nasId, ip, allocatedAt)
+- [x] Create IP allocation functions (allocateNextIp, releaseIp)
+- [x] Modify NAS creation to auto-allocate IP for VPN types
+- [x] Keep Auto-sync as fallback (not removed)
+- [x] Keep VPN Status Dialog as fallback (not removed)
+- [x] Update MikroTik scripts to include static IP assignment
+- [x] Add getVpnIpPoolStats and getAllocatedVpnIp endpoints
+- [ ] Add IP Pool management UI in System Settings (future)
