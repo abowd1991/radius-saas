@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, nasname, shortname, secret, connectionType FROM nas ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret, connectionType FROM nas ORDER BY id;",
+  "rows": [
+    {
+      "id": "30009",
+      "nasname": "192.168.30.197",
+      "shortname": "Homecntpo",
+      "secret": "258639985",
+      "connectionType": "vpn_l2tp"
+    },
+    {
+      "id": "60004",
+      "nasname": "192.168.30.10",
+      "shortname": "Ramy",
+      "secret": "258096335",
+      "connectionType": "vpn_l2tp"
+    },
+    {
+      "id": "90001",
+      "nasname": "192.168.30.12",
+      "shortname": "Abowdnet",
+      "secret": "75893417",
+      "connectionType": "vpn_l2tp"
+    },
+    {
+      "id": "90002",
+      "nasname": "192.168.30.11",
+      "shortname": "Abowd.Net 20",
+      "secret": "75893417",
+      "connectionType": "vpn_sstp"
+    },
+    {
+      "id": "120001",
+      "nasname": "192.168.30.13",
+      "shortname": "Arad",
+      "secret": "3258963",
+      "connectionType": "vpn_sstp"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\tconnectionType\n30009\t192.168.30.197\tHomecntpo\t258639985\tvpn_l2tp\n60004\t192.168.30.10\tRamy\t258096335\tvpn_l2tp\n90001\t192.168.30.12\tAbowdnet\t75893417\tvpn_l2tp\n90002\t192.168.30.11\tAbowd.Net 20\t75893417\tvpn_sstp\n120001\t192.168.30.13\tArad\t3258963\tvpn_sstp\n",
+  "stderr": "",
+  "execution_time_ms": 54
+}

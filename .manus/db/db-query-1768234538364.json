@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, nasname, shortname, secret FROM nas WHERE shortname LIKE '%Arad%' OR nasname = '192.168.30.13';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret FROM nas WHERE shortname LIKE '%Arad%' OR nasname = '192.168.30.13';",
+  "rows": [
+    {
+      "id": "120001",
+      "nasname": "192.168.30.13",
+      "shortname": "Arad",
+      "secret": "3258963"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\n120001\t192.168.30.13\tArad\t3258963\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}

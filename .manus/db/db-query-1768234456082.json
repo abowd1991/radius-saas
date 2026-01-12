@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, nasname, shortname, secret, connectionType, vpnUsername, vpnPassword FROM nas WHERE nasname = '192.168.30.11';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret, connectionType, vpnUsername, vpnPassword FROM nas WHERE nasname = '192.168.30.11';",
+  "rows": [
+    {
+      "id": "90002",
+      "nasname": "192.168.30.11",
+      "shortname": "Abowd.Net 20",
+      "secret": "75893417",
+      "connectionType": "vpn_sstp",
+      "vpnUsername": "NULL",
+      "vpnPassword": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\tconnectionType\tvpnUsername\tvpnPassword\n90002\t192.168.30.11\tAbowd.Net 20\t75893417\tvpn_sstp\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 66
+}

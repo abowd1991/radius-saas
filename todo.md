@@ -1438,3 +1438,40 @@
   - [x] FreeRADIUS reloaded and recognized new client
   - [x] Verified in FreeRADIUS logs: "Client 'Abowd.Net 20' (sql) added"
 
+
+
+## Production-Ready RADIUS System (Jan 12, 2026)
+
+### Phase 1: تحليل السبب الجذري ✅
+- [x] تحديد السبب المؤكد: تعارض بين dynamic-clients و clients.conf
+- [x] توثيق جميع نقاط الفشل المحتملة
+
+### Phase 2: ثبات الخدمات بعد Restart ✅
+- [x] إعادة هيكلة systemd services بترتيب صحيح
+- [x] إضافة health checks لكل خدمة
+- [x] إضافة auto-restart عند الفشل (Restart=on-failure)
+- [x] ضمان: vpnserver → radius-bridge → DHCP → RADIUS
+
+### Phase 3: أداء عالي (10k مستخدم) ✅
+- [x] ضبط FreeRADIUS thread pool (32-128 threads)
+- [x] ضبط max_request_time = 30s
+- [x] ضبط DB connection pool (20-100 connections)
+- [x] توثيق الأرقام النهائية
+
+### Phase 4: Dynamic NAS بدون تدخل يدوي ✅
+- [x] DHCP reservation تلقائي حسب MAC (cron كل 5 دقائق)
+- [x] nasname = IP (ليس اسم VPN)
+- [x] FreeRADIUS يتعرف على NAS فوراً (read_clients=yes)
+- [x] لا sync يدوي مطلوب
+
+### Phase 5: صفحة تشخيص وLogs Dashboard ✅
+- [x] عرض حالة freeradius (diagnosticsRouter)
+- [x] آخر 50 Access-Accept/Reject (logsRouter)
+- [x] آخر 50 "unknown client" (getUnknownClients)
+- [x] تشخيص واضح للمشاكل (testConnectivity)
+
+### Phase 6: Monitoring + Alerts ✅
+- [x] تنبيه فوري عند فشل freeradius
+- [x] تنبيه عند فشل VPN
+- [x] تنبيه عند فشل DHCP
+- [x] Health monitor كل دقيقة مع auto-restart

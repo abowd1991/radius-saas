@@ -4670,6 +4670,46 @@ const logsRouter = router({
 });
 
 // ============================================================================
+// DIAGNOSTICS ROUTER (System Health & Troubleshooting)
+// ============================================================================
+const diagnosticsRouter = router({
+  // Get comprehensive system diagnostics
+  getSystemStatus: superAdminProcedure.query(async () => {
+    return freeradiusService.getSystemDiagnostics();
+  }),
+
+  // Get FreeRADIUS status
+  getFreeradiusStatus: superAdminProcedure.query(async () => {
+    return freeradiusService.checkFreeRADIUSStatus();
+  }),
+
+  // Get FreeRADIUS logs
+  getFreeradiusLogs: superAdminProcedure
+    .input(z.object({ lines: z.number().default(50) }))
+    .query(async ({ input }) => {
+      const logs = await freeradiusService.getFreeRADIUSLogs(input.lines);
+      return { logs };
+    }),
+
+  // Get unknown client attempts
+  getUnknownClients: superAdminProcedure
+    .input(z.object({ limit: z.number().default(50) }))
+    .query(async ({ input }) => {
+      return freeradiusService.getUnknownClients(input.limit);
+    }),
+
+  // Test RADIUS connectivity
+  testConnectivity: superAdminProcedure.query(async () => {
+    return freeradiusService.testRadiusConnectivity();
+  }),
+
+  // Reload FreeRADIUS
+  reloadFreeradius: superAdminProcedure.mutation(async () => {
+    return freeradiusService.reloadFreeRADIUS();
+  }),
+});
+
+// ============================================================================
 // SAAS PLANS ROUTER (Subscription Plans Management)
 // ============================================================================
 import * as saasPlansDb from './db/saasPlans';
@@ -4843,6 +4883,7 @@ export const appRouter = router({
   vpn: vpnRouter,
   audit: auditRouter,
   logs: logsRouter,
+  diagnostics: diagnosticsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, nasname, shortname, secret, vpnUsername, vpnPassword FROM nas WHERE shortname = 'Arad';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret, vpnUsername, vpnPassword FROM nas WHERE shortname = 'Arad';",
+  "rows": [
+    {
+      "id": "120001",
+      "nasname": "192.168.30.13",
+      "shortname": "Arad",
+      "secret": "3258963",
+      "vpnUsername": "arad-mkbd2zhe",
+      "vpnPassword": "4a9qzddje7ty7xl5gs9zzh"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\tvpnUsername\tvpnPassword\n120001\t192.168.30.13\tArad\t3258963\tarad-mkbd2zhe\t4a9qzddje7ty7xl5gs9zzh\n",
+  "stderr": "",
+  "execution_time_ms": 54
+}
