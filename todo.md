@@ -1408,3 +1408,13 @@
 ## Bug Fixes & New Features (Jan 12, 2026 - Session 2)
 - [x] Fix email not being sent on registration
 - [x] Create public Pricing Page with plans display (dynamic from DB)
+
+
+## Critical Bug Fixes & UX Improvements (Jan 12, 2026)
+- [x] Fix registration logic - require Name, Email, Password before creating user
+- [ ] Prevent empty users from being created
+- [ ] Merge admin pages (Clients/Client-Management/Resellers) into single Users Management page
+- [ ] Add Tabs: All Users, Clients, Resellers, Trial, Active, Suspended, Incomplete
+- [ ] Add delete user permission for Super Admin
+- [ ] Improve users table with columns: Name, Email, Role, Status, Plan, Days Left, Last Login, Actions
+- [ ] Add inline actions (View/Suspend/Delete) without navigating to another page

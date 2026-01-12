@@ -122,23 +122,32 @@ export default function Auth() {
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!registerForm.username || !registerForm.email || !registerForm.password) {
-      toast.error("الرجاء ملء جميع الحقول المطلوبة");
+    // ALL fields are REQUIRED
+    if (!registerForm.name || registerForm.name.trim().length < 2) {
+      toast.error("الاسم الكامل مطلوب (حرفين على الأقل)");
+      return;
+    }
+    if (!registerForm.username || registerForm.username.trim().length < 3) {
+      toast.error("اسم المستخدم مطلوب (3 أحرف على الأقل)");
+      return;
+    }
+    if (!registerForm.email || !registerForm.email.includes("@") || !registerForm.email.includes(".")) {
+      toast.error("البريد الإلكتروني غير صحيح");
+      return;
+    }
+    if (!registerForm.password || registerForm.password.length < 6) {
+      toast.error("كلمة المرور مطلوبة (6 أحرف على الأقل)");
       return;
     }
     if (registerForm.password !== registerForm.confirmPassword) {
       toast.error("كلمات المرور غير متطابقة");
       return;
     }
-    if (registerForm.password.length < 6) {
-      toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
-      return;
-    }
     registerMutation.mutate({
-      username: registerForm.username,
-      email: registerForm.email,
+      username: registerForm.username.trim(),
+      email: registerForm.email.trim().toLowerCase(),
       password: registerForm.password,
-      name: registerForm.name || undefined,
+      name: registerForm.name.trim(),
       phone: registerForm.phone || undefined,
     });
   };
@@ -289,6 +298,23 @@ export default function Auth() {
         {/* Register Tab */}
         <TabsContent value="register" className="mt-0">
           <form onSubmit={handleRegister} className="space-y-4">
+            {/* Name - REQUIRED */}
+            <div className="space-y-2">
+              <Label htmlFor="register-name" className="text-slate-200">
+                الاسم الكامل <span className="text-red-400">*</span>
+              </Label>
+              <Input
+                id="register-name"
+                type="text"
+                placeholder="اسمك الكامل"
+                value={registerForm.name}
+                onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
+                required
+              />
+            </div>
+
+            {/* Username - REQUIRED */}
             <div className="space-y-2">
               <Label htmlFor="register-username" className="text-slate-200">
                 اسم المستخدم <span className="text-red-400">*</span>
@@ -303,10 +329,12 @@ export default function Auth() {
                   onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
                   className="pr-10 bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
                   dir="ltr"
+                  required
                 />
               </div>
             </div>
 
+            {/* Email - REQUIRED */}
             <div className="space-y-2">
               <Label htmlFor="register-email" className="text-slate-200">
                 البريد الإلكتروني <span className="text-red-400">*</span>
@@ -321,27 +349,15 @@ export default function Auth() {
                   onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
                   className="pr-10 bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
                   dir="ltr"
+                  required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="register-name" className="text-slate-200">
-                الاسم الكامل
-              </Label>
-              <Input
-                id="register-name"
-                type="text"
-                placeholder="اسمك الكامل (اختياري)"
-                value={registerForm.name}
-                onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
-              />
-            </div>
-
+            {/* Phone - Optional */}
             <div className="space-y-2">
               <Label htmlFor="register-phone" className="text-slate-200">
-                رقم الهاتف
+                رقم الهاتف <span className="text-slate-500">(اختياري)</span>
               </Label>
               <div className="relative">
                 <Phone className="absolute right-3 top-3 h-4 w-4 text-slate-400" />

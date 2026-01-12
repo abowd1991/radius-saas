@@ -35,6 +35,7 @@ import NasHealthMonitor from "./pages/NasHealthMonitor";
 import BandwidthReports from "./pages/BandwidthReports";
 import SaasPlansManagement from "./pages/SaasPlansManagement";
 import ClientManagement from "./pages/ClientManagement";
+import UsersManagement from "./pages/UsersManagement";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -81,6 +82,7 @@ function Router() {
           <Clients />
         </DashboardLayout>
       </Route>
+      <Route path="/users-management" component={UsersManagement} />
       <Route path="/resellers">
         <DashboardLayout>
           <Resellers />

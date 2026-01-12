@@ -50,15 +50,18 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
     return { success: false, error: "Database connection failed" };
   }
 
-  // Validate input
-  if (!input.username || input.username.length < 3) {
-    return { success: false, error: "Username must be at least 3 characters" };
+  // Validate input - ALL fields are REQUIRED
+  if (!input.name || input.name.trim().length < 2) {
+    return { success: false, error: "الاسم مطلوب (حرفين على الأقل)" };
   }
-  if (!input.email || !input.email.includes("@")) {
-    return { success: false, error: "Invalid email address" };
+  if (!input.username || input.username.trim().length < 3) {
+    return { success: false, error: "اسم المستخدم مطلوب (3 أحرف على الأقل)" };
+  }
+  if (!input.email || !input.email.includes("@") || !input.email.includes(".")) {
+    return { success: false, error: "البريد الإلكتروني غير صحيح" };
   }
   if (!input.password || input.password.length < 6) {
-    return { success: false, error: "Password must be at least 6 characters" };
+    return { success: false, error: "كلمة المرور مطلوبة (6 أحرف على الأقل)" };
   }
 
   // Check if username or email already exists

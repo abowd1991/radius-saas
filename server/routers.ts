@@ -480,6 +480,64 @@ const usersRouter = router({
         plan,
       };
     }),
+
+  // Delete user (Super Admin only)
+  delete: superAdminProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await db.getUserById(input.userId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      // Prevent deleting super_admin
+      if ((user as any).role === 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot delete super admin' });
+      }
+      
+      // Prevent self-deletion
+      if (input.userId === ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot delete yourself' });
+      }
+      
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      // Delete user's data in order (foreign key constraints)
+      // 1. Delete radcheck entries for user's cards
+      await drizzleDb.execute(
+        sql`DELETE FROM radcheck WHERE username IN (SELECT username FROM radius_cards WHERE owner_id = ${input.userId})`
+      );
+      
+      // 2. Delete radreply entries for user's cards
+      await drizzleDb.execute(
+        sql`DELETE FROM radreply WHERE username IN (SELECT username FROM radius_cards WHERE owner_id = ${input.userId})`
+      );
+      
+      // 3. Delete user's cards
+      await drizzleDb.execute(
+        sql`DELETE FROM radius_cards WHERE owner_id = ${input.userId}`
+      );
+      
+      // 4. Delete user's NAS devices
+      await drizzleDb.execute(
+        sql`DELETE FROM nas WHERE owner_id = ${input.userId}`
+      );
+      
+      // 5. Delete user's plans
+      await drizzleDb.execute(
+        sql`DELETE FROM plans WHERE owner_id = ${input.userId}`
+      );
+      
+      // 6. Delete user's audit logs
+      await drizzleDb.execute(
+        sql`DELETE FROM audit_logs WHERE user_id = ${input.userId}`
+      );
+      
+      // 7. Finally delete the user
+      await drizzleDb.delete(users).where(eq(users.id, input.userId));
+      
+      console.log(`[User Delete] Super admin ${ctx.user.id} deleted user ${input.userId}`);
+      return { success: true, message: 'User deleted successfully' };
+    }),
 });
 
 // ============================================================================
