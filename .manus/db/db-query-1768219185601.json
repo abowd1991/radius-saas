@@ -1,0 +1,226 @@
+{
+  "query": "DESCRIBE nas;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute DESCRIBE nas;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "nasname",
+      "Type": "varchar(128)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "shortname",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "type",
+      "Type": "varchar(30)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "other",
+      "Extra": ""
+    },
+    {
+      "Field": "ports",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "secret",
+      "Type": "varchar(60)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "server",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "community",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "description",
+      "Type": "varchar(200)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "connectionType",
+      "Type": "enum('public_ip','vpn_sstp','vpn_l2tp')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "public_ip",
+      "Extra": ""
+    },
+    {
+      "Field": "location",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "model",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "apiPort",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "8728",
+      "Extra": ""
+    },
+    {
+      "Field": "apiUsername",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "apiPassword",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "status",
+      "Type": "enum('active','inactive')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "active",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "updatedAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    },
+    {
+      "Field": "mikrotikApiPort",
+      "Type": "int(11)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "8728",
+      "Extra": ""
+    },
+    {
+      "Field": "mikrotikApiUser",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "mikrotikApiPassword",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "lastSeen",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "vpnUsername",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "vpnPassword",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "vpnTunnelIp",
+      "Type": "varchar(45)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "apiEnabled",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "ownerId",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\nnasname\tvarchar(128)\tNO\t\tNULL\t\nshortname\tvarchar(32)\tYES\t\tNULL\t\ntype\tvarchar(30)\tYES\t\tother\t\nports\tint(11)\tYES\t\tNULL\t\nsecret\tvarchar(60)\tNO\t\tNULL\t\nserver\tvarchar(64)\tYES\t\tNULL\t\ncommunity\tvarchar(50)\tYES\t\tNULL\t\ndescription\tvarchar(200)\tYES\t\tNULL\t\nconnectionType\tenum('public_ip','vpn_sstp','vpn_l2tp')\tYES\t\tpublic_ip\t\nlocation\tvarchar(255)\tYES\t\tNULL\t\nmodel\tvarchar(100)\tYES\t\tNULL\t\napiPort\tint(11)\tYES\t\t8728\t\napiUsername\tvarchar(100)\tYES\t\tNULL\t\napiPassword\tvarchar(255)\tYES\t\tNULL\t\nstatus\tenum('active','inactive')\tNO\t\tactive\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nupdatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\nmikrotikApiPort\tint(11)\tYES\t\t8728\t\nmikrotikApiUser\tvarchar(64)\tYES\t\tNULL\t\nmikrotikApiPassword\tvarchar(128)\tYES\t\tNULL\t\nlastSeen\ttimestamp\tYES\t\tNULL\t\nvpnUsername\tvarchar(64)\tYES\t\tNULL\t\nvpnPassword\tvarchar(128)\tYES\t\tNULL\t\nvpnTunnelIp\tvarchar(45)\tYES\t\tNULL\t\napiEnabled\ttinyint(1)\tYES\t\t0\t\nownerId\tint(11)\tNO\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 54
+}

@@ -1422,3 +1422,19 @@
 
 ## Bug Fix - Email Verification (Jan 12, 2026)
 - [x] Remove "Skip verification" option - email verification must be mandatory
+
+## Auto FreeRADIUS Reload (Jan 12, 2026)
+- [x] Create SSH service to reload FreeRADIUS remotely
+  - [x] Created freeradiusService.ts with SSH connection to 37.60.228.5
+  - [x] reloadFreeRADIUS() - graceful reload/restart
+  - [x] checkFreeRADIUSStatus() - check if running
+  - [x] addNASClient() - manual NAS addition (fallback)
+- [x] Auto-reload FreeRADIUS on NAS add/edit/delete
+  - [x] Integrated into nasRouter.create
+  - [x] Integrated into nasRouter.update
+  - [x] Integrated into nasRouter.delete
+- [x] Test with new NAS device 192.168.30.11
+  - [x] Added NAS to database (Abowd.Net 20)
+  - [x] FreeRADIUS reloaded and recognized new client
+  - [x] Verified in FreeRADIUS logs: "Client 'Abowd.Net 20' (sql) added"
+

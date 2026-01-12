@@ -29,6 +29,7 @@ import { eq, and, isNull, sql } from "drizzle-orm";
 import * as radiusSubscribers from "./db/radiusSubscribers";
 import { logAudit } from "./services/auditLogService";
 import * as vpnIpPool from "./db/vpnIpPool";
+import * as freeradiusService from "./services/freeradiusService";
 
 // ============================================================================
 // AUTH ROUTER
@@ -832,6 +833,17 @@ const nasRouter = router({
         }
       }
       
+      // Reload FreeRADIUS to pick up new NAS client
+      freeradiusService.reloadFreeRADIUS().then(result => {
+        if (result.success) {
+          console.log(`[NAS Create] FreeRADIUS reloaded successfully for new NAS ${newNas.id}`);
+        } else {
+          console.error(`[NAS Create] Failed to reload FreeRADIUS:`, result.message);
+        }
+      }).catch(error => {
+        console.error(`[NAS Create] Error reloading FreeRADIUS:`, error);
+      });
+      
       return newNas;
     }),
 
@@ -1077,7 +1089,20 @@ const nasRouter = router({
       if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
-      return nasDb.updateNas(input.id, input);
+      const updatedNas = await nasDb.updateNas(input.id, input);
+      
+      // Reload FreeRADIUS to pick up NAS changes
+      freeradiusService.reloadFreeRADIUS().then(result => {
+        if (result.success) {
+          console.log(`[NAS Update] FreeRADIUS reloaded successfully for NAS ${input.id}`);
+        } else {
+          console.error(`[NAS Update] Failed to reload FreeRADIUS:`, result.message);
+        }
+      }).catch(error => {
+        console.error(`[NAS Update] Error reloading FreeRADIUS:`, error);
+      });
+      
+      return updatedNas;
     }),
 
   // Delete NAS - check ownership (requires active subscription)
@@ -1128,6 +1153,17 @@ const nasRouter = router({
           console.error('[NAS Delete] Failed to disconnect VPN session:', error);
         }
       }
+      
+      // Reload FreeRADIUS to remove deleted NAS client
+      freeradiusService.reloadFreeRADIUS().then(reloadResult => {
+        if (reloadResult.success) {
+          console.log(`[NAS Delete] FreeRADIUS reloaded successfully after deleting NAS ${input.id}`);
+        } else {
+          console.error(`[NAS Delete] Failed to reload FreeRADIUS:`, reloadResult.message);
+        }
+      }).catch(error => {
+        console.error(`[NAS Delete] Error reloading FreeRADIUS:`, error);
+      });
       
       return { success: true };
     }),

@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO nas (nasname, shortname, type, ports, secret, description, connectionType, ownerId, apiEnabled, apiPort, staticIp) VALUES ('192.168.30.11', 'Abowd.Net 20', 'other', 0, '75893417', 'Abowd.Net 20 - MikroTik', 'vpn_sstp', 1, 0, 8728, '192.168.30.11');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute INSERT INTO nas (nasname, shortname, type, ports, secret, description, connectionType, ownerId, apiEnabled, apiPort, staticIp) VALUES ('192.168.30.11', 'Abowd.Net 20', 'other', 0, '75893417', 'Abowd.Net 20 - MikroTik', 'vpn_sstp', 1, 0, 8728, '192.168.30.11');",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'staticIp' in 'field list'"
+  ]
+}

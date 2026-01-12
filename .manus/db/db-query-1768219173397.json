@@ -1,0 +1,28 @@
+{
+  "query": "SELECT id, nasname, shortname, secret FROM nas;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret FROM nas;",
+  "rows": [
+    {
+      "id": "30009",
+      "nasname": "192.168.30.197",
+      "shortname": "Homecntpo",
+      "secret": "258639985"
+    },
+    {
+      "id": "60004",
+      "nasname": "192.168.30.10",
+      "shortname": "Ramy",
+      "secret": "258096335"
+    },
+    {
+      "id": "90001",
+      "nasname": "192.168.30.12",
+      "shortname": "Abowdnet",
+      "secret": "75893417"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\n30009\t192.168.30.197\tHomecntpo\t258639985\n60004\t192.168.30.10\tRamy\t258096335\n90001\t192.168.30.12\tAbowdnet\t75893417\n",
+  "stderr": "",
+  "execution_time_ms": 148
+}
