@@ -34,6 +34,7 @@ import RadiusLogs from "./pages/RadiusLogs";
 import NasHealthMonitor from "./pages/NasHealthMonitor";
 import BandwidthReports from "./pages/BandwidthReports";
 import SaasPlansManagement from "./pages/SaasPlansManagement";
+import ClientManagement from "./pages/ClientManagement";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -139,6 +140,9 @@ function Router() {
       </Route>
       <Route path="/saas-plans">
         <SaasPlansManagement />
+      </Route>
+      <Route path="/client-management">
+        <ClientManagement />
       </Route>
       <Route path="/reports">
         <DashboardLayout>

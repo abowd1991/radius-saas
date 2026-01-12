@@ -1381,3 +1381,25 @@
 - [x] Show current plan name and limits
 - [ ] Show usage vs limits (NAS count, cards count)
 - [ ] Upgrade/Renew CTA button
+
+
+## Client Control Panel for Super Admin (Jan 12, 2026)
+- [ ] API endpoints for client management
+  - [ ] Get all clients with subscription status
+  - [ ] Activate client account
+  - [ ] Suspend client account (disable all services)
+  - [x] Change client plan
+  - [x] Extend subscription manually
+  - [ ] View client's NAS/cards/sessions
+- [ ] Client Management Page
+  - [ ] List all clients with status badges
+  - [ ] Filter by status (trial/active/expired/suspended)
+  - [ ] Quick actions menu per client
+  - [ ] Subscription details modal
+  - [ ] Extend subscription dialog
+  - [ ] Change plan dialog
+- [ ] Suspension actions
+  - [ ] Disable all client's NAS devices
+  - [ ] Disconnect all active sessions
+  - [ ] Block RADIUS authentication
+  - [ ] Block card creation

@@ -24,8 +24,8 @@ import * as accountingService from "./services/accountingService";
 import * as sessionMonitor from "./services/sessionMonitor";
 import * as authService from "./services/authService";
 import { getDb } from "./db";
-import { radcheck, nasDevices } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { radcheck, nasDevices, radiusCards, radacct, users } from "../drizzle/schema";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import * as radiusSubscribers from "./db/radiusSubscribers";
 import { logAudit } from "./services/auditLogService";
 import * as vpnIpPool from "./db/vpnIpPool";
@@ -248,6 +248,237 @@ const usersRouter = router({
     }))
     .mutation(async ({ input }) => {
       return { success: true };
+    }),
+
+  // Get all clients with subscription details (Super Admin)
+  getClientsWithSubscription: superAdminProcedure
+    .input(z.object({
+      status: z.enum(['trial', 'active', 'expired', 'suspended', 'all']).default('all'),
+      search: z.string().optional(),
+      page: z.number().default(1),
+      limit: z.number().default(20),
+    }).optional())
+    .query(async ({ input }) => {
+      const allUsers = await db.getAllUsers();
+      let clients = allUsers.filter((u: any) => u.role !== 'super_admin');
+      
+      // Filter by status
+      if (input?.status && input.status !== 'all') {
+        clients = clients.filter((c: any) => c.accountStatus === input.status);
+      }
+      
+      // Search
+      if (input?.search) {
+        const search = input.search.toLowerCase();
+        clients = clients.filter((c: any) => 
+          c.name?.toLowerCase().includes(search) ||
+          c.email?.toLowerCase().includes(search) ||
+          c.username?.toLowerCase().includes(search)
+        );
+      }
+      
+      // Get plan names for each client
+      const plans = await saasPlansDb.getAllPlans(false);
+      const planMap = new Map(plans.map((p: any) => [p.id, p.name]));
+      
+      const clientsWithPlan = clients.map((c: any) => ({
+        ...c,
+        planName: c.subscriptionPlanId ? planMap.get(c.subscriptionPlanId) : null,
+        daysRemaining: c.trialEndDate 
+          ? Math.max(0, Math.ceil((new Date(c.trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+          : c.subscriptionEndDate
+            ? Math.max(0, Math.ceil((new Date(c.subscriptionEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+            : null,
+      }));
+      
+      // Pagination
+      const page = input?.page || 1;
+      const limit = input?.limit || 20;
+      const start = (page - 1) * limit;
+      const paginated = clientsWithPlan.slice(start, start + limit);
+      
+      return {
+        clients: paginated,
+        total: clientsWithPlan.length,
+        page,
+        totalPages: Math.ceil(clientsWithPlan.length / limit),
+      };
+    }),
+
+  // Activate client account
+  activateClient: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      planId: z.number().optional(),
+      durationDays: z.number().default(30),
+    }))
+    .mutation(async ({ input }) => {
+      const user = await db.getUserById(input.userId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      const now = new Date();
+      const endDate = new Date(now.getTime() + input.durationDays * 24 * 60 * 60 * 1000);
+      
+      // Update user status
+      await drizzleDb.update(users)
+        .set({
+          accountStatus: 'active',
+          subscriptionStartDate: now,
+          subscriptionEndDate: endDate,
+          subscriptionPlanId: input.planId || null,
+        })
+        .where(eq(users.id, input.userId));
+      
+      // Enable all NAS devices
+      await drizzleDb.execute(
+        sql`UPDATE nas SET is_active = 1 WHERE owner_id = ${input.userId}`
+      );
+      
+      console.log(`[Client Control] Activated user ${input.userId} for ${input.durationDays} days`);
+      return { success: true, message: 'Client activated successfully' };
+    }),
+
+  // Suspend client account
+  suspendClient: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const user = await db.getUserById(input.userId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      // Update user status
+      await drizzleDb.update(users)
+        .set({ accountStatus: 'suspended' })
+        .where(eq(users.id, input.userId));
+      
+      // Disable all NAS devices
+      await drizzleDb.execute(
+        sql`UPDATE nas SET is_active = 0 WHERE owner_id = ${input.userId}`
+      );
+      
+      // Block all cards (add Auth-Type := Reject)
+      // Get user's cards and block them
+      const userCardsResult = await drizzleDb.execute(
+        sql`SELECT username FROM radius_cards WHERE owner_id = ${input.userId}`
+      );
+      const userCards = (userCardsResult as any)[0] || [];
+      for (const card of userCards) {
+        await drizzleDb.execute(
+          sql`INSERT INTO radcheck (username, attribute, op, value) VALUES (${card.username}, 'Auth-Type', ':=', 'Reject') ON DUPLICATE KEY UPDATE value = 'Reject'`
+        );
+      }
+      
+      console.log(`[Client Control] Suspended user ${input.userId}`);
+      return { success: true, message: 'Client suspended successfully' };
+    }),
+
+  // Extend subscription
+  extendSubscription: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      days: z.number().min(1),
+    }))
+    .mutation(async ({ input }) => {
+      const user = await db.getUserById(input.userId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      const currentEnd = (user as any).subscriptionEndDate 
+        ? new Date((user as any).subscriptionEndDate) 
+        : (user as any).trialEndDate 
+          ? new Date((user as any).trialEndDate)
+          : new Date();
+      
+      const newEnd = new Date(Math.max(currentEnd.getTime(), Date.now()) + input.days * 24 * 60 * 60 * 1000);
+      
+      await drizzleDb.update(users)
+        .set({
+          accountStatus: 'active',
+          subscriptionEndDate: newEnd,
+        })
+        .where(eq(users.id, input.userId));
+      
+      // Re-enable NAS devices
+      await drizzleDb.execute(
+        sql`UPDATE nas SET is_active = 1 WHERE owner_id = ${input.userId}`
+      );
+      
+      console.log(`[Client Control] Extended user ${input.userId} subscription by ${input.days} days`);
+      return { success: true, newEndDate: newEnd };
+    }),
+
+  // Change client plan
+  changeClientPlan: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      planId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const user = await db.getUserById(input.userId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      const plan = await saasPlansDb.getPlanById(input.planId);
+      if (!plan) throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
+      
+      await drizzleDb.update(users)
+        .set({ subscriptionPlanId: input.planId })
+        .where(eq(users.id, input.userId));
+      
+      console.log(`[Client Control] Changed user ${input.userId} plan to ${plan.name}`);
+      return { success: true, planName: plan.name };
+    }),
+
+  // Get client details with stats
+  getClientDetails: superAdminProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const user = await db.getUserById(input.userId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      // Get NAS count
+      const nasCount = await drizzleDb.select({ count: sql<number>`count(*)` })
+        .from(nasDevices)
+        .where(eq(nasDevices.ownerId, input.userId));
+      
+      // Get cards count - use raw SQL for simplicity
+      const cardsResult = await drizzleDb.execute(
+        sql`SELECT COUNT(*) as count FROM radius_cards WHERE owner_id = ${input.userId}`
+      );
+      const cardsCount = (cardsResult as any)[0]?.[0]?.count || 0;
+      
+      // Get active sessions
+      const sessionsResult = await drizzleDb.execute(
+        sql`SELECT COUNT(*) as count FROM radacct WHERE acctstoptime IS NULL AND username IN (SELECT username FROM radius_cards WHERE owner_id = ${input.userId})`
+      );
+      const sessionsCount = (sessionsResult as any)[0]?.[0]?.count || 0;
+      
+      // Get plan details
+      let plan = null;
+      if ((user as any).subscriptionPlanId) {
+        plan = await saasPlansDb.getPlanById((user as any).subscriptionPlanId);
+      }
+      
+      return {
+        user,
+        stats: {
+          nasCount: Number(nasCount[0]?.count || 0),
+          cardsCount: Number(cardsCount),
+          activeSessions: Number(sessionsCount),
+        },
+        plan,
+      };
     }),
 });
 

@@ -112,6 +112,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: Activity, label: "مراقبة NAS", path: "/nas-health" },
     { icon: BarChart3, label: "تقارير الباندويث", path: "/bandwidth" },
     { icon: CreditCard, label: "خطط الاشتراك SaaS", path: "/saas-plans" },
+    { icon: Users, label: "إدارة العملاء", path: "/client-management" },
   ];
 
   const resellerItems = [
