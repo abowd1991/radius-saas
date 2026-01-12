@@ -142,13 +142,16 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   });
 
   // Send verification email (async, don't wait)
+  console.log(`[Auth] Attempting to send verification email to ${input.email} with code ${verificationCode}`);
   sendVerificationEmail(input.email, input.name || input.username, verificationCode)
     .then(sent => {
       if (sent) {
-        console.log(`[Auth] Verification email sent to ${input.email}`);
+        console.log(`[Auth] ✅ Verification email sent successfully to ${input.email}`);
+      } else {
+        console.error(`[Auth] ❌ Failed to send verification email to ${input.email}`);
       }
     })
-    .catch(err => console.error(`[Auth] Failed to send verification email:`, err));
+    .catch(err => console.error(`[Auth] ❌ Error sending verification email:`, err));
 
   return { success: true, user: createdUser };
 }

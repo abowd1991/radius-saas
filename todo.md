@@ -1403,3 +1403,8 @@
   - [ ] Disconnect all active sessions
   - [ ] Block RADIUS authentication
   - [ ] Block card creation
+
+
+## Bug Fixes & New Features (Jan 12, 2026 - Session 2)
+- [x] Fix email not being sent on registration
+- [x] Create public Pricing Page with plans display (dynamic from DB)

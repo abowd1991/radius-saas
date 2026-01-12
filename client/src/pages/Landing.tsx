@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { trpc } from "@/lib/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Accordion,
   AccordionContent,
@@ -33,6 +35,9 @@ import {
 
 export default function Landing() {
   const [, setLocation] = useLocation();
+  
+  // Fetch plans from database
+  const { data: dbPlans, isLoading: plansLoading } = trpc.saasPlans.getAll.useQuery();
 
   const features = [
     {
@@ -104,7 +109,8 @@ export default function Landing() {
     },
   ];
 
-  const plans = [
+  // Fallback static plans (used when DB plans not available)
+  const staticPlans = [
     {
       name: "أساسي",
       price: "49",
@@ -153,6 +159,30 @@ export default function Landing() {
       popular: false,
     },
   ];
+
+  // Convert DB plans to display format
+  const plans = dbPlans && dbPlans.length > 0 ? dbPlans.map((plan: any, index: number) => {
+    const features = [];
+    if (plan.maxCards !== null) features.push(`حتى ${plan.maxCards} كرت نشط`);
+    else features.push("كروت غير محدودة");
+    if (plan.maxNas !== null) features.push(`حتى ${plan.maxNas} جهاز NAS`);
+    else features.push("أجهزة NAS غير محدودة");
+    if (plan.maxSubscribers !== null) features.push(`حتى ${plan.maxSubscribers} مشترك`);
+    else features.push("مشتركين غير محدودين");
+    if (plan.hasApi) features.push("API للتكامل");
+    if (plan.hasCoa) features.push("دعم CoA/Disconnect");
+    if (plan.hasVpn) features.push("دعم VPN");
+    if (plan.hasAdvancedReports) features.push("تقارير متقدمة");
+    
+    return {
+      name: plan.name,
+      price: plan.priceMonthly?.toString() || "0",
+      period: "شهرياً",
+      description: plan.description || "",
+      features,
+      popular: index === 1, // Middle plan is popular
+    };
+  }) : staticPlans;
 
   const faqs = [
     {
@@ -359,7 +389,26 @@ export default function Landing() {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {plans.map((plan, index) => (
+            {plansLoading ? (
+              // Loading skeleton
+              Array.from({ length: 3 }).map((_, index) => (
+                <Card key={index} className="bg-slate-800/50 border-slate-700">
+                  <CardHeader className="text-center pb-2">
+                    <Skeleton className="h-6 w-24 mx-auto mb-2" />
+                    <Skeleton className="h-4 w-32 mx-auto" />
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <Skeleton className="h-12 w-28 mx-auto my-6" />
+                    <div className="space-y-3 mb-6">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Skeleton key={i} className="h-4 w-full" />
+                      ))}
+                    </div>
+                    <Skeleton className="h-10 w-full" />
+                  </CardContent>
+                </Card>
+              ))
+            ) : plans.map((plan, index) => (
               <Card 
                 key={index} 
                 className={`relative bg-slate-800/50 border-slate-700 ${
