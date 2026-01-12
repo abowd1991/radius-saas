@@ -1215,6 +1215,73 @@ const nasRouter = router({
       };
     }),
 
+  // Get health status for all NAS devices
+  getHealthStatus: superAdminProcedure
+    .query(async () => {
+      const db = await getDb();
+      if (!db) return { devices: [], lastChecked: new Date() };
+      
+      // Get all NAS devices
+      const devices = await db.select().from(nasDevices);
+      
+      // Get active sessions count per NAS
+      const { radacct } = await import('../drizzle/schema');
+      const { sql, isNull, eq, count } = await import('drizzle-orm');
+      
+      const sessionCounts = await db.select({
+        nasipaddress: radacct.nasipaddress,
+        count: count(),
+      })
+        .from(radacct)
+        .where(isNull(radacct.acctstoptime))
+        .groupBy(radacct.nasipaddress);
+      
+      const sessionMap = new Map(sessionCounts.map(s => [s.nasipaddress, s.count]));
+      
+      // Build health status for each device
+      const healthDevices = devices.map(device => {
+        // Determine status based on last activity
+        let status: 'online' | 'offline' | 'warning' | 'unknown' = 'unknown';
+        const activeSessions = sessionMap.get(device.nasname) || 0;
+        
+        // If device has active sessions, it's online
+        if (activeSessions > 0) {
+          status = 'online';
+        } else if (device.connectionType !== 'public_ip') {
+          // VPN devices - check if VPN tunnel IP is set
+          if (device.vpnTunnelIp) {
+            status = 'online';
+          } else {
+            status = 'offline';
+          }
+        } else {
+          // Public IP devices - assume online if configured
+          status = device.nasname ? 'online' : 'offline';
+        }
+        
+        return {
+          id: device.id,
+          shortname: device.shortname || device.nasname,
+          nasname: device.nasname,
+          description: device.description,
+          connectionType: device.connectionType,
+          status,
+          lastSeen: device.updatedAt,
+          responseTime: null, // Would need actual ping
+          activeSessions,
+          uptime: null,
+          cpuUsage: null,
+          memoryUsage: null,
+          lastChecked: new Date(),
+        };
+      });
+      
+      return {
+        devices: healthDevices,
+        lastChecked: new Date(),
+      };
+    }),
+
   // Get VPN IP Pool statistics
   getVpnIpPoolStats: superAdminProcedure
     .query(async () => {
@@ -1253,6 +1320,142 @@ const nasRouter = router({
         nasname: nas.nasname,
         isVpn: nas.connectionType !== 'public_ip'
       };
+    }),
+
+  // Get all allocated VPN IPs with NAS details
+  getAllAllocatedVpnIps: superAdminProcedure
+    .query(async () => {
+      const db = await getDb();
+      if (!db) return { allocations: [], pool: null };
+      
+      const { allocatedVpnIps, vpnIpPool: vpnIpPoolTable } = await import('../drizzle/schema');
+      
+      // Get pool info
+      const pools = await db.select()
+        .from(vpnIpPoolTable)
+        .where(eq(vpnIpPoolTable.isActive, true))
+        .limit(1);
+      const pool = pools[0] || null;
+      
+      // Get all allocations with NAS details
+      const allocations = await db.select({
+        id: allocatedVpnIps.id,
+        ipAddress: allocatedVpnIps.ipAddress,
+        nasId: allocatedVpnIps.nasId,
+        allocatedAt: allocatedVpnIps.allocatedAt,
+        nasShortname: nasDevices.shortname,
+        nasDescription: nasDevices.description,
+        connectionType: nasDevices.connectionType,
+        vpnUsername: nasDevices.vpnUsername,
+        ownerId: nasDevices.ownerId,
+      })
+        .from(allocatedVpnIps)
+        .leftJoin(nasDevices, eq(allocatedVpnIps.nasId, nasDevices.id))
+        .orderBy(allocatedVpnIps.ipAddress);
+      
+      return { allocations, pool };
+    }),
+
+  // Get available IPs in the pool
+  getAvailableVpnIps: superAdminProcedure
+    .query(async () => {
+      const stats = await vpnIpPool.getPoolStats();
+      if (!stats || !stats.pool) {
+        return { availableIps: [], pool: null };
+      }
+      
+      const db = await getDb();
+      if (!db) return { availableIps: [], pool: stats.pool };
+      
+      const { allocatedVpnIps } = await import('../drizzle/schema');
+      
+      // Get all allocated IPs
+      const allocated = await db.select({ ipAddress: allocatedVpnIps.ipAddress })
+        .from(allocatedVpnIps)
+        .where(eq(allocatedVpnIps.poolId, stats.pool.id));
+      const allocatedSet = new Set(allocated.map(a => a.ipAddress));
+      
+      // Generate list of available IPs
+      const ipToInt = (ip: string): number => {
+        const parts = ip.split('.').map(Number);
+        return ((parts[0] << 24) + (parts[1] << 16) + (parts[2] << 8) + parts[3]) >>> 0;
+      };
+      const intToIp = (num: number): string => [
+        (num >>> 24) & 255,
+        (num >>> 16) & 255,
+        (num >>> 8) & 255,
+        num & 255,
+      ].join('.');
+      
+      const startInt = ipToInt(stats.pool.startIp);
+      const endInt = ipToInt(stats.pool.endIp);
+      const availableIps: string[] = [];
+      
+      for (let i = startInt; i <= endInt; i++) {
+        const ip = intToIp(i);
+        if (!allocatedSet.has(ip)) {
+          availableIps.push(ip);
+        }
+      }
+      
+      return { availableIps, pool: stats.pool };
+    }),
+
+  // Manually release an IP
+  releaseVpnIp: superAdminProcedure
+    .input(z.object({ nasId: z.number() }))
+    .mutation(async ({ input }) => {
+      const released = await vpnIpPool.releaseIpForNas(input.nasId);
+      return { success: released, message: released ? 'تم تحرير الـ IP بنجاح' : 'فشل تحرير الـ IP' };
+    }),
+
+  // Update pool configuration
+  updateVpnIpPool: superAdminProcedure
+    .input(z.object({
+      poolId: z.number(),
+      name: z.string().optional(),
+      startIp: z.string().optional(),
+      endIp: z.string().optional(),
+      gateway: z.string().optional(),
+      subnet: z.string().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { poolId, ...data } = input;
+      const updated = await vpnIpPool.updatePool(poolId, data);
+      return { success: updated, message: updated ? 'تم تحديث إعدادات الـ Pool' : 'فشل التحديث' };
+    }),
+
+  // Create a new IP pool
+  createVpnIpPool: superAdminProcedure
+    .input(z.object({
+      name: z.string().default('Default VPN Pool'),
+      startIp: z.string(),
+      endIp: z.string(),
+      gateway: z.string().default('192.168.30.1'),
+      subnet: z.string().default('255.255.255.0'),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      const { vpnIpPool: vpnIpPoolTable } = await import('../drizzle/schema');
+      
+      // Deactivate any existing pools
+      await db.update(vpnIpPoolTable)
+        .set({ isActive: false });
+      
+      // Create new pool
+      const result = await db.insert(vpnIpPoolTable).values({
+        name: input.name,
+        startIp: input.startIp,
+        endIp: input.endIp,
+        gateway: input.gateway,
+        subnet: input.subnet,
+        isActive: true,
+      });
+      
+      return { success: true, poolId: Number((result as any)[0]?.insertId || 0), message: 'تم إنشاء الـ Pool بنجاح' };
     }),
 });
 
@@ -3135,6 +3338,118 @@ const reportsRouter = router({
       const html = reportExporter.generateSessionsPDFHTML(data, dateRange);
       return { html, filename: `sessions-report-${input.startDate}-${input.endDate}.html` };
     }),
+
+  // Get bandwidth usage report from radacct
+  getBandwidthUsage: superAdminProcedure
+    .input(z.object({
+      dateRange: z.string().default('today'),
+      sortBy: z.string().default('totalData'),
+      sortOrder: z.enum(['asc', 'desc']).default('desc'),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { userUsage: [], nasUsage: [], stats: { totalDownload: 0, totalUpload: 0, totalData: 0, activeUsers: 0 } };
+      
+      const { radacct } = await import('../drizzle/schema');
+      const { sql, and, gte, lte, desc, asc, count, sum, countDistinct } = await import('drizzle-orm');
+      
+      // Build date filter
+      let startDate: Date | null = null;
+      let endDate: Date | null = null;
+      const now = new Date();
+      
+      switch (input.dateRange) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+          break;
+        case 'yesterday':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'week':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+          break;
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+      }
+      
+      const conditions: any[] = [];
+      if (startDate) conditions.push(gte(radacct.acctstarttime, startDate));
+      if (endDate) conditions.push(lte(radacct.acctstarttime, endDate));
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+      
+      // Get user usage
+      const userUsage = await db.select({
+        username: radacct.username,
+        totalDownload: sum(radacct.acctinputoctets),
+        totalUpload: sum(radacct.acctoutputoctets),
+        sessionCount: count(),
+        totalTime: sum(radacct.acctsessiontime),
+      })
+        .from(radacct)
+        .where(whereClause)
+        .groupBy(radacct.username)
+        .orderBy(input.sortOrder === 'desc' ? desc(sum(radacct.acctinputoctets)) : asc(sum(radacct.acctinputoctets)))
+        .limit(100);
+      
+      // Get NAS usage
+      const nasUsage = await db.select({
+        nasipaddress: radacct.nasipaddress,
+        totalDownload: sum(radacct.acctinputoctets),
+        totalUpload: sum(radacct.acctoutputoctets),
+        userCount: countDistinct(radacct.username),
+        sessionCount: count(),
+      })
+        .from(radacct)
+        .where(whereClause)
+        .groupBy(radacct.nasipaddress)
+        .orderBy(input.sortOrder === 'desc' ? desc(sum(radacct.acctinputoctets)) : asc(sum(radacct.acctinputoctets)));
+      
+      // Get NAS names
+      const nasNames = await db.select({ nasname: nasDevices.nasname, shortname: nasDevices.shortname })
+        .from(nasDevices);
+      const nasNameMap = new Map(nasNames.map(n => [n.nasname, n.shortname]));
+      
+      // Get overall stats
+      const statsResult = await db.select({
+        totalDownload: sum(radacct.acctinputoctets),
+        totalUpload: sum(radacct.acctoutputoctets),
+        activeUsers: countDistinct(radacct.username),
+      })
+        .from(radacct)
+        .where(whereClause);
+      
+      const stats = statsResult[0] || { totalDownload: 0, totalUpload: 0, activeUsers: 0 };
+      
+      return {
+        userUsage: userUsage.map(u => ({
+          username: u.username,
+          totalDownload: Number(u.totalDownload) || 0,
+          totalUpload: Number(u.totalUpload) || 0,
+          totalData: (Number(u.totalDownload) || 0) + (Number(u.totalUpload) || 0),
+          sessionCount: u.sessionCount,
+          totalTime: Number(u.totalTime) || 0,
+          lastActivity: null,
+        })),
+        nasUsage: nasUsage.map(n => ({
+          nasipaddress: n.nasipaddress,
+          nasShortname: nasNameMap.get(n.nasipaddress) || null,
+          totalDownload: Number(n.totalDownload) || 0,
+          totalUpload: Number(n.totalUpload) || 0,
+          totalData: (Number(n.totalDownload) || 0) + (Number(n.totalUpload) || 0),
+          userCount: n.userCount,
+          sessionCount: n.sessionCount,
+        })),
+        stats: {
+          totalDownload: Number(stats.totalDownload) || 0,
+          totalUpload: Number(stats.totalUpload) || 0,
+          totalData: (Number(stats.totalDownload) || 0) + (Number(stats.totalUpload) || 0),
+          activeUsers: stats.activeUsers || 0,
+        },
+      };
+    }),
 });
 
 // ============================================================================
@@ -3841,6 +4156,188 @@ const auditRouter = router({
 });
 
 // ============================================================================
+// LOGS ROUTER (RADIUS Logs Viewer)
+// ============================================================================
+const logsRouter = router({
+  // Get authentication logs from radpostauth
+  getAuthLogs: superAdminProcedure
+    .input(z.object({
+      page: z.number().default(1),
+      limit: z.number().default(50),
+      search: z.string().optional(),
+      status: z.string().optional(),
+      nasIp: z.string().optional(),
+      dateRange: z.string().default('today'),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { logs: [], total: 0, stats: { accepted: 0, rejected: 0 } };
+      
+      const { radpostauth } = await import('../drizzle/schema');
+      const { sql, and, eq, like, gte, lte, desc, count } = await import('drizzle-orm');
+      
+      // Build date filter
+      let startDate: Date | null = null;
+      let endDate: Date | null = null;
+      const now = new Date();
+      
+      switch (input.dateRange) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+          break;
+        case 'yesterday':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'week':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+          break;
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+      }
+      
+      // Build conditions
+      const conditions: any[] = [];
+      if (input.search) {
+        conditions.push(like(radpostauth.username, `%${input.search}%`));
+      }
+      if (input.status) {
+        conditions.push(eq(radpostauth.reply, input.status));
+      }
+      if (startDate) {
+        conditions.push(gte(radpostauth.authdate, startDate));
+      }
+      if (endDate) {
+        conditions.push(lte(radpostauth.authdate, endDate));
+      }
+      
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+      
+      // Get logs
+      const logs = await db.select()
+        .from(radpostauth)
+        .where(whereClause)
+        .orderBy(desc(radpostauth.authdate))
+        .limit(input.limit)
+        .offset((input.page - 1) * input.limit);
+      
+      // Get total count
+      const totalResult = await db.select({ count: count() })
+        .from(radpostauth)
+        .where(whereClause);
+      const total = totalResult[0]?.count || 0;
+      
+      // Get stats
+      const acceptedResult = await db.select({ count: count() })
+        .from(radpostauth)
+        .where(and(whereClause, eq(radpostauth.reply, 'Access-Accept')));
+      const rejectedResult = await db.select({ count: count() })
+        .from(radpostauth)
+        .where(and(whereClause, eq(radpostauth.reply, 'Access-Reject')));
+      
+      return {
+        logs,
+        total,
+        stats: {
+          accepted: acceptedResult[0]?.count || 0,
+          rejected: rejectedResult[0]?.count || 0,
+        }
+      };
+    }),
+
+  // Get accounting logs from radacct
+  getAccountingLogs: superAdminProcedure
+    .input(z.object({
+      page: z.number().default(1),
+      limit: z.number().default(50),
+      search: z.string().optional(),
+      nasIp: z.string().optional(),
+      dateRange: z.string().default('today'),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { logs: [], total: 0, stats: { activeSessions: 0, totalSessionTime: 0 } };
+      
+      const { radacct } = await import('../drizzle/schema');
+      const { sql, and, eq, like, gte, lte, desc, count, sum, isNull } = await import('drizzle-orm');
+      
+      // Build date filter
+      let startDate: Date | null = null;
+      let endDate: Date | null = null;
+      const now = new Date();
+      
+      switch (input.dateRange) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+          break;
+        case 'yesterday':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'week':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+          break;
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+      }
+      
+      // Build conditions
+      const conditions: any[] = [];
+      if (input.search) {
+        conditions.push(like(radacct.username, `%${input.search}%`));
+      }
+      if (input.nasIp) {
+        conditions.push(eq(radacct.nasipaddress, input.nasIp));
+      }
+      if (startDate) {
+        conditions.push(gte(radacct.acctstarttime, startDate));
+      }
+      if (endDate) {
+        conditions.push(lte(radacct.acctstarttime, endDate));
+      }
+      
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+      
+      // Get logs
+      const logs = await db.select()
+        .from(radacct)
+        .where(whereClause)
+        .orderBy(desc(radacct.acctstarttime))
+        .limit(input.limit)
+        .offset((input.page - 1) * input.limit);
+      
+      // Get total count
+      const totalResult = await db.select({ count: count() })
+        .from(radacct)
+        .where(whereClause);
+      const total = totalResult[0]?.count || 0;
+      
+      // Get stats - active sessions (no stop time)
+      const activeResult = await db.select({ count: count() })
+        .from(radacct)
+        .where(and(whereClause, isNull(radacct.acctstoptime)));
+      
+      // Get total session time
+      const timeResult = await db.select({ total: sum(radacct.acctsessiontime) })
+        .from(radacct)
+        .where(whereClause);
+      
+      return {
+        logs,
+        total,
+        stats: {
+          activeSessions: activeResult[0]?.count || 0,
+          totalSessionTime: Number(timeResult[0]?.total) || 0,
+        }
+      };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -3866,6 +4363,7 @@ export const appRouter = router({
   subscribers: subscribersRouter,
   vpn: vpnRouter,
   audit: auditRouter,
+  logs: logsRouter,
 });
 
 export type AppRouter = typeof appRouter;

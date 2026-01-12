@@ -50,6 +50,7 @@ import {
   UserCheck,
   Wifi,
   History,
+  Network,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -106,6 +107,10 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: CreditCard, label: "إدارة الاشتراكات", path: "/tenant-subscriptions" },
     { icon: BarChart3, label: "التقارير", path: "/reports" },
     { icon: Database, label: "النسخ الاحتياطي", path: "/backups" },
+    { icon: Network, label: "إدارة IP Pool", path: "/ip-pool" },
+    { icon: FileText, label: "سجلات RADIUS", path: "/radius-logs" },
+    { icon: Activity, label: "مراقبة NAS", path: "/nas-health" },
+    { icon: BarChart3, label: "تقارير الباندويث", path: "/bandwidth" },
   ];
 
   const resellerItems = [

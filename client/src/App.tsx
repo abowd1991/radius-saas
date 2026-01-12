@@ -29,6 +29,10 @@ import OnlineUsers from "./pages/OnlineUsers";
 import VpnConnections from "./pages/VpnConnections";
 import VpnLogs from "./pages/VpnLogs";
 import AuditLog from "./pages/AuditLog";
+import IpPoolManagement from "./pages/IpPoolManagement";
+import RadiusLogs from "./pages/RadiusLogs";
+import NasHealthMonitor from "./pages/NasHealthMonitor";
+import BandwidthReports from "./pages/BandwidthReports";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -119,6 +123,18 @@ function Router() {
         <DashboardLayout>
           <AuditLog />
         </DashboardLayout>
+      </Route>
+      <Route path="/ip-pool">
+        <IpPoolManagement />
+      </Route>
+      <Route path="/radius-logs">
+        <RadiusLogs />
+      </Route>
+      <Route path="/nas-health">
+        <NasHealthMonitor />
+      </Route>
+      <Route path="/bandwidth">
+        <BandwidthReports />
       </Route>
       <Route path="/reports">
         <DashboardLayout>

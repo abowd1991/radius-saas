@@ -1303,3 +1303,36 @@
   - [x] DHCP range: 192.168.30.10-250
   - [x] Reservations stored in /etc/dhcp/reservations.conf
   - [x] Auto-restart DHCP on reservation changes
+
+
+## MikroTik API Connection Fix (Jan 12, 2026)
+- [ ] Fix API test from dashboard - must go through server (not direct browser connection)
+- [ ] API test endpoint should use server-side connection to VPN network
+- [ ] Test API connection from dashboard after fix
+
+
+## High Priority Features (Jan 12, 2026)
+- [x] IP Pool Management Page
+  - [x] View all allocated VPN IPs
+  - [x] View available IPs in pool
+  - [x] Auto-release IP when NAS is deleted
+  - [x] Alert when IP pool is nearly exhausted
+  - [x] Manual IP allocation/release
+- [x] RADIUS Logs Viewer
+  - [x] View Access-Accept/Reject logs
+  - [x] View Accounting logs (Start/Stop/Interim)
+  - [x] Filter by username/NAS/date/status
+  - [x] Export logs to CSV
+  - [ ] Real-time log streaming
+- [x] NAS Health Monitor
+  - [x] Automatic NAS connectivity check (based on sessions)
+  - [x] Status indicator (online/offline/warning)
+  - [x] Alert display for offline devices
+  - [x] Auto-refresh every 15/30/60 seconds
+  - [x] Active sessions count per NAS
+- [x] Bandwidth Usage Reports
+  - [x] Per-user bandwidth consumption
+  - [x] Per-NAS bandwidth consumption
+  - [x] Daily/Weekly/Monthly aggregation
+  - [x] Progress bars for usage comparison
+  - [x] Export to CSV
