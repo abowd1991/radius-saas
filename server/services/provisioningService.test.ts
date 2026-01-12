@@ -109,8 +109,8 @@ describe('Provisioning Service', () => {
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({
-            mac: 'ca:6e:26:d3:11:35',
-            ip: '192.168.30.17',
+            macAddress: 'ca:6e:26:d3:11:35',
+            ipAddress: '192.168.30.17',
             hostname: 'nas-123',
           }),
         })

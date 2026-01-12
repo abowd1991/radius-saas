@@ -1,0 +1,21 @@
+{
+  "query": "SELECT id, shortname, nasname, vpnUsername, vpnTunnelIp, provisioningStatus, allocatedIp, lastTempIp, lastMac FROM nas WHERE shortname LIKE '%lolo%' OR shortname LIKE '%Lolo%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, shortname, nasname, vpnUsername, vpnTunnelIp, provisioningStatus, allocatedIp, lastTempIp, lastMac FROM nas WHERE shortname LIKE '%lolo%' OR shortname LIKE '%Lolo%';",
+  "rows": [
+    {
+      "id": "120006",
+      "shortname": "Lolo",
+      "nasname": "192.168.30.18",
+      "vpnUsername": "lolo-mkbq1xlj",
+      "vpnTunnelIp": "192.168.30.18",
+      "provisioningStatus": "pending",
+      "allocatedIp": "NULL",
+      "lastTempIp": "NULL",
+      "lastMac": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tshortname\tnasname\tvpnUsername\tvpnTunnelIp\tprovisioningStatus\tallocatedIp\tlastTempIp\tlastMac\n120006\tLolo\t192.168.30.18\tlolo-mkbq1xlj\t192.168.30.18\tpending\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 448
+}

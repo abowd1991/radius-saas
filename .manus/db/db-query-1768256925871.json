@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE nas SET provisioningStatus = 'pending' WHERE shortname = 'Lolo' OR vpnUsername LIKE '%lolo%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute UPDATE nas SET provisioningStatus = 'pending' WHERE shortname = 'Lolo' OR vpnUsername LIKE '%lolo%';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 399
+}

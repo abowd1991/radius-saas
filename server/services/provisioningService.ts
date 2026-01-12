@@ -134,8 +134,8 @@ export async function createDhcpReservation(
 ): Promise<{ success: boolean; message: string }> {
   try {
     const result = await apiRequest('/api/vpn/dhcp/reservation', 'POST', {
-      mac,
-      ip,
+      macAddress: mac,
+      ipAddress: ip,
       hostname,
     });
     
@@ -273,81 +273,44 @@ export async function provisionNas(nasId: number): Promise<ProvisioningResult> {
       .set({ lastTempIp: session.localIp, lastMac: lease.mac } as any)
       .where(eq(nasDevices.id, nasId));
     
-    // Step 3: Check if already has correct IP
-    if (session.localIp === nasDevice.allocatedIp) {
-      // Already has the correct IP!
-      await db.update(nasDevices)
-        .set({ 
-          provisioningStatus: 'ready',
-          provisionedAt: new Date(),
-          nasname: nasDevice.allocatedIp || nasDevice.nasname,
-        } as any)
-        .where(eq(nasDevices.id, nasId));
-      
-      return { 
-        success: true, 
-        message: 'NAS already has correct IP', 
-        nasId, 
-        allocatedIp: nasDevice.allocatedIp || undefined,
-        mac: lease.mac 
-      };
-    }
+    // Step 3: Use the current IP as the final IP (no need to change it)
+    // The MikroTik already has an IP from DHCP, we just need to make it permanent
+    const finalIp = session.localIp;
     
-    // Step 4: Create DHCP reservation
-    const hostname = `nas-${nasId}`;
+    // Step 4: Create DHCP reservation for current IP
+    const hostname = `nas-${nasDevice.nasname?.replace(/\./g, '')}`;
     const reservationResult = await createDhcpReservation(
       lease.mac,
-      nasDevice.allocatedIp || '',
+      finalIp,
       hostname
     );
     
-    if (!reservationResult.success) {
+    // If reservation already exists, that's OK
+    if (!reservationResult.success && !reservationResult.message.includes('already exists')) {
       throw new Error(`Failed to create DHCP reservation: ${reservationResult.message}`);
     }
     
-    // Step 5: Disconnect VPN session to force reconnect
-    console.log(`[Provisioning] Disconnecting VPN session: ${session.sessionName}`);
-    await disconnectVpnSession(session.sessionName);
+    // Step 5: Update NAS with the actual IP
+    await db.update(nasDevices)
+      .set({ 
+        provisioningStatus: 'ready',
+        provisionedAt: new Date(),
+        nasname: finalIp,
+        allocatedIp: finalIp,
+        lastTempIp: finalIp,
+        lastMac: lease.mac,
+      } as any)
+      .where(eq(nasDevices.id, nasId));
     
-    // Wait a bit for reconnection
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    console.log(`[Provisioning] ✅ NAS ${nasId} provisioned successfully with IP ${finalIp}`);
     
-    // Step 6: Verify new IP
-    const newSession = await findVpnSession(nasDevice.vpnUsername);
-    
-    if (newSession && newSession.localIp === nasDevice.allocatedIp) {
-      // Success!
-      await db.update(nasDevices)
-        .set({ 
-          provisioningStatus: 'ready',
-          provisionedAt: new Date(),
-          nasname: nasDevice.allocatedIp || nasDevice.nasname,
-        } as any)
-        .where(eq(nasDevices.id, nasId));
-      
-      console.log(`[Provisioning] ✅ NAS ${nasId} provisioned successfully with IP ${nasDevice.allocatedIp}`);
-      
-      return { 
-        success: true, 
-        message: 'NAS provisioned successfully', 
-        nasId, 
-        allocatedIp: nasDevice.allocatedIp || undefined,
-        mac: lease.mac 
-      };
-    } else {
-      // Reconnection pending - mark as provisioning
-      await db.update(nasDevices)
-        .set({ provisioningStatus: 'provisioning' } as any)
-        .where(eq(nasDevices.id, nasId));
-      
-      return { 
-        success: false, 
-        message: 'Waiting for VPN reconnection with new IP...', 
-        nasId,
-        allocatedIp: nasDevice.allocatedIp || undefined,
-        mac: lease.mac 
-      };
-    }
+    return { 
+      success: true, 
+      message: 'NAS provisioned successfully', 
+      nasId, 
+      allocatedIp: finalIp,
+      mac: lease.mac 
+    };
     
   } catch (error: any) {
     console.error(`[Provisioning] Error provisioning NAS ${nasId}:`, error.message);

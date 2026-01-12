@@ -11,6 +11,7 @@ import { startMonitor } from "../services/sessionMonitor";
 import { startSubscriptionNotifier } from "../services/subscriptionNotifier";
 import { startAlertMonitor } from "../services/alertMonitor";
 import { startSubscriptionEnforcer } from "../services/subscriptionEnforcer";
+import { startProvisioningMonitor } from "../services/provisioningService";
 import multer from "multer";
 import { storagePut } from "../storage";
 import { sdk } from "./sdk";
@@ -124,6 +125,10 @@ async function startServer() {
     // Start subscription enforcer for expired trials/subscriptions
     startSubscriptionEnforcer();
     console.log('[SubscriptionEnforcer] Started - checking for expired accounts every 5 minutes');
+    
+    // Start provisioning monitor for VPN NAS devices
+    startProvisioningMonitor();
+    console.log('[ProvisioningMonitor] Started - checking for pending NAS every 30 seconds');
   });
 }
 

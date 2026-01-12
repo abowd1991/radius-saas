@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, shortname, nasname, vpnUsername FROM nas WHERE shortname LIKE '%olo%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, shortname, nasname, vpnUsername FROM nas WHERE shortname LIKE '%olo%';",
+  "rows": [
+    {
+      "id": "120006",
+      "shortname": "Lolo",
+      "nasname": "192.168.30.11",
+      "vpnUsername": "lolo-mkbq1xlj"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tshortname\tnasname\tvpnUsername\n120006\tLolo\t192.168.30.11\tlolo-mkbq1xlj\n",
+  "stderr": "",
+  "execution_time_ms": 401
+}

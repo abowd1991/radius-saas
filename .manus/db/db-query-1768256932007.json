@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, shortname, nasname, vpnUsername, provisioningStatus FROM nas;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, shortname, nasname, vpnUsername, provisioningStatus FROM nas;",
+  "rows": [
+    {
+      "id": "120006",
+      "shortname": "Lolo",
+      "nasname": "192.168.30.11",
+      "vpnUsername": "lolo-mkbq1xlj",
+      "provisioningStatus": "pending"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tshortname\tnasname\tvpnUsername\tprovisioningStatus\n120006\tLolo\t192.168.30.11\tlolo-mkbq1xlj\tpending\n",
+  "stderr": "",
+  "execution_time_ms": 392
+}
