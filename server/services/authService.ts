@@ -30,6 +30,7 @@ export interface AuthResult {
   success: boolean;
   user?: typeof users.$inferSelect;
   error?: string;
+  message?: string;
 }
 
 // Hash password
@@ -89,7 +90,12 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   const verificationExpires = new Date();
   verificationExpires.setMinutes(verificationExpires.getMinutes() + CODE_EXPIRY_MINUTES);
 
-  // Create user
+  // Calculate trial dates (7 days)
+  const trialStartDate = new Date();
+  const trialEndDate = new Date();
+  trialEndDate.setDate(trialEndDate.getDate() + 7);
+
+  // Create user with trial status
   const [newUser] = await db
     .insert(users)
     .values({
@@ -101,6 +107,9 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
       loginMethod: "traditional",
       role: "client", // New users are clients (SaaS customers who manage their own network)
       status: "active",
+      accountStatus: "trial", // Start with trial
+      trialStartDate,
+      trialEndDate,
       emailVerified: false,
       emailVerificationCode: verificationCode,
       emailVerificationExpires: verificationExpires,
@@ -181,6 +190,25 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
   // Check if user is active
   if (user.status !== "active") {
     return { success: false, error: "Your account has been suspended. Please contact support." };
+  }
+
+  // Check if email is verified (required for login)
+  if (!user.emailVerified) {
+    return { 
+      success: false, 
+      error: "EMAIL_NOT_VERIFIED",
+      message: "Please verify your email address before logging in. Check your inbox for the verification code."
+    };
+  }
+
+  // Check account status (trial/expired/suspended)
+  if (user.accountStatus === "suspended") {
+    return { success: false, error: "Your account has been suspended. Please contact support." };
+  }
+  
+  if (user.accountStatus === "expired") {
+    // Allow login but with limited access (handled in frontend)
+    console.log(`[Auth] User ${user.username} logged in with expired account`);
   }
 
   // Update last signed in

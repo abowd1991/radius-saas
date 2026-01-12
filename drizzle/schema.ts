@@ -17,6 +17,12 @@ export const users = mysqlTable("users", {
   role: mysqlEnum("role", ["super_admin", "reseller", "client", "support"]).default("client").notNull(),
   resellerId: int("resellerId"), // For clients: their reseller ID
   status: mysqlEnum("status", ["active", "suspended", "inactive"]).default("active").notNull(),
+  accountStatus: mysqlEnum("accountStatus", ["trial", "active", "expired", "suspended"]).default("trial").notNull(),
+  trialStartDate: timestamp("trialStartDate"),
+  trialEndDate: timestamp("trialEndDate"),
+  subscriptionPlanId: int("subscriptionPlanId"), // Reference to saasPlans
+  subscriptionStartDate: timestamp("subscriptionStartDate"),
+  subscriptionEndDate: timestamp("subscriptionEndDate"),
   language: mysqlEnum("language", ["ar", "en"]).default("ar").notNull(),
   avatarUrl: text("avatarUrl"),
   emailVerified: boolean("emailVerified").default(false),
@@ -923,3 +929,90 @@ export const allocatedVpnIps = mysqlTable("allocated_vpn_ips", {
 
 export type AllocatedVpnIp = typeof allocatedVpnIps.$inferSelect;
 export type InsertAllocatedVpnIp = typeof allocatedVpnIps.$inferInsert;
+
+
+// ============================================================================
+// SAAS PLANS (Commercial Subscription Plans)
+// ============================================================================
+
+export const saasPlans = mysqlTable("saas_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Basic info
+  name: varchar("name", { length: 100 }).notNull(),
+  nameAr: varchar("nameAr", { length: 100 }),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  
+  // Pricing
+  priceMonthly: decimal("priceMonthly", { precision: 10, scale: 2 }).notNull(),
+  priceYearly: decimal("priceYearly", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+  
+  // Limits
+  maxNasDevices: int("maxNasDevices").notNull().default(1),
+  maxCards: int("maxCards").notNull().default(100),
+  maxSubscribers: int("maxSubscribers").default(50),
+  
+  // Features (JSON or individual booleans)
+  featureMikrotikApi: boolean("featureMikrotikApi").default(false),
+  featureCoaDisconnect: boolean("featureCoaDisconnect").default(true),
+  featureStaticVpnIp: boolean("featureStaticVpnIp").default(false),
+  featureAdvancedReports: boolean("featureAdvancedReports").default(false),
+  featureCustomBranding: boolean("featureCustomBranding").default(false),
+  featurePrioritySupport: boolean("featurePrioritySupport").default(false),
+  
+  // Display
+  displayOrder: int("displayOrder").default(0),
+  isPopular: boolean("isPopular").default(false),
+  isActive: boolean("isActive").default(true).notNull(),
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SaasPlan = typeof saasPlans.$inferSelect;
+export type InsertSaasPlan = typeof saasPlans.$inferInsert;
+
+// ============================================================================
+// SAAS SUBSCRIPTIONS (User subscription history)
+// ============================================================================
+
+export const saasSubscriptions = mysqlTable("saas_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // User reference
+  userId: int("userId").notNull(),
+  
+  // Plan reference
+  planId: int("planId").notNull(),
+  planName: varchar("planName", { length: 100 }).notNull(), // Snapshot at time of subscription
+  
+  // Subscription period
+  startDate: timestamp("startDate").notNull(),
+  endDate: timestamp("endDate").notNull(),
+  
+  // Billing
+  billingCycle: mysqlEnum("billingCycle", ["monthly", "yearly"]).default("monthly").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+  
+  // Status
+  status: mysqlEnum("status", ["active", "expired", "cancelled", "suspended"]).default("active").notNull(),
+  
+  // Payment info
+  paymentMethod: varchar("paymentMethod", { length: 50 }),
+  paymentReference: varchar("paymentReference", { length: 255 }),
+  
+  // Admin actions
+  activatedBy: int("activatedBy"), // Admin who activated
+  notes: text("notes"),
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SaasSubscription = typeof saasSubscriptions.$inferSelect;
+export type InsertSaasSubscription = typeof saasSubscriptions.$inferInsert;

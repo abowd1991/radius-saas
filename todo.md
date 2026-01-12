@@ -1336,3 +1336,48 @@
   - [x] Daily/Weekly/Monthly aggregation
   - [x] Progress bars for usage comparison
   - [x] Export to CSV
+
+
+## SaaS Phase 1 - Commercial Launch (Jan 12, 2026)
+
+### User Registration & Trial System
+- [x] Auto Trial 7 days on new registration
+- [x] Account status: trial → active → expired → suspended
+- [x] Trial start date tracking
+- [x] Trial end date calculation
+
+### Email Verification System
+- [x] Activation code generation (6 digits)
+- [x] Send activation email on registration
+- [x] Verify activation code endpoint
+- [x] Block login until email verified
+- [x] Resend activation code option
+
+### Plans System
+- [x] Plans table in database (name, price, limits, features)
+- [ ] Create 2-3 default plans (Starter, Pro, Enterprise)
+- [x] Plan limits: max NAS, max cards, features enabled
+- [x] Plans management page for Super Admin
+- [ ] Assign plan to user on subscription
+
+### Auto Suspension System
+- [x] Background job to check expired trials/subscriptions
+- [x] On expiry: disable all user's NAS devices
+- [ ] On expiry: disconnect all active sessions (CoA)
+- [x] On expiry: block RADIUS authentication
+- [ ] On expiry: block card creation
+- [x] Update account status to 'expired'
+
+### Email Notifications
+- [x] Welcome email after registration
+- [x] Trial ending soon (2 days before)
+- [x] Trial expired notification
+- [ ] Subscription ending soon (7 days, 2 days)
+- [ ] Subscription expired notification
+
+### Dashboard Account Status
+- [x] Show account status badge (Trial/Active/Expired)
+- [x] Show days remaining in trial/subscription
+- [x] Show current plan name and limits
+- [ ] Show usage vs limits (NAS count, cards count)
+- [ ] Upgrade/Renew CTA button

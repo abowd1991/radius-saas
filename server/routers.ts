@@ -46,6 +46,13 @@ const authRouter = router({
       permissions,
       canSeeFinancials,
       isAdmin,
+      // SaaS account status fields
+      accountStatus: (opts.ctx.user as any).accountStatus || 'active',
+      trialStartDate: (opts.ctx.user as any).trialStartDate || null,
+      trialEndDate: (opts.ctx.user as any).trialEndDate || null,
+      subscriptionStartDate: (opts.ctx.user as any).subscriptionStartDate || null,
+      subscriptionEndDate: (opts.ctx.user as any).subscriptionEndDate || null,
+      subscriptionPlanId: (opts.ctx.user as any).subscriptionPlanId || null,
     };
   }),
   
@@ -4338,6 +4345,152 @@ const logsRouter = router({
 });
 
 // ============================================================================
+// SAAS PLANS ROUTER (Subscription Plans Management)
+// ============================================================================
+import * as saasPlansDb from './db/saasPlans';
+
+const saasPlansRouter = router({
+  // Get all active plans (public)
+  getAll: publicProcedure.query(async () => {
+    return saasPlansDb.getAllPlans(true);
+  }),
+
+  // Get all plans including inactive (Super Admin)
+  getAllAdmin: superAdminProcedure.query(async () => {
+    return saasPlansDb.getAllPlans(false);
+  }),
+
+  // Get single plan
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return saasPlansDb.getPlanById(input.id);
+    }),
+
+  // Create plan (Super Admin)
+  create: superAdminProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      nameAr: z.string().optional(),
+      description: z.string().optional(),
+      descriptionAr: z.string().optional(),
+      priceMonthly: z.number().min(0),
+      priceYearly: z.number().optional(),
+      currency: z.string().default('USD'),
+      maxNasDevices: z.number().min(1),
+      maxCards: z.number().min(1),
+      maxSubscribers: z.number().optional(),
+      featureMikrotikApi: z.boolean().optional(),
+      featureCoaDisconnect: z.boolean().optional(),
+      featureStaticVpnIp: z.boolean().optional(),
+      featureAdvancedReports: z.boolean().optional(),
+      featureCustomBranding: z.boolean().optional(),
+      featurePrioritySupport: z.boolean().optional(),
+      displayOrder: z.number().optional(),
+      isPopular: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await saasPlansDb.createPlan(input);
+      if (!id) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create plan' });
+      return { success: true, id };
+    }),
+
+  // Update plan (Super Admin)
+  update: superAdminProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      nameAr: z.string().optional(),
+      description: z.string().optional(),
+      descriptionAr: z.string().optional(),
+      priceMonthly: z.number().optional(),
+      priceYearly: z.number().optional(),
+      currency: z.string().optional(),
+      maxNasDevices: z.number().optional(),
+      maxCards: z.number().optional(),
+      maxSubscribers: z.number().optional(),
+      featureMikrotikApi: z.boolean().optional(),
+      featureCoaDisconnect: z.boolean().optional(),
+      featureStaticVpnIp: z.boolean().optional(),
+      featureAdvancedReports: z.boolean().optional(),
+      featureCustomBranding: z.boolean().optional(),
+      featurePrioritySupport: z.boolean().optional(),
+      displayOrder: z.number().optional(),
+      isPopular: z.boolean().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await saasPlansDb.updatePlan(id, data);
+      return { success: true };
+    }),
+
+  // Delete plan (Super Admin)
+  delete: superAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await saasPlansDb.deletePlan(input.id);
+      return { success: true };
+    }),
+
+  // Get user account info (current user)
+  getMyAccountInfo: protectedProcedure.query(async ({ ctx }) => {
+    return saasPlansDb.getUserAccountInfo(ctx.user.id);
+  }),
+
+  // Get any user's account info (Super Admin)
+  getUserAccountInfo: superAdminProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      return saasPlansDb.getUserAccountInfo(input.userId);
+    }),
+
+  // Activate subscription for user (Super Admin)
+  activateSubscription: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      planId: z.number(),
+      months: z.number().min(1).max(24),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const success = await saasPlansDb.activateUserSubscription(
+        input.userId,
+        input.planId,
+        input.months,
+        ctx.user.id,
+        input.notes
+      );
+      if (!success) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to activate subscription' });
+      return { success: true };
+    }),
+
+  // Suspend user (Super Admin)
+  suspendUser: superAdminProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ input }) => {
+      await saasPlansDb.suspendUser(input.userId);
+      return { success: true };
+    }),
+
+  // Reactivate user (Super Admin)
+  reactivateUser: superAdminProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ input }) => {
+      await saasPlansDb.reactivateUser(input.userId);
+      return { success: true };
+    }),
+
+  // Get subscription history (Super Admin or own)
+  getSubscriptionHistory: protectedProcedure
+    .input(z.object({ userId: z.number().optional() }))
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.user.role === 'super_admin' && input.userId ? input.userId : ctx.user.id;
+      return saasPlansDb.getSubscriptionHistory(userId);
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -4345,6 +4498,7 @@ export const appRouter = router({
   auth: authRouter,
   users: usersRouter,
   plans: plansRouter,
+  saasPlans: saasPlansRouter,
   nas: nasRouter,
   wallet: walletRouter,
   vouchers: vouchersRouter,

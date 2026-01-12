@@ -10,6 +10,7 @@ import { serveStatic, setupVite } from "./vite";
 import { startMonitor } from "../services/sessionMonitor";
 import { startSubscriptionNotifier } from "../services/subscriptionNotifier";
 import { startAlertMonitor } from "../services/alertMonitor";
+import { startSubscriptionEnforcer } from "../services/subscriptionEnforcer";
 import multer from "multer";
 import { storagePut } from "../storage";
 import { sdk } from "./sdk";
@@ -119,6 +120,10 @@ async function startServer() {
     // Start alert monitor for card expiration and NAS connection
     startAlertMonitor();
     console.log('[AlertMonitor] Started - checking for alerts every 5 minutes');
+    
+    // Start subscription enforcer for expired trials/subscriptions
+    startSubscriptionEnforcer();
+    console.log('[SubscriptionEnforcer] Started - checking for expired accounts every 5 minutes');
   });
 }
 

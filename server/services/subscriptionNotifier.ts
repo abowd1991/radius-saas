@@ -1,7 +1,7 @@
 import { getDb } from "../db";
 import { users, tenantSubscriptions } from "../../drizzle/schema";
-import { eq, and, lte, gte, sql } from "drizzle-orm";
-import { sendTrialExpiringEmail } from "./emailService";
+import { eq, and, lte, gte, lt, isNull, or } from "drizzle-orm";
+import { sendTrialExpiringEmail, sendSubscriptionExpiredEmail } from "./emailService";
 
 const CHECK_INTERVAL = 6 * 60 * 60 * 1000; // Check every 6 hours
 
@@ -9,9 +9,81 @@ let isRunning = false;
 let intervalId: NodeJS.Timeout | null = null;
 
 /**
- * Check for subscriptions expiring in 2 days and send notification emails
+ * Check for trials and subscriptions expiring soon and send notification emails
  */
 export async function checkExpiringSubscriptions(): Promise<void> {
+  await checkExpiringTrials();
+  await checkExpiringTenantSubscriptions();
+}
+
+/**
+ * Check for trials expiring in 2 days
+ */
+async function checkExpiringTrials(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    const now = new Date();
+    const twoDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+    const minDate = new Date(twoDaysFromNow.getTime() - 12 * 60 * 60 * 1000);
+    const maxDate = new Date(twoDaysFromNow.getTime() + 12 * 60 * 60 * 1000);
+
+    // Find users with trials expiring in ~2 days
+    const expiringTrials = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        trialEndDate: users.trialEndDate,
+        notified: users.trialExpirationNotified,
+      })
+      .from(users)
+      .where(
+        and(
+          eq(users.accountStatus, "trial"),
+          gte(users.trialEndDate, minDate),
+          lte(users.trialEndDate, maxDate),
+          eq(users.trialExpirationNotified, false)
+        )
+      );
+
+    console.log(`[SubscriptionNotifier] Found ${expiringTrials.length} trials expiring in ~2 days`);
+
+    for (const user of expiringTrials) {
+      if (!user.email || !user.trialEndDate) continue;
+
+      const daysLeft = Math.ceil((user.trialEndDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+      const expiryDateStr = user.trialEndDate.toLocaleDateString("ar-EG", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      const sent = await sendTrialExpiringEmail(
+        user.email,
+        user.name || "User",
+        daysLeft,
+        expiryDateStr
+      );
+
+      if (sent) {
+        await db
+          .update(users)
+          .set({ trialExpirationNotified: true })
+          .where(eq(users.id, user.id));
+        console.log(`[SubscriptionNotifier] Sent trial expiration warning to ${user.email}`);
+      }
+    }
+  } catch (error) {
+    console.error("[SubscriptionNotifier] Error checking expiring trials:", error);
+  }
+}
+
+/**
+ * Check for tenant subscriptions expiring in 2 days (legacy)
+ */
+async function checkExpiringTenantSubscriptions(): Promise<void> {
   const db = await getDb();
   if (!db) {
     console.error("[SubscriptionNotifier] Database connection failed");

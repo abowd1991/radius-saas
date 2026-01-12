@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { AccountStatusBanner } from "@/components/AccountStatusBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,9 @@ export default function Dashboard() {
   if (user?.role === "super_admin") {
     return (
       <div className="space-y-6">
+        {/* Account Status Banner */}
+        <AccountStatusBanner />
+        
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -225,6 +229,9 @@ export default function Dashboard() {
   if (user?.role === "reseller") {
     return (
       <div className="space-y-6">
+        {/* Account Status Banner */}
+        <AccountStatusBanner />
+        
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -336,6 +343,9 @@ export default function Dashboard() {
   // Client Dashboard
   return (
     <div className="space-y-6">
+      {/* Account Status Banner */}
+      <AccountStatusBanner />
+      
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>

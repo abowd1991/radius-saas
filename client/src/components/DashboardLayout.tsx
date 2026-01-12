@@ -111,6 +111,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: FileText, label: "سجلات RADIUS", path: "/radius-logs" },
     { icon: Activity, label: "مراقبة NAS", path: "/nas-health" },
     { icon: BarChart3, label: "تقارير الباندويث", path: "/bandwidth" },
+    { icon: CreditCard, label: "خطط الاشتراك SaaS", path: "/saas-plans" },
   ];
 
   const resellerItems = [

@@ -33,6 +33,11 @@ const templates = {
     subject: 'مرحباً بك في RadiusPro! 🎉',
     html: `<div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 10px 10px 0 0;"><h1 style="color: white; margin: 0; text-align: center;">🎉 مرحباً بك في RadiusPro!</h1></div><div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;"><h2 style="color: #1f2937;">مرحباً ${name}!</h2><p style="color: #4b5563; font-size: 16px;">شكراً لانضمامك إلى RadiusPro - الحل الاحترافي لإدارة شبكات RADIUS.</p><div style="background: #d1fae5; border: 2px solid #10b981; padding: 20px; border-radius: 8px; margin: 20px 0;"><p style="color: #065f46; font-size: 18px; margin: 0; text-align: center;"><strong>✅ تم تفعيل حسابك بنجاح!</strong></p><p style="color: #065f46; font-size: 14px; margin: 10px 0 0 0; text-align: center;">لديك فترة تجريبية مجانية لمدة 7 أيام</p></div></div></div>`,
   }),
+
+  subscriptionExpired: (name: string) => ({
+    subject: '❗ انتهى اشتراكك - RadiusPro',
+    html: `<div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 30px; border-radius: 10px 10px 0 0;"><h1 style="color: white; margin: 0; text-align: center;">❗ انتهى اشتراكك</h1></div><div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;"><h2 style="color: #1f2937;">مرحباً ${name}!</h2><p style="color: #4b5563; font-size: 16px;">نود إعلامك بأن اشتراكك في RadiusPro قد انتهى.</p><div style="background: #fee2e2; border: 2px solid #ef4444; padding: 20px; border-radius: 8px; margin: 20px 0;"><p style="color: #991b1b; font-size: 18px; margin: 0; text-align: center;"><strong>❌ تم إيقاف خدماتك</strong></p><p style="color: #991b1b; font-size: 14px; margin: 10px 0 0 0; text-align: center;">تم تعطيل أجهزة NAS وقطع الجلسات النشطة</p></div><p style="color: #4b5563; font-size: 16px;">لإعادة تفعيل حسابك، يرجى التواصل معنا لتجديد اشتراكك.</p><p style="color: #4b5563;">الدعم الفني: <strong>support@radius-pro.com</strong></p></div></div>`,
+  }),
 };
 
 export async function sendEmail(to: string, template: keyof typeof templates, data: any): Promise<boolean> {
@@ -77,6 +82,10 @@ export async function sendTrialExpiringEmail(to: string, name: string, daysLeft:
 
 export async function sendWelcomeEmail(to: string, name: string): Promise<boolean> {
   return sendEmail(to, 'welcome', { name });
+}
+
+export async function sendSubscriptionExpiredEmail(to: string, name: string): Promise<boolean> {
+  return sendEmail(to, 'subscriptionExpired', { name });
 }
 
 export async function testSmtpConnection(): Promise<boolean> {
