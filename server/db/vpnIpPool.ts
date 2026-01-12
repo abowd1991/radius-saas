@@ -73,10 +73,26 @@ export async function findNextAvailableIp(poolId: number, startIp: string, endIp
 }
 
 /**
+ * Get the next available IP without allocating it
+ * Used for pre-allocation before NAS creation
+ */
+export async function getNextAvailableIp(): Promise<string | null> {
+  const pool = await getActivePool();
+  if (!pool) {
+    console.error('[VPN IP Pool] No active pool found');
+    return null;
+  }
+  
+  return findNextAvailableIp(pool.id, pool.startIp, pool.endIp);
+}
+
+/**
  * Allocate an IP for a NAS device
+ * @param nasId - The NAS device ID
+ * @param specificIp - Optional specific IP to allocate (for pre-allocated IPs)
  * Returns the allocated IP or null if pool is exhausted
  */
-export async function allocateIpForNas(nasId: number): Promise<{ ip: string; gateway: string } | null> {
+export async function allocateIpForNas(nasId: number, specificIp?: string): Promise<{ ip: string; gateway: string } | null> {
   const db = await getDb();
   if (!db) return null;
   
@@ -97,9 +113,21 @@ export async function allocateIpForNas(nasId: number): Promise<{ ip: string; gat
     return { ip: existing[0].ipAddress, gateway: pool.gateway };
   }
   
-  // Find next available IP
-  const nextIp = await findNextAvailableIp(pool.id, pool.startIp, pool.endIp);
-  if (!nextIp) {
+  // Use specific IP if provided, otherwise find next available
+  let ipToAllocate: string | null;
+  if (specificIp) {
+    // Verify the specific IP is not already allocated
+    const allocatedIps = await getAllocatedIps(pool.id);
+    if (allocatedIps.includes(specificIp)) {
+      console.error(`[VPN IP Pool] Specific IP ${specificIp} is already allocated`);
+      return null;
+    }
+    ipToAllocate = specificIp;
+  } else {
+    ipToAllocate = await findNextAvailableIp(pool.id, pool.startIp, pool.endIp);
+  }
+  
+  if (!ipToAllocate) {
     console.error('[VPN IP Pool] Pool exhausted - no available IPs');
     return null;
   }
@@ -108,17 +136,17 @@ export async function allocateIpForNas(nasId: number): Promise<{ ip: string; gat
   try {
     await db.insert(allocatedVpnIps).values({
       poolId: pool.id,
-      ipAddress: nextIp,
+      ipAddress: ipToAllocate,
       nasId: nasId,
     });
     
-    console.log(`[VPN IP Pool] Allocated IP ${nextIp} for NAS ${nasId}`);
-    return { ip: nextIp, gateway: pool.gateway };
+    console.log(`[VPN IP Pool] Allocated IP ${ipToAllocate} for NAS ${nasId}`);
+    return { ip: ipToAllocate, gateway: pool.gateway };
   } catch (error: any) {
     // Handle race condition - IP might have been allocated by another request
     if (error.code === 'ER_DUP_ENTRY') {
       console.warn('[VPN IP Pool] Race condition detected, retrying...');
-      return allocateIpForNas(nasId); // Retry
+      return allocateIpForNas(nasId); // Retry without specific IP
     }
     throw error;
   }

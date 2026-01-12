@@ -52,18 +52,28 @@ async function apiRequest(
 
 /**
  * Create a VPN user in SoftEther with Password authentication
+ * @param username - VPN username
+ * @param password - VPN password
+ * @param staticIp - Optional static IP to assign to this user from the VPN Pool
  */
-export async function createVpnUser(username: string, password: string): Promise<VPNResult> {
+export async function createVpnUser(username: string, password: string, staticIp?: string): Promise<VPNResult> {
   try {
-    console.log(`[VPN API] Creating VPN user: ${username}`);
+    console.log(`[VPN API] Creating VPN user: ${username}${staticIp ? ` with static IP: ${staticIp}` : ''}`);
     
-    const result = await apiRequest('/api/vpn/users', 'POST', {
+    const requestBody: { username: string; password: string; staticIp?: string } = {
       username,
       password,
-    });
+    };
+    
+    // Add static IP if provided - this will be used by SoftEther to assign a fixed IP
+    if (staticIp) {
+      requestBody.staticIp = staticIp;
+    }
+    
+    const result = await apiRequest('/api/vpn/users', 'POST', requestBody);
     
     if (result.success) {
-      console.log(`[VPN API] User ${username} created successfully`);
+      console.log(`[VPN API] User ${username} created successfully${staticIp ? ` with IP ${staticIp}` : ''}`);
       return { success: true, message: result.message };
     } else {
       console.error(`[VPN API] Failed to create user:`, result.error);
@@ -310,4 +320,157 @@ export async function getVpnUserLocalIp(username: string): Promise<string | null
     console.error('[VPN API] Error getting user local IP:', error.message);
     return null;
   }
+}
+
+
+// ============================================
+// Phase 2: DHCP Reservation Auto-Provisioning
+// ============================================
+
+interface SessionMacResult {
+  success: boolean;
+  username?: string;
+  sessionName?: string;
+  macAddress?: string;
+  ipAddress?: string;
+  error?: string;
+}
+
+interface DhcpReservationResult {
+  success: boolean;
+  hostname?: string;
+  macAddress?: string;
+  ipAddress?: string;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Get MAC address from active VPN session by username
+ */
+export async function getSessionMac(username: string): Promise<SessionMacResult> {
+  try {
+    const result = await apiRequest(`/api/vpn/session/${encodeURIComponent(username)}/mac`, 'GET');
+    return result;
+  } catch (error: any) {
+    console.error('[VPN API] Error getting session MAC:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Create DHCP reservation for a MAC address
+ */
+export async function createDhcpReservation(
+  macAddress: string,
+  ipAddress: string,
+  hostname: string
+): Promise<DhcpReservationResult> {
+  try {
+    const result = await apiRequest('/api/vpn/dhcp/reservation', 'POST', {
+      macAddress,
+      ipAddress,
+      hostname,
+    });
+    return result;
+  } catch (error: any) {
+    console.error('[VPN API] Error creating DHCP reservation:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * List all DHCP reservations
+ */
+export async function listDhcpReservations(): Promise<VPNResult & { reservations?: Array<{ hostname: string; macAddress: string; ipAddress: string }> }> {
+  try {
+    const result = await apiRequest('/api/vpn/dhcp/reservations', 'GET');
+    return result;
+  } catch (error: any) {
+    console.error('[VPN API] Error listing DHCP reservations:', error.message);
+    return { success: false, error: error.message, reservations: [] };
+  }
+}
+
+/**
+ * Delete DHCP reservation by hostname
+ */
+export async function deleteDhcpReservation(hostname: string): Promise<VPNResult> {
+  try {
+    const result = await apiRequest(`/api/vpn/dhcp/reservation/${encodeURIComponent(hostname)}`, 'DELETE');
+    return result;
+  } catch (error: any) {
+    console.error('[VPN API] Error deleting DHCP reservation:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Auto-provision DHCP reservation for a NAS after VPN connection
+ * This function:
+ * 1. Waits for VPN session to be established
+ * 2. Reads MAC address from the session
+ * 3. Creates DHCP reservation for the assigned IP
+ * 
+ * @param vpnUsername - The VPN username
+ * @param staticIp - The static IP assigned to this NAS
+ * @param nasId - The NAS ID for hostname
+ * @param maxRetries - Maximum number of retries (default: 12)
+ * @param retryInterval - Interval between retries in ms (default: 5000)
+ */
+export async function autoProvisionDhcpReservation(
+  vpnUsername: string,
+  staticIp: string,
+  nasId: number,
+  maxRetries: number = 12,
+  retryInterval: number = 5000
+): Promise<DhcpReservationResult> {
+  const hostname = `nas-${nasId}`;
+  
+  console.log(`[VPN API] Starting DHCP auto-provision for ${vpnUsername} (${hostname}) -> ${staticIp}`);
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    console.log(`[VPN API] Attempt ${attempt}/${maxRetries} to get MAC for ${vpnUsername}`);
+    
+    try {
+      // Try to get MAC from session
+      const macResult = await getSessionMac(vpnUsername);
+      
+      if (macResult.success && macResult.macAddress) {
+        console.log(`[VPN API] Found MAC: ${macResult.macAddress} for ${vpnUsername}`);
+        
+        // Create DHCP reservation
+        const reservationResult = await createDhcpReservation(
+          macResult.macAddress,
+          staticIp,
+          hostname
+        );
+        
+        if (reservationResult.success) {
+          console.log(`[VPN API] DHCP reservation created: ${macResult.macAddress} -> ${staticIp}`);
+          return reservationResult;
+        } else if (reservationResult.error?.includes('already exists')) {
+          console.log(`[VPN API] DHCP reservation already exists for ${hostname}`);
+          return { success: true, message: 'Reservation already exists', hostname, macAddress: macResult.macAddress, ipAddress: staticIp };
+        } else {
+          console.error(`[VPN API] Failed to create reservation:`, reservationResult.error);
+          return reservationResult;
+        }
+      }
+      
+      // Wait before next attempt
+      if (attempt < maxRetries) {
+        console.log(`[VPN API] Session not found, waiting ${retryInterval}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryInterval));
+      }
+    } catch (error: any) {
+      console.error(`[VPN API] Error in attempt ${attempt}:`, error.message);
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryInterval));
+      }
+    }
+  }
+  
+  console.error(`[VPN API] Failed to provision DHCP after ${maxRetries} attempts`);
+  return { success: false, error: `Failed to find VPN session after ${maxRetries} attempts` };
 }

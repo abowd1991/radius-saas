@@ -1252,3 +1252,54 @@
 - [x] Update MikroTik scripts to include static IP assignment
 - [x] Add getVpnIpPoolStats and getAllocatedVpnIp endpoints
 - [ ] Add IP Pool management UI in System Settings (future)
+
+
+## VPN Static IP from SoftEther Server (Jan 12, 2026)
+- [ ] Modify SoftEther VPN User creation to assign Static IP
+- [ ] Remove vpn-static-ip script from MikroTik scripts
+- [ ] Test: NAS connects via VPN and gets assigned IP from Pool
+- [ ] Test: Authentication + Accounting + CoA works immediately
+
+
+## Phase 1: Server Setup for VPN Static IP via Local Bridge + TAP + DHCP (Jan 12, 2026)
+- [ ] Create TAP interface (tap_radius) with IP 192.168.30.1/24
+- [ ] Install isc-dhcp-server
+- [ ] Configure DHCP for 192.168.30.0/24 (range 192.168.30.10-250)
+- [ ] Setup SoftEther Local Bridge (Hub VPN → tap_radius)
+- [ ] Disable SecureNAT completely (never enable again)
+- [ ] Verify: ping 192.168.30.1 from MikroTik
+- [ ] Verify: ping MikroTik VPN IP from server
+- [ ] Send verification outputs to user before proceeding
+
+
+## Phase 2: DHCP Reservation Auto-Provisioning (Jan 12, 2026)
+- [ ] Add VPN API endpoint to read MAC from session (SoftEther vpncmd)
+- [ ] Add VPN API endpoint to create DHCP Reservation
+- [ ] Modify NAS creation to save nasname = staticIp directly
+- [ ] Remove old sync/placeholder logic
+- [ ] Test full flow: Create NAS → VPN Connect → DHCP Reservation → RADIUS Auth
+- [ ] Verify FreeRADIUS Dynamic Clients recognizes NAS immediately
+
+
+## Phase 2 Complete: DHCP Reservation Auto-Provisioning (Jan 12, 2026)
+- [x] VPN API Endpoints added:
+  - [x] GET /api/vpn/session/{username}/mac - Read MAC from VPN session
+  - [x] POST /api/vpn/dhcp/reservation - Create DHCP reservation
+  - [x] GET /api/vpn/dhcp/reservations - List all reservations
+  - [x] DELETE /api/vpn/dhcp/reservation/{hostname} - Delete reservation
+- [x] sshVpnService.ts updated:
+  - [x] getSessionMac() - Get MAC address from VPN session
+  - [x] createDhcpReservation() - Create DHCP reservation
+  - [x] listDhcpReservations() - List all reservations
+  - [x] deleteDhcpReservation() - Delete reservation
+  - [x] autoProvisionDhcpReservation() - Auto-provision in background (24 retries, 5s interval)
+- [x] NAS creation flow updated:
+  - [x] Allocate static IP from Pool at creation time
+  - [x] Save nasname = staticIp directly (no placeholders)
+  - [x] Start DHCP auto-provisioning in background
+  - [x] FreeRADIUS identifies NAS immediately by IP
+- [x] Server infrastructure:
+  - [x] isc-dhcp-server installed and configured
+  - [x] DHCP range: 192.168.30.10-250
+  - [x] Reservations stored in /etc/dhcp/reservations.conf
+  - [x] Auto-restart DHCP on reservation changes

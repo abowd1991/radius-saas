@@ -452,37 +452,87 @@ const nasRouter = router({
         }
       }
       
-      // Create NAS first (with temporary IP if VPN)
-      const newNas = await nasDb.createNas({ ...input, ownerId });
+      // For VPN connections, allocate a static IP from the pool BEFORE creating NAS
+      // This ensures the IP is assigned to SoftEther user during creation
+      let allocatedVpnIp: string | null = null;
       
-      // For VPN connections, allocate a static IP from the pool immediately
-      // This replaces the old auto-sync approach - IP is fixed at creation time
       if (input.connectionType === 'vpn_l2tp' || input.connectionType === 'vpn_sstp') {
         try {
-          const allocation = await vpnIpPool.allocateIpForNas(newNas.id);
+          // Pre-allocate IP from pool (we'll link it to NAS ID after creation)
+          const preAllocation = await vpnIpPool.getNextAvailableIp();
           
-          if (allocation) {
-            // Update nasname with the allocated static IP
-            await nasDb.updateNas(newNas.id, { ipAddress: allocation.ip });
+          if (preAllocation) {
+            allocatedVpnIp = preAllocation;
+            console.log(`[VPN IP Pool] Pre-allocated static IP ${allocatedVpnIp} for new NAS`);
             
-            // Also update vpnTunnelIp field
-            const database = await getDb();
-            if (database) {
-              await database.update(nasDevices)
-                .set({ vpnTunnelIp: allocation.ip })
-                .where(eq(nasDevices.id, newNas.id));
+            // Update the VPN user creation to include static IP
+            // This tells SoftEther to assign this specific IP to the user
+            if (input.vpnUsername && input.vpnPassword) {
+              try {
+                console.log(`[SSH] Updating VPN user ${input.vpnUsername} with static IP: ${allocatedVpnIp}`);
+                // Re-create VPN user with static IP assignment
+                await sshVpn.createVpnUser(input.vpnUsername, input.vpnPassword, allocatedVpnIp);
+              } catch (error) {
+                console.error('[SSH] Failed to update VPN user with static IP:', error);
+              }
             }
-            
-            console.log(`[VPN IP Pool] Allocated static IP ${allocation.ip} for NAS ${newNas.id}`);
-            
-            // Return NAS with updated IP
-            return { ...newNas, nasname: allocation.ip, vpnTunnelIp: allocation.ip, allocatedVpnIp: allocation.ip };
           } else {
-            console.error(`[VPN IP Pool] Failed to allocate IP for NAS ${newNas.id} - pool might be exhausted`);
-            // NAS is created but without allocated IP - admin needs to expand pool
+            console.error(`[VPN IP Pool] Failed to pre-allocate IP - pool might be exhausted`);
           }
         } catch (error) {
-          console.error(`[VPN IP Pool] Error allocating IP for NAS ${newNas.id}:`, error);
+          console.error(`[VPN IP Pool] Error pre-allocating IP:`, error);
+        }
+      }
+      
+      // Create NAS with the allocated IP (or temporary if allocation failed)
+      const nasInput = { ...input, ownerId };
+      if (allocatedVpnIp) {
+        nasInput.ipAddress = allocatedVpnIp;
+      }
+      
+      const newNas = await nasDb.createNas(nasInput);
+      
+      // For VPN connections, finalize the IP allocation
+      if ((input.connectionType === 'vpn_l2tp' || input.connectionType === 'vpn_sstp') && allocatedVpnIp) {
+        try {
+          // Now allocate the IP officially with the NAS ID
+          await vpnIpPool.allocateIpForNas(newNas.id, allocatedVpnIp);
+          
+          // Also update vpnTunnelIp field
+          const database = await getDb();
+          if (database) {
+            await database.update(nasDevices)
+              .set({ vpnTunnelIp: allocatedVpnIp })
+              .where(eq(nasDevices.id, newNas.id));
+          }
+          
+          console.log(`[VPN IP Pool] Finalized static IP ${allocatedVpnIp} for NAS ${newNas.id}`);
+          
+          // Start DHCP auto-provisioning in background
+          // This will wait for VPN connection and create DHCP reservation
+          if (input.vpnUsername) {
+            // Run in background - don't await
+            sshVpn.autoProvisionDhcpReservation(
+              input.vpnUsername,
+              allocatedVpnIp,
+              newNas.id,
+              24, // 24 retries
+              5000 // 5 seconds interval = 2 minutes total
+            ).then(result => {
+              if (result.success) {
+                console.log(`[DHCP] Auto-provisioned reservation for NAS ${newNas.id}: ${result.macAddress} -> ${allocatedVpnIp}`);
+              } else {
+                console.error(`[DHCP] Failed to auto-provision for NAS ${newNas.id}:`, result.error);
+              }
+            }).catch(error => {
+              console.error(`[DHCP] Error in auto-provision for NAS ${newNas.id}:`, error);
+            });
+          }
+          
+          // Return NAS with updated IP
+          return { ...newNas, nasname: allocatedVpnIp, vpnTunnelIp: allocatedVpnIp, allocatedVpnIp: allocatedVpnIp };
+        } catch (error) {
+          console.error(`[VPN IP Pool] Error finalizing IP for NAS ${newNas.id}:`, error);
         }
       }
       
@@ -556,18 +606,19 @@ const nasRouter = router({
             required: true,
           });
           
-          // Add static IP assignment for VPN interface
-          // This ensures the NAS always gets the same IP that's registered in RADIUS
+          // Note: Static IP is now assigned by SoftEther server automatically
+          // No need for /ip address add on MikroTik - PPP gets IP from server
+          // The IP assigned by SoftEther matches what's registered in RADIUS
           if (nas.nasname && !nas.nasname.startsWith('pending-') && !nas.nasname.startsWith('allocating')) {
             scripts.push({
-              id: 'vpn-static-ip',
-              title: 'Assign Static VPN IP',
-              titleAr: 'تعيين IP ثابت للـ VPN',
-              description: `Assign static IP ${nas.nasname} to VPN interface (required for RADIUS)`,
-              descriptionAr: `تعيين عنوان IP ثابت ${nas.nasname} لواجهة VPN (مطلوب لـ RADIUS)`,
-              command: `/ip address add address=${nas.nasname}/24 interface=radius-vpn comment="Static RADIUS IP"`,
+              id: 'vpn-ip-info',
+              title: 'VPN IP Information',
+              titleAr: 'معلومات IP الـ VPN',
+              description: `Your VPN will automatically receive IP: ${nas.nasname} from the server`,
+              descriptionAr: `سيحصل اتصال VPN تلقائياً على IP: ${nas.nasname} من السيرفر`,
+              command: `# IP ${nas.nasname} سيتم تعيينه تلقائياً من سيرفر VPN - لا حاجة لأي أوامر إضافية`,
               category: 'vpn',
-              required: true,
+              required: false,
             });
           }
         }
@@ -607,18 +658,19 @@ const nasRouter = router({
             required: true,
           });
           
-          // Add static IP assignment for VPN interface
-          // This ensures the NAS always gets the same IP that's registered in RADIUS
+          // Note: Static IP is now assigned by SoftEther server automatically
+          // No need for /ip address add on MikroTik - PPP gets IP from server
+          // The IP assigned by SoftEther matches what's registered in RADIUS
           if (nas.nasname && !nas.nasname.startsWith('pending-') && !nas.nasname.startsWith('allocating')) {
             scripts.push({
-              id: 'vpn-static-ip',
-              title: 'Assign Static VPN IP',
-              titleAr: 'تعيين IP ثابت للـ VPN',
-              description: `Assign static IP ${nas.nasname} to VPN interface (required for RADIUS)`,
-              descriptionAr: `تعيين عنوان IP ثابت ${nas.nasname} لواجهة VPN (مطلوب لـ RADIUS)`,
-              command: `/ip address add address=${nas.nasname}/24 interface=radius-vpn comment="Static RADIUS IP"`,
+              id: 'vpn-ip-info',
+              title: 'VPN IP Information',
+              titleAr: 'معلومات IP الـ VPN',
+              description: `Your VPN will automatically receive IP: ${nas.nasname} from the server`,
+              descriptionAr: `سيحصل اتصال VPN تلقائياً على IP: ${nas.nasname} من السيرفر`,
+              command: `# IP ${nas.nasname} سيتم تعيينه تلقائياً من سيرفر VPN - لا حاجة لأي أوامر إضافية`,
               category: 'vpn',
-              required: true,
+              required: false,
             });
           }
         }
