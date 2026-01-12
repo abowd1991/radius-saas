@@ -279,3 +279,128 @@ export async function checkApiHealth(): Promise<VPNApiResponse & { services?: { 
     };
   }
 }
+
+
+/**
+ * Get DHCP lease by IP address
+ */
+export async function getDhcpLease(ip: string): Promise<{
+  ip: string;
+  mac: string;
+  state: string;
+  hostname?: string;
+  leaseStart?: string;
+  leaseEnd?: string;
+} | null> {
+  try {
+    const config = await getApiConfig();
+    
+    const response = await fetch(`${config.url}/api/dhcp/lease?ip=${encodeURIComponent(ip)}`, {
+      method: 'GET',
+      headers: {
+        'X-API-Key': config.apiKey,
+      },
+    });
+    
+    const data = await response.json();
+    
+    if (data.error) {
+      console.log(`DHCP Lease not found for IP: ${ip}`);
+      return null;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('VPN API Error (getDhcpLease):', error);
+    return null;
+  }
+}
+
+/**
+ * Get all DHCP leases
+ */
+export async function getDhcpLeases(): Promise<Array<{
+  ip: string;
+  mac: string;
+  state: string;
+  hostname?: string;
+}>> {
+  try {
+    const config = await getApiConfig();
+    
+    const response = await fetch(`${config.url}/api/dhcp/leases`, {
+      method: 'GET',
+      headers: {
+        'X-API-Key': config.apiKey,
+      },
+    });
+    
+    const data = await response.json();
+    return data.leases || [];
+  } catch (error: any) {
+    console.error('VPN API Error (getDhcpLeases):', error);
+    return [];
+  }
+}
+
+/**
+ * Create DHCP reservation
+ */
+export async function createDhcpReservation(
+  mac: string,
+  ip: string,
+  hostname: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const config = await getApiConfig();
+    
+    const response = await fetch(`${config.url}/api/vpn/dhcp/reservation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': config.apiKey,
+      },
+      body: JSON.stringify({
+        mac,
+        ip,
+        hostname,
+      }),
+    });
+    
+    const data = await response.json();
+    console.log(`DHCP Reservation Create: ${mac} -> ${ip}`, data);
+    return data;
+  } catch (error: any) {
+    console.error('VPN API Error (createDhcpReservation):', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to connect to VPN API',
+    };
+  }
+}
+
+/**
+ * Delete DHCP reservation
+ */
+export async function deleteDhcpReservation(hostname: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const config = await getApiConfig();
+    
+    const response = await fetch(`${config.url}/api/vpn/dhcp/reservation/${encodeURIComponent(hostname)}`, {
+      method: 'DELETE',
+      headers: {
+        'X-API-Key': config.apiKey,
+      },
+    });
+    
+    const data = await response.json();
+    console.log(`DHCP Reservation Delete: ${hostname}`, data);
+    return data;
+  } catch (error: any) {
+    console.error('VPN API Error (deleteDhcpReservation):', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to connect to VPN API',
+    };
+  }
+}

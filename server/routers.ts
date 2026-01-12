@@ -1789,6 +1789,86 @@ const nasRouter = router({
       
       return { success: true, poolId: Number((result as any)[0]?.insertId || 0), message: 'تم إنشاء الـ Pool بنجاح' };
     }),
+
+  // ============================================================================
+  // TWO-PHASE AUTO PROVISIONING ENDPOINTS
+  // ============================================================================
+
+  // Get provisioning status for a NAS
+  getProvisioningStatus: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const nas = await nasDb.getNasById(input.nasId);
+      if (!nas) throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS not found' });
+      
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      
+      return {
+        nasId: nas.id,
+        status: (nas as any).provisioningStatus || 'pending',
+        allocatedIp: (nas as any).allocatedIp,
+        lastTempIp: (nas as any).lastTempIp,
+        lastMac: (nas as any).lastMac,
+        provisionedAt: (nas as any).provisionedAt,
+        error: (nas as any).provisioningError,
+      };
+    }),
+
+  // Retry provisioning for a NAS
+  retryProvisioning: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const nas = await nasDb.getNasById(input.nasId);
+      if (!nas) throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS not found' });
+      
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      
+      // Only for VPN connections
+      if (nas.connectionType === 'public_ip') {
+        return { success: false, message: 'Public IP NAS does not need provisioning' };
+      }
+      
+      // Import and run provisioning
+      const { provisionNas } = await import('./services/provisioningService');
+      const result = await provisionNas(input.nasId);
+      
+      return result;
+    }),
+
+  // Trigger provisioning manually (admin only)
+  triggerProvisioning: superAdminProcedure
+    .input(z.object({ nasId: z.number() }))
+    .mutation(async ({ input }) => {
+      const { provisionNas } = await import('./services/provisioningService');
+      const result = await provisionNas(input.nasId);
+      return result;
+    }),
+
+  // List all NAS with provisioning status
+  listWithProvisioningStatus: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      let devices;
+      if (ctx.user.role === 'super_admin') {
+        devices = await db.select().from(nasDevices);
+      } else {
+        devices = await db.select().from(nasDevices).where(eq(nasDevices.ownerId, ctx.user.id));
+      }
+      
+      return devices.map(nas => ({
+        ...nas,
+        provisioningStatus: (nas as any).provisioningStatus || 'pending',
+        allocatedIp: (nas as any).allocatedIp,
+        lastTempIp: (nas as any).lastTempIp,
+        lastMac: (nas as any).lastMac,
+      }));
+    }),
 });
 
 // ============================================================================

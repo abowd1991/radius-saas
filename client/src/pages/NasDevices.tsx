@@ -60,6 +60,9 @@ import {
   Loader2,
   WifiOff,
   ArrowRightLeft,
+  Clock,
+  AlertTriangle,
+  Zap,
 } from "lucide-react";
 import { useState, useRef } from "react";
 
@@ -198,6 +201,21 @@ export default function NasDevices() {
     autoSyncVpnIp.mutate({ id: nasId, maxRetries: 3, retryDelayMs: 5000 });
   };
 
+  // Retry Provisioning Mutation
+  const retryProvisioning = trpc.nas.retryProvisioning.useMutation({
+    onSuccess: (result: any) => {
+      if (result.success) {
+        toast.success(language === "ar" ? "تم إعادة التهيئة بنجاح" : "Provisioning completed successfully");
+      } else {
+        toast.info(result.message);
+      }
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
+
   const testApiConnection = trpc.nas.testApiConnection.useMutation({
     onSuccess: (result: any) => {
       setApiTestResult(result);
@@ -283,6 +301,44 @@ export default function NasDevices() {
         {language === "ar" ? connType.labelAr : connType.labelEn}
       </Badge>
     );
+  };
+
+  // Provisioning Status Badge
+  const getProvisioningStatusBadge = (status: string | null | undefined, connectionType: string | null) => {
+    // Only show for VPN connections
+    if (connectionType === 'public_ip') return null;
+    
+    switch (status) {
+      case 'ready':
+        return (
+          <Badge variant="default" className="bg-green-500 gap-1">
+            <CheckCircle className="h-3 w-3" />
+            {language === "ar" ? "جاهز" : "Ready"}
+          </Badge>
+        );
+      case 'provisioning':
+        return (
+          <Badge variant="default" className="bg-blue-500 gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {language === "ar" ? "جاري التهيئة" : "Provisioning"}
+          </Badge>
+        );
+      case 'error':
+        return (
+          <Badge variant="destructive" className="gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            {language === "ar" ? "خطأ" : "Error"}
+          </Badge>
+        );
+      case 'pending':
+      default:
+        return (
+          <Badge variant="secondary" className="gap-1">
+            <Clock className="h-3 w-3" />
+            {language === "ar" ? "بانتظار الاتصال" : "Pending"}
+          </Badge>
+        );
+    }
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -986,6 +1042,7 @@ export default function NasDevices() {
                   <TableHead>{language === "ar" ? "نوع الاتصال" : "Connection Type"}</TableHead>
                   <TableHead>{language === "ar" ? "النوع" : "Type"}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
+                  <TableHead>{language === "ar" ? "حالة التهيئة" : "Provisioning"}</TableHead>
                   <TableHead>{language === "ar" ? "آخر اتصال" : "Last Seen"}</TableHead>
                   <TableHead className="text-center">{t("common.actions")}</TableHead>
                 </TableRow>
@@ -1007,6 +1064,7 @@ export default function NasDevices() {
                       <Badge variant="outline">{device.type || "mikrotik"}</Badge>
                     </TableCell>
                     <TableCell>{getStatusBadge(device.status)}</TableCell>
+                    <TableCell>{getProvisioningStatusBadge((device as any).provisioningStatus, (device as any).connectionType)}</TableCell>
                     <TableCell>{formatDate(device.lastSeen)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -1025,6 +1083,14 @@ export default function NasDevices() {
                             <DropdownMenuItem onClick={() => setVpnStatusDevice(device)}>
                               <Wifi className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
                               {language === "ar" ? "حالة VPN" : "VPN Status"}
+                            </DropdownMenuItem>
+                          )}
+                          {/* Retry Provisioning - only for VPN with pending/error status */}
+                          {((device as any).connectionType === 'vpn_l2tp' || (device as any).connectionType === 'vpn_sstp') && 
+                           ((device as any).provisioningStatus === 'pending' || (device as any).provisioningStatus === 'error') && (
+                            <DropdownMenuItem onClick={() => retryProvisioning.mutate({ nasId: device.id })}>
+                              <Zap className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+                              {language === "ar" ? "إعادة التهيئة" : "Retry Provisioning"}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />

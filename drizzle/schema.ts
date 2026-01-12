@@ -149,6 +149,13 @@ export const nasDevices = mysqlTable("nas", {
   mikrotikApiPassword: varchar("mikrotikApiPassword", { length: 128 }),
   status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
   lastSeen: timestamp("lastSeen"),
+  // Two-Phase Auto Provisioning fields
+  provisioningStatus: mysqlEnum("provisioningStatus", ["pending", "provisioning", "ready", "error"]).default("pending"),
+  allocatedIp: varchar("allocatedIp", { length: 45 }),
+  lastTempIp: varchar("lastTempIp", { length: 45 }),
+  lastMac: varchar("lastMac", { length: 17 }),
+  provisionedAt: timestamp("provisionedAt"),
+  provisioningError: text("provisioningError"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
