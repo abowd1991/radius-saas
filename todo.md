@@ -1418,3 +1418,7 @@
 - [ ] Add delete user permission for Super Admin
 - [ ] Improve users table with columns: Name, Email, Role, Status, Plan, Days Left, Last Login, Actions
 - [ ] Add inline actions (View/Suspend/Delete) without navigating to another page
+
+
+## Bug Fix - Email Verification (Jan 12, 2026)
+- [x] Remove "Skip verification" option - email verification must be mandatory

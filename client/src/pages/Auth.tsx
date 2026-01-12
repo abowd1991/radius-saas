@@ -677,18 +677,7 @@ export default function Auth() {
           </div>
         </form>
       </CardContent>
-      <CardFooter className="flex justify-center border-t border-slate-700 pt-4">
-        <button
-          type="button"
-          className="text-sm text-slate-400 hover:text-white"
-          onClick={() => {
-            setActiveView("login");
-            setLoginForm({ usernameOrEmail: registerForm.username, password: "" });
-          }}
-        >
-          تخطي والمتابعة لتسجيل الدخول
-        </button>
-      </CardFooter>
+
     </>
   );
 

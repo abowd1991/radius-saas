@@ -1,0 +1,904 @@
+{
+  "query": "SELECT id, username, email, role FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, username, email, role FROM users;",
+  "rows": [
+    {
+      "id": "3",
+      "username": "NULL",
+      "email": "abowd19911@gmail.com",
+      "role": "super_admin"
+    },
+    {
+      "id": "4",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "5",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "6",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "7",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "8",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "9",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "10",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "11",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "12",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "13",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "14",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "15",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "16",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "17",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "18",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "19",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "20",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "21",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "22",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "23",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "24",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "25",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "26",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "27",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "28",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "29",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "30",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "31",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "32",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "33",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "34",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "35",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "36",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "37",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "38",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "39",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "40",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "41",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "42",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "43",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "44",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "45",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "46",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "47",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "48",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "49",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "50",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "95",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "96",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "99",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "100",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "101",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "102",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "103",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "104",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "105",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "106",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "107",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "108",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "109",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "110",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "111",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "112",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "113",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "114",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "115",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "116",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "117",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "118",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "119",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "121",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "142",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "143",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "144",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "145",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "146",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "147",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "148",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "149",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "150",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "151",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "152",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "153",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "154",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "155",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "156",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "197",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "198",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "199",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "200",
+      "username": "NULL",
+      "email": "abowd19911@gmail.com",
+      "role": "super_admin"
+    },
+    {
+      "id": "201",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "202",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "203",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "204",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "205",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "206",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "207",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "208",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "209",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "210",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "211",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "212",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "213",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "214",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "215",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "216",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "217",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "218",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "219",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "220",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "221",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "222",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "223",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "224",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "225",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "226",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "227",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "228",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "229",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "230",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "231",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "232",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "233",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "234",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "235",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "30001",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "30002",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "30003",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "30004",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "60020",
+      "username": "NULL",
+      "email": "abowd19911@gmail.com",
+      "role": "super_admin"
+    },
+    {
+      "id": "60021",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "60022",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "60023",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "60024",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "60025",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "60026",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "60027",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120161",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120169",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120177",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120180",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120181",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120183",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120184",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120190",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120193",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "super_admin"
+    },
+    {
+      "id": "120204",
+      "username": "NULL",
+      "email": "NULL",
+      "role": "client"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\temail\trole\n3\tNULL\tabowd19911@gmail.com\tsuper_admin\n4\tNULL\tNULL\tsuper_admin\n5\tNULL\tNULL\tsuper_admin\n6\tNULL\tNULL\tsuper_admin\n7\tNULL\tNULL\tsuper_admin\n8\tNULL\tNULL\tsuper_admin\n9\tNULL\tNULL\tsuper_admin\n10\tNULL\tNULL\tsuper_admin\n11\tNULL\tNULL\tsuper_admin\n12\tNULL\tNULL\tsuper_admin\n13\tNULL\tNULL\tsuper_admin\n14\tNULL\tNULL\tsuper_admin\n15\tNULL\tNULL\tsuper_admin\n16\tNULL\tNULL\tsuper_admin\n17\tNULL\tNULL\tsuper_admin\n18\tNULL\tNULL\tsuper_admin\n19\tNULL\tNULL\tsuper_admin\n20\tNULL\tNULL\tsuper_admin\n21\tNULL\tNULL\tsuper_admin\n22\tNULL\tNULL\tsuper_admin\n23\tNULL\tNULL\tsuper_admin\n24\tNULL\tNULL\tsuper_admin\n25\tNULL\tNULL\tsuper_admin\n26\tNULL\tNULL\tsuper_admin\n27\tNULL\tNULL\tsuper_admin\n28\tNULL\tNULL\tsuper_admin\n29\tNULL\tNULL\tsuper_admin\n30\tNULL\tNULL\tsuper_admin\n31\tNULL\tNULL\tsuper_admin\n32\tNULL\tNULL\tsuper_admin\n33\tNULL\tNULL\tsuper_admin\n34\tNULL\tNULL\tsuper_admin\n35\tNULL\tNULL\tsuper_admin\n36\tNULL\tNULL\tsuper_admin\n37\tNULL\tNULL\tsuper_admin\n38\tNULL\tNULL\tsuper_admin\n39\tNULL\tNULL\tsuper_admin\n40\tNULL\tNULL\tsuper_admin\n41\tNULL\tNULL\tsuper_admin\n42\tNULL\tNULL\tsuper_admin\n43\tNULL\tNULL\tsuper_admin\n44\tNULL\tNULL\tsuper_admin\n45\tNULL\tNULL\tsuper_admin\n46\tNULL\tNULL\tsuper_admin\n47\tNULL\tNULL\tsuper_admin\n48\tNULL\tNULL\tsuper_admin\n49\tNULL\tNULL\tsuper_admin\n50\tNULL\tNULL\tsuper_admin\n95\tNULL\tNULL\tsuper_admin\n96\tNULL\tNULL\tsuper_admin\n99\tNULL\tNULL\tsuper_admin\n100\tNULL\tNULL\tsuper_admin\n101\tNULL\tNULL\tsuper_admin\n102\tNULL\tNULL\tsuper_admin\n103\tNULL\tNULL\tsuper_admin\n104\tNULL\tNULL\tsuper_admin\n105\tNULL\tNULL\tsuper_admin\n106\tNULL\tNULL\tsuper_admin\n107\tNULL\tNULL\tsuper_admin\n108\tNULL\tNULL\tsuper_admin\n109\tNULL\tNULL\tsuper_admin\n110\tNULL\tNULL\tsuper_admin\n111\tNULL\tNULL\tsuper_admin\n112\tNULL\tNULL\tsuper_admin\n113\tNULL\tNULL\tsuper_admin\n114\tNULL\tNULL\tsuper_admin\n115\tNULL\tNULL\tsuper_admin\n116\tNULL\tNULL\tsuper_admin\n117\tNULL\tNULL\tsuper_admin\n118\tNULL\tNULL\tsuper_admin\n119\tNULL\tNULL\tsuper_admin\n120\tNULL\tNULL\tsuper_admin\n121\tNULL\tNULL\tsuper_admin\n142\tNULL\tNULL\tsuper_admin\n143\tNULL\tNULL\tsuper_admin\n144\tNULL\tNULL\tsuper_admin\n145\tNULL\tNULL\tsuper_admin\n146\tNULL\tNULL\tsuper_admin\n147\tNULL\tNULL\tsuper_admin\n148\tNULL\tNULL\tsuper_admin\n149\tNULL\tNULL\tsuper_admin\n150\tNULL\tNULL\tsuper_admin\n151\tNULL\tNULL\tsuper_admin\n152\tNULL\tNULL\tsuper_admin\n153\tNULL\tNULL\tsuper_admin\n154\tNULL\tNULL\tsuper_admin\n155\tNULL\tNULL\tsuper_admin\n156\tNULL\tNULL\tsuper_admin\n197\tNULL\tNULL\tsuper_admin\n198\tNULL\tNULL\tsuper_admin\n199\tNULL\tNULL\tsuper_admin\n200\tNULL\tabowd19911@gmail.com\tsuper_admin\n201\tNULL\tNULL\tsuper_admin\n202\tNULL\tNULL\tsuper_admin\n203\tNULL\tNULL\tsuper_admin\n204\tNULL\tNULL\tsuper_admin\n205\tNULL\tNULL\tsuper_admin\n206\tNULL\tNULL\tsuper_admin\n207\tNULL\tNULL\tsuper_admin\n208\tNULL\tNULL\tsuper_admin\n209\tNULL\tNULL\tsuper_admin\n210\tNULL\tNULL\tsuper_admin\n211\tNULL\tNULL\tsuper_admin\n212\tNULL\tNULL\tsuper_admin\n213\tNULL\tNULL\tsuper_admin\n214\tNULL\tNULL\tsuper_admin\n215\tNULL\tNULL\tsuper_admin\n216\tNULL\tNULL\tsuper_admin\n217\tNULL\tNULL\tsuper_admin\n218\tNULL\tNULL\tsuper_admin\n219\tNULL\tNULL\tsuper_admin\n220\tNULL\tNULL\tsuper_admin\n221\tNULL\tNULL\tsuper_admin\n222\tNULL\tNULL\tsuper_admin\n223\tNULL\tNULL\tsuper_admin\n224\tNULL\tNULL\tsuper_admin\n225\tNULL\tNULL\tsuper_admin\n226\tNULL\tNULL\tsuper_admin\n227\tNULL\tNULL\tsuper_admin\n228\tNULL\tNULL\tsuper_admin\n229\tNULL\tNULL\tsuper_admin\n230\tNULL\tNULL\tsuper_admin\n231\tNULL\tNULL\tsuper_admin\n232\tNULL\tNULL\tsuper_admin\n233\tNULL\tNULL\tsuper_admin\n234\tNULL\tNULL\tsuper_admin\n235\tNULL\tNULL\tsuper_admin\n30001\tNULL\tNULL\tsuper_admin\n30002\tNULL\tNULL\tsuper_admin\n30003\tNULL\tNULL\tsuper_admin\n30004\tNULL\tNULL\tsuper_admin\n60020\tNULL\tabowd19911@gmail.com\tsuper_admin\n60021\tNULL\tNULL\tsuper_admin\n60022\tNULL\tNULL\tsuper_admin\n60023\tNULL\tNULL\tsuper_admin\n60024\tNULL\tNULL\tsuper_admin\n60025\tNULL\tNULL\tsuper_admin\n60026\tNULL\tNULL\tsuper_admin\n60027\tNULL\tNULL\tsuper_admin\n120161\tNULL\tNULL\tsuper_admin\n120169\tNULL\tNULL\tsuper_admin\n120177\tNULL\tNULL\tsuper_admin\n120180\tNULL\tNULL\tsuper_admin\n120181\tNULL\tNULL\tsuper_admin\n120183\tNULL\tNULL\tsuper_admin\n120184\tNULL\tNULL\tsuper_admin\n120190\tNULL\tNULL\tsuper_admin\n120193\tNULL\tNULL\tsuper_admin\n120204\tNULL\tNULL\tclient\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

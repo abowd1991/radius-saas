@@ -1,0 +1,460 @@
+{
+  "query": "\n-- First, let's see how many users we have\nSELECT COUNT(*) as total_users FROM users;\n\n-- Delete all users except super_admin role\nDELETE FROM users WHERE role != 'super_admin';\n\n-- Verify remaining users\nSELECT id, username, email, role FROM users;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- First, let's see how many users we have\nSELECT COUNT(*) as total_users FROM users;\n\n-- Delete all users except super_admin role\nDELETE FROM users WHERE role != 'super_admin';\n\n-- Verify remaining users\nSELECT id, username, email, role FROM users;\n",
+  "rows": [
+    {
+      "total_users": "628"
+    },
+    {
+      "total_users": "id\tusername\temail\trole"
+    },
+    {
+      "total_users": "3\tNULL\tabowd19911@gmail.com\tsuper_admin"
+    },
+    {
+      "total_users": "4\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "5\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "6\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "7\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "8\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "9\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "10\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "11\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "12\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "13\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "14\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "15\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "16\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "17\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "18\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "19\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "20\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "21\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "22\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "23\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "24\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "25\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "26\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "27\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "28\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "29\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "30\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "31\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "32\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "33\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "34\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "35\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "36\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "37\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "38\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "39\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "40\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "41\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "42\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "43\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "44\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "45\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "46\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "47\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "48\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "49\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "50\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "95\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "96\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "99\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "100\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "101\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "102\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "103\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "104\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "105\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "106\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "107\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "108\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "109\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "110\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "111\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "112\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "113\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "114\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "115\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "116\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "117\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "118\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "119\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "120\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "121\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "142\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "143\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "144\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "145\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "146\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "147\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "148\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "149\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "150\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "151\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "152\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "153\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "154\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "155\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "156\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "197\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "198\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "199\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "200\tNULL\tabowd19911@gmail.com\tsuper_admin"
+    },
+    {
+      "total_users": "201\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "202\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "203\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "204\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "205\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "206\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "207\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "208\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "209\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "210\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "211\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "212\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "213\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "214\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "215\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "216\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "217\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "218\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "219\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "220\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "221\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "222\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "223\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "224\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "225\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "226\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "227\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "228\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "229\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "230\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "231\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "232\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "233\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "234\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "235\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "30001\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "30002\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "30003\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "30004\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "60020\tNULL\tabowd19911@gmail.com\tsuper_admin"
+    },
+    {
+      "total_users": "60021\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "60022\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "60023\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "60024\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "60025\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "60026\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "60027\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "120161\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "120169\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "120177\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "120180\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "120181\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "120183\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "120184\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "120190\tNULL\tNULL\tsuper_admin"
+    },
+    {
+      "total_users": "120193\tNULL\tNULL\tsuper_admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_users\n628\nid\tusername\temail\trole\n3\tNULL\tabowd19911@gmail.com\tsuper_admin\n4\tNULL\tNULL\tsuper_admin\n5\tNULL\tNULL\tsuper_admin\n6\tNULL\tNULL\tsuper_admin\n7\tNULL\tNULL\tsuper_admin\n8\tNULL\tNULL\tsuper_admin\n9\tNULL\tNULL\tsuper_admin\n10\tNULL\tNULL\tsuper_admin\n11\tNULL\tNULL\tsuper_admin\n12\tNULL\tNULL\tsuper_admin\n13\tNULL\tNULL\tsuper_admin\n14\tNULL\tNULL\tsuper_admin\n15\tNULL\tNULL\tsuper_admin\n16\tNULL\tNULL\tsuper_admin\n17\tNULL\tNULL\tsuper_admin\n18\tNULL\tNULL\tsuper_admin\n19\tNULL\tNULL\tsuper_admin\n20\tNULL\tNULL\tsuper_admin\n21\tNULL\tNULL\tsuper_admin\n22\tNULL\tNULL\tsuper_admin\n23\tNULL\tNULL\tsuper_admin\n24\tNULL\tNULL\tsuper_admin\n25\tNULL\tNULL\tsuper_admin\n26\tNULL\tNULL\tsuper_admin\n27\tNULL\tNULL\tsuper_admin\n28\tNULL\tNULL\tsuper_admin\n29\tNULL\tNULL\tsuper_admin\n30\tNULL\tNULL\tsuper_admin\n31\tNULL\tNULL\tsuper_admin\n32\tNULL\tNULL\tsuper_admin\n33\tNULL\tNULL\tsuper_admin\n34\tNULL\tNULL\tsuper_admin\n35\tNULL\tNULL\tsuper_admin\n36\tNULL\tNULL\tsuper_admin\n37\tNULL\tNULL\tsuper_admin\n38\tNULL\tNULL\tsuper_admin\n39\tNULL\tNULL\tsuper_admin\n40\tNULL\tNULL\tsuper_admin\n41\tNULL\tNULL\tsuper_admin\n42\tNULL\tNULL\tsuper_admin\n43\tNULL\tNULL\tsuper_admin\n44\tNULL\tNULL\tsuper_admin\n45\tNULL\tNULL\tsuper_admin\n46\tNULL\tNULL\tsuper_admin\n47\tNULL\tNULL\tsuper_admin\n48\tNULL\tNULL\tsuper_admin\n49\tNULL\tNULL\tsuper_admin\n50\tNULL\tNULL\tsuper_admin\n95\tNULL\tNULL\tsuper_admin\n96\tNULL\tNULL\tsuper_admin\n99\tNULL\tNULL\tsuper_admin\n100\tNULL\tNULL\tsuper_admin\n101\tNULL\tNULL\tsuper_admin\n102\tNULL\tNULL\tsuper_admin\n103\tNULL\tNULL\tsuper_admin\n104\tNULL\tNULL\tsuper_admin\n105\tNULL\tNULL\tsuper_admin\n106\tNULL\tNULL\tsuper_admin\n107\tNULL\tNULL\tsuper_admin\n108\tNULL\tNULL\tsuper_admin\n109\tNULL\tNULL\tsuper_admin\n110\tNULL\tNULL\tsuper_admin\n111\tNULL\tNULL\tsuper_admin\n112\tNULL\tNULL\tsuper_admin\n113\tNULL\tNULL\tsuper_admin\n114\tNULL\tNULL\tsuper_admin\n115\tNULL\tNULL\tsuper_admin\n116\tNULL\tNULL\tsuper_admin\n117\tNULL\tNULL\tsuper_admin\n118\tNULL\tNULL\tsuper_admin\n119\tNULL\tNULL\tsuper_admin\n120\tNULL\tNULL\tsuper_admin\n121\tNULL\tNULL\tsuper_admin\n142\tNULL\tNULL\tsuper_admin\n143\tNULL\tNULL\tsuper_admin\n144\tNULL\tNULL\tsuper_admin\n145\tNULL\tNULL\tsuper_admin\n146\tNULL\tNULL\tsuper_admin\n147\tNULL\tNULL\tsuper_admin\n148\tNULL\tNULL\tsuper_admin\n149\tNULL\tNULL\tsuper_admin\n150\tNULL\tNULL\tsuper_admin\n151\tNULL\tNULL\tsuper_admin\n152\tNULL\tNULL\tsuper_admin\n153\tNULL\tNULL\tsuper_admin\n154\tNULL\tNULL\tsuper_admin\n155\tNULL\tNULL\tsuper_admin\n156\tNULL\tNULL\tsuper_admin\n197\tNULL\tNULL\tsuper_admin\n198\tNULL\tNULL\tsuper_admin\n199\tNULL\tNULL\tsuper_admin\n200\tNULL\tabowd19911@gmail.com\tsuper_admin\n201\tNULL\tNULL\tsuper_admin\n202\tNULL\tNULL\tsuper_admin\n203\tNULL\tNULL\tsuper_admin\n204\tNULL\tNULL\tsuper_admin\n205\tNULL\tNULL\tsuper_admin\n206\tNULL\tNULL\tsuper_admin\n207\tNULL\tNULL\tsuper_admin\n208\tNULL\tNULL\tsuper_admin\n209\tNULL\tNULL\tsuper_admin\n210\tNULL\tNULL\tsuper_admin\n211\tNULL\tNULL\tsuper_admin\n212\tNULL\tNULL\tsuper_admin\n213\tNULL\tNULL\tsuper_admin\n214\tNULL\tNULL\tsuper_admin\n215\tNULL\tNULL\tsuper_admin\n216\tNULL\tNULL\tsuper_admin\n217\tNULL\tNULL\tsuper_admin\n218\tNULL\tNULL\tsuper_admin\n219\tNULL\tNULL\tsuper_admin\n220\tNULL\tNULL\tsuper_admin\n221\tNULL\tNULL\tsuper_admin\n222\tNULL\tNULL\tsuper_admin\n223\tNULL\tNULL\tsuper_admin\n224\tNULL\tNULL\tsuper_admin\n225\tNULL\tNULL\tsuper_admin\n226\tNULL\tNULL\tsuper_admin\n227\tNULL\tNULL\tsuper_admin\n228\tNULL\tNULL\tsuper_admin\n229\tNULL\tNULL\tsuper_admin\n230\tNULL\tNULL\tsuper_admin\n231\tNULL\tNULL\tsuper_admin\n232\tNULL\tNULL\tsuper_admin\n233\tNULL\tNULL\tsuper_admin\n234\tNULL\tNULL\tsuper_admin\n235\tNULL\tNULL\tsuper_admin\n30001\tNULL\tNULL\tsuper_admin\n30002\tNULL\tNULL\tsuper_admin\n30003\tNULL\tNULL\tsuper_admin\n30004\tNULL\tNULL\tsuper_admin\n60020\tNULL\tabowd19911@gmail.com\tsuper_admin\n60021\tNULL\tNULL\tsuper_admin\n60022\tNULL\tNULL\tsuper_admin\n60023\tNULL\tNULL\tsuper_admin\n60024\tNULL\tNULL\tsuper_admin\n60025\tNULL\tNULL\tsuper_admin\n60026\tNULL\tNULL\tsuper_admin\n60027\tNULL\tNULL\tsuper_admin\n120161\tNULL\tNULL\tsuper_admin\n120169\tNULL\tNULL\tsuper_admin\n120177\tNULL\tNULL\tsuper_admin\n120180\tNULL\tNULL\tsuper_admin\n120181\tNULL\tNULL\tsuper_admin\n120183\tNULL\tNULL\tsuper_admin\n120184\tNULL\tNULL\tsuper_admin\n120190\tNULL\tNULL\tsuper_admin\n120193\tNULL\tNULL\tsuper_admin\n",
+  "stderr": "",
+  "execution_time_ms": 363
+}
