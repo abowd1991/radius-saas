@@ -115,6 +115,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: CreditCard, label: "خطط الاشتراك SaaS", path: "/saas-plans" },
     { icon: Users, label: "إدارة المستخدمين", path: "/users-management" },
     { icon: Smartphone, label: "إدارة SMS", path: "/sms" },
+    { icon: Server, label: "لوحة تحكم RADIUS", path: "/radius-control" },
   ];
 
   const resellerItems = [

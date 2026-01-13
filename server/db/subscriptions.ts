@@ -94,14 +94,18 @@ export async function getActiveSessions(options?: { page?: number; limit?: numbe
     .limit(options?.limit || 50);
 }
 
-// Get online sessions (real-time tracking)
+// Get online sessions from radacct (source of truth)
+// Online = acctstoptime IS NULL
 export async function getOnlineSessions(options?: { page?: number; limit?: number }) {
   const db = await getDb();
   if (!db) return [];
   
+  // Use radacct as source of truth for online status
+  // A session is online ONLY if acctstoptime is NULL
   return db.select()
-    .from(onlineSessions)
-    .orderBy(desc(onlineSessions.startTime))
+    .from(radacct)
+    .where(isNull(radacct.acctstoptime))
+    .orderBy(desc(radacct.acctstarttime))
     .limit(options?.limit || 50);
 }
 

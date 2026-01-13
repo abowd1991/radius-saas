@@ -188,3 +188,81 @@ export async function getAuditStats(days = 7) {
 
   return stats;
 }
+
+/**
+ * Log session timeout (automatic disconnect due to time exhaustion)
+ */
+export async function logSessionTimeout(
+  username: string,
+  allocatedTime: number,
+  usedTime: number,
+  nasIp?: string
+): Promise<void> {
+  await logAudit({
+    userId: 0,
+    userRole: 'system',
+    action: 'session_disconnect',
+    targetType: 'session',
+    targetId: username,
+    targetName: username,
+    nasIp,
+    method: 'direct',
+    result: 'success',
+    details: {
+      reason: 'time_exhausted',
+      allocatedTimeSeconds: allocatedTime,
+      usedTimeSeconds: usedTime,
+    },
+  });
+}
+
+/**
+ * Log validity expiration (automatic disconnect due to card expiry)
+ */
+export async function logValidityExpired(
+  username: string,
+  expiresAt: Date,
+  remainingTime: number,
+  nasIp?: string
+): Promise<void> {
+  await logAudit({
+    userId: 0,
+    userRole: 'system',
+    action: 'session_disconnect',
+    targetType: 'session',
+    targetId: username,
+    targetName: username,
+    nasIp,
+    method: 'direct',
+    result: 'success',
+    details: {
+      reason: 'validity_expired',
+      expiresAt: expiresAt.toISOString(),
+      remainingTimeSeconds: remainingTime,
+    },
+  });
+}
+
+/**
+ * Log CoA sent
+ */
+export async function logCoASent(
+  username: string,
+  nasIp: string,
+  coaType: 'disconnect' | 'coa',
+  success: boolean,
+  details?: Record<string, any>
+): Promise<void> {
+  await logAudit({
+    userId: 0,
+    userRole: 'system',
+    action: coaType === 'disconnect' ? 'session_disconnect_coa' : 'speed_change_coa',
+    targetType: 'session',
+    targetId: username,
+    targetName: username,
+    nasIp,
+    method: 'coa',
+    result: success ? 'success' : 'failure',
+    details,
+  });
+}

@@ -1530,3 +1530,56 @@
   - [x] Integrated with subscriptionNotifier service
   - [x] Send SMS 2 days before subscription expires
   - [x] Track notification status to avoid duplicates (sms_notification_tracking table)
+
+
+## RADIUS Time & Session Logic Fix (Jan 13, 2026)
+**CRITICAL: DO NOT TOUCH - Auth, NAS, VPN, Dynamic Clients**
+
+### 1. Time Accounting Fix
+- [x] Fix time calculation logic (card time vs MikroTik time mismatch)
+- [x] Use radacct as single source of truth for consumption
+- [x] Session-Timeout = calculated result only, NOT storage
+- [x] Deduction based on Acct-Session-Time only
+- [x] Created centralAccountingService.ts with proper architecture
+
+### 2. Validity vs Usage Logic
+- [x] Implement dual check: validity expiry AND time exhaustion
+- [x] Cut connection immediately when validity expires (even if time remains)
+- [x] Cut connection immediately when time exhausts (even if validity remains)
+- [x] All decisions from control panel, not MikroTik estimates
+- [x] Implemented in centralAccountingService.ts with proper priority
+
+### 3. Online Users / Session Status Fix
+- [x] Online = Acct-Stop-Time IS NULL only
+- [x] Any session with Stop-Time → Offline immediately
+- [x] Add cleanup job for stale sessions (cleanupStaleSessions in centralAccountingService)
+- [x] Fix disconnect not reflecting in dashboard
+- [x] Updated getOnlineSessions to use radacct as source of truth
+
+### 4. CoA / Speed Change Sync
+- [x] Proper sync after ACK received (already in coaService)
+- [x] Update session state in DB after execution (already in coaService)
+- [x] No changes to CoA or MikroTik API itself
+- [x] Added Audit Log for all changes (logSessionTimeout, logValidityExpired, logCoASent)
+
+### 5. Advanced RADIUS Control Panel
+- [x] RADIUS Control Panel page created (/radius-control)
+- [x] Central Accounting status display
+- [x] Session Monitor status display
+- [x] Active sessions list (from radacct)
+- [x] User time lookup tool
+- [x] Manual sync user usage
+- [x] Trigger accounting run manually
+- [x] Audit log display
+- [x] Architecture principles display
+- [ ] Display: Status, Threads, Queue, Last errors
+- [ ] IP Pools restructuring
+- [ ] Accounting Jobs monitoring
+- [ ] Health checks dashboard
+- [ ] Goal: No server SSH access needed after launch
+
+### 6. Best Practices Implementation
+- [ ] Central Accounting Job (cron every minute)
+- [ ] Grace Period (1-2 minutes before disconnect)
+- [ ] Audit Log for all changes (speed, disconnect, extend)
+- [ ] Read-only Mode button for maintenance

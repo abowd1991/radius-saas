@@ -12,6 +12,7 @@ import { startSubscriptionNotifier } from "../services/subscriptionNotifier";
 import { startAlertMonitor } from "../services/alertMonitor";
 import { startSubscriptionEnforcer } from "../services/subscriptionEnforcer";
 import { startProvisioningMonitor } from "../services/provisioningService";
+import { startCentralAccounting } from "../services/centralAccountingService";
 import multer from "multer";
 import { storagePut } from "../storage";
 import { sdk } from "./sdk";
@@ -129,6 +130,10 @@ async function startServer() {
     // Start provisioning monitor for VPN NAS devices
     startProvisioningMonitor();
     console.log('[ProvisioningMonitor] Started - checking for pending NAS every 30 seconds');
+    
+    // Start central accounting service (check every minute for time/validity)
+    startCentralAccounting(60000);
+    console.log('[CentralAccounting] Started - syncing usage from radacct every 60 seconds');
   });
 }
 

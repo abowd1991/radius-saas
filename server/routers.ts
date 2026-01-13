@@ -5121,6 +5121,53 @@ const saasPlansRouter = router({
 });
 
 // ============================================================================
+// RADIUS CONTROL PANEL ROUTER
+// ============================================================================
+import * as centralAccountingService from "./services/centralAccountingService";
+
+const radiusControlRouter = router({
+  // Get Central Accounting Status
+  getAccountingStatus: superAdminProcedure
+    .query(async () => {
+      return centralAccountingService.getCentralAccountingStatus();
+    }),
+  
+  // Get Session Monitor Status
+  getSessionMonitorStatus: superAdminProcedure
+    .query(async () => {
+      return sessionMonitor.getMonitorStatus();
+    }),
+  
+  // Trigger Accounting Run
+  triggerAccountingRun: superAdminProcedure
+    .mutation(async () => {
+      return centralAccountingService.triggerAccountingRun();
+    }),
+  
+  // Get User Time Details
+  getUserTimeDetails: superAdminProcedure
+    .input(z.object({ username: z.string() }))
+    .query(async ({ input }) => {
+      return centralAccountingService.getUserTimeDetails(input.username);
+    }),
+  
+  // Sync User Usage from radacct
+  syncUserUsage: superAdminProcedure
+    .input(z.object({ username: z.string() }))
+    .mutation(async ({ input }) => {
+      await centralAccountingService.forceSyncUserUsage(input.username);
+      return { success: true };
+    }),
+  
+  // Get Recent Audit Logs
+  getRecentAuditLogs: superAdminProcedure
+    .input(z.object({ limit: z.number().default(20) }).optional())
+    .query(async ({ input }) => {
+      return auditLogService.getAuditLogs({ limit: input?.limit || 20 });
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -5149,6 +5196,7 @@ export const appRouter = router({
   audit: auditRouter,
   logs: logsRouter,
   diagnostics: diagnosticsRouter,
+  radius: radiusControlRouter,
 });
 
 export type AppRouter = typeof appRouter;

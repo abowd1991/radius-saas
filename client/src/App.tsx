@@ -37,6 +37,7 @@ import SaasPlansManagement from "./pages/SaasPlansManagement";
 import ClientManagement from "./pages/ClientManagement";
 import UsersManagement from "./pages/UsersManagement";
 import SmsManagement from "./pages/SmsManagement";
+import RadiusControlPanel from "./pages/RadiusControlPanel";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -147,6 +148,11 @@ function Router() {
       <Route path="/sms">
         <DashboardLayout>
           <SmsManagement />
+        </DashboardLayout>
+      </Route>
+      <Route path="/radius-control">
+        <DashboardLayout>
+          <RadiusControlPanel />
         </DashboardLayout>
       </Route>
       <Route path="/client-management">
