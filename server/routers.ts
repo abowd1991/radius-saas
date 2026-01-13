@@ -32,6 +32,7 @@ import * as vpnIpPool from "./db/vpnIpPool";
 import * as freeradiusService from "./services/freeradiusService";
 import * as multiChannelNotification from "./services/multiChannelNotificationService";
 import * as tweetsmsService from "./services/tweetsmsService";
+import * as smsDb from "./db/sms";
 
 // ============================================================================
 // AUTH ROUTER
@@ -2721,9 +2722,141 @@ const notificationsRouter = router({
       phones: z.array(z.string()).min(1),
       message: z.string().min(1).max(160),
     }))
-    .mutation(async ({ input }) => {
-      const result = await tweetsmsService.sendBulkSms(input.phones, input.message);
+    .mutation(async ({ ctx, input }) => {
+      const result = await tweetsmsService.sendBulkSms(input.phones, input.message, undefined, {
+        sentBy: ctx.user.id,
+      });
       return result;
+    }),
+
+  // ============================================================================
+  // SMS LOGS
+  // ============================================================================
+  
+  // Get SMS Logs (Super Admin only)
+  getSmsLogs: superAdminProcedure
+    .input(z.object({
+      page: z.number().default(1),
+      limit: z.number().default(20),
+      status: z.enum(["pending", "sent", "delivered", "failed"]).optional(),
+      type: z.enum(["manual", "bulk", "automatic"]).optional(),
+      phone: z.string().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      return smsDb.getSmsLogs({
+        ...input,
+        startDate: input?.startDate ? new Date(input.startDate) : undefined,
+        endDate: input?.endDate ? new Date(input.endDate) : undefined,
+      });
+    }),
+
+  // Get SMS Stats (Super Admin only)
+  getSmsStats: superAdminProcedure.query(async () => {
+    return smsDb.getSmsStats();
+  }),
+
+  // ============================================================================
+  // SMS TEMPLATES
+  // ============================================================================
+  
+  // Get SMS Templates (Super Admin only)
+  getSmsTemplates: superAdminProcedure
+    .input(z.object({ activeOnly: z.boolean().default(false) }).optional())
+    .query(async ({ input }) => {
+      return smsDb.getSmsTemplates(input?.activeOnly);
+    }),
+
+  // Get SMS Template by ID (Super Admin only)
+  getSmsTemplate: superAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const template = await smsDb.getSmsTemplateById(input.id);
+      if (!template) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "القالب غير موجود" });
+      }
+      return template;
+    }),
+
+  // Create SMS Template (Super Admin only)
+  createSmsTemplate: superAdminProcedure
+    .input(z.object({
+      name: z.string().min(1).max(100),
+      nameAr: z.string().max(100).optional(),
+      content: z.string().min(1),
+      contentAr: z.string().optional(),
+      type: z.enum(["subscription_expiry", "welcome", "payment_reminder", "custom"]).default("custom"),
+      isActive: z.boolean().default(true),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await smsDb.createSmsTemplate(input);
+      return { id, success: true };
+    }),
+
+  // Update SMS Template (Super Admin only)
+  updateSmsTemplate: superAdminProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().min(1).max(100).optional(),
+      nameAr: z.string().max(100).optional(),
+      content: z.string().min(1).optional(),
+      contentAr: z.string().optional(),
+      type: z.enum(["subscription_expiry", "welcome", "payment_reminder", "custom"]).optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await smsDb.updateSmsTemplate(id, data);
+      return { success: true };
+    }),
+
+  // Delete SMS Template (Super Admin only)
+  deleteSmsTemplate: superAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      try {
+        await smsDb.deleteSmsTemplate(input.id);
+        return { success: true };
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("system")) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكن حذف قوالب النظام" });
+        }
+        throw error;
+      }
+    }),
+
+  // Send SMS with Template (Super Admin only)
+  sendSmsWithTemplate: superAdminProcedure
+    .input(z.object({
+      phone: z.string().min(9),
+      templateId: z.number(),
+      variables: z.record(z.string(), z.union([z.string(), z.number()])),
+      language: z.enum(["ar", "en"]).default("ar"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const template = await smsDb.getSmsTemplateById(input.templateId);
+      if (!template) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "القالب غير موجود" });
+      }
+      
+      const content = input.language === "ar" && template.contentAr 
+        ? template.contentAr 
+        : template.content;
+      
+      const message = smsDb.replaceTemplateVariables(content, input.variables);
+      
+      const result = await tweetsmsService.sendSms(input.phone, message, undefined, {
+        templateId: template.id,
+        sentBy: ctx.user.id,
+        type: "manual",
+      });
+      
+      if (!result.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: result.errorMessage || "فشل إرسال الرسالة" });
+      }
+      
+      return { success: true, smsId: result.smsId };
     }),
 });
 

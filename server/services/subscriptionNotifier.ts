@@ -2,6 +2,8 @@ import { getDb } from "../db";
 import { users, tenantSubscriptions } from "../../drizzle/schema";
 import { eq, and, lte, gte, lt, isNull, or } from "drizzle-orm";
 import { sendTrialExpiringEmail, sendSubscriptionExpiredEmail } from "./emailService";
+import * as tweetsmsService from "./tweetsmsService";
+import * as smsDb from "../db/sms";
 
 const CHECK_INTERVAL = 6 * 60 * 60 * 1000; // Check every 6 hours
 
@@ -73,6 +75,22 @@ async function checkExpiringTrials(): Promise<void> {
           .set({ trialExpirationNotified: true })
           .where(eq(users.id, user.id));
         console.log(`[SubscriptionNotifier] Sent trial expiration warning to ${user.email}`);
+      }
+      
+      // Also send SMS if user has phone
+      const userWithPhone = await db.select({ phone: users.phone, language: users.language })
+        .from(users)
+        .where(eq(users.id, user.id));
+      
+      if (userWithPhone[0]?.phone) {
+        await sendExpirationSms(
+          user.id,
+          userWithPhone[0].phone,
+          user.name || "عزيزي العميل",
+          daysLeft,
+          userWithPhone[0].language || "ar",
+          "trial"
+        );
       }
     }
   } catch (error) {
@@ -154,9 +172,84 @@ async function checkExpiringTenantSubscriptions(): Promise<void> {
       } else {
         console.error(`[SubscriptionNotifier] Failed to send email to ${sub.userEmail}`);
       }
+      
+      // Also send SMS if user has phone
+      const userWithPhone = await db.select({ phone: users.phone, language: users.language })
+        .from(users)
+        .where(eq(users.id, sub.userId));
+      
+      if (userWithPhone[0]?.phone) {
+        await sendExpirationSms(
+          sub.userId,
+          userWithPhone[0].phone,
+          sub.userName || "عزيزي العميل",
+          daysLeft,
+          userWithPhone[0].language || "ar",
+          "subscription",
+          sub.subscriptionId
+        );
+      }
     }
   } catch (error) {
     console.error("[SubscriptionNotifier] Error checking expiring subscriptions:", error);
+  }
+}
+
+/**
+ * Send SMS notification for expiring subscription/trial
+ */
+async function sendExpirationSms(
+  userId: number,
+  phone: string,
+  name: string,
+  daysLeft: number,
+  language: string,
+  type: "trial" | "subscription",
+  subscriptionId?: number
+): Promise<void> {
+  try {
+    // Check if SMS was already sent for this notification
+    const notificationType = `subscription_expiry_${daysLeft}days`;
+    const alreadySent = await smsDb.hasNotificationBeenSent(
+      userId,
+      notificationType,
+      subscriptionId
+    );
+    
+    if (alreadySent) {
+      console.log(`[SubscriptionNotifier] SMS already sent to ${phone} for ${notificationType}`);
+      return;
+    }
+    
+    // Send SMS using template
+    const result = await tweetsmsService.sendSmsWithTemplate(
+      phone,
+      "subscription_expiry",
+      { name, days: daysLeft },
+      language === "ar" ? "ar" : "en",
+      {
+        userId,
+        type: "automatic",
+        triggeredBy: "subscription_notifier",
+      }
+    );
+    
+    if (result.success) {
+      // Track that we sent this notification
+      await smsDb.createNotificationTracking({
+        userId,
+        phone,
+        notificationType,
+        referenceId: subscriptionId,
+        referenceType: type === "trial" ? "trial" : "tenant_subscription",
+        smsLogId: result.logId,
+      });
+      console.log(`[SubscriptionNotifier] SMS sent to ${phone} - subscription expiring in ${daysLeft} days`);
+    } else {
+      console.error(`[SubscriptionNotifier] Failed to send SMS to ${phone}: ${result.errorMessage}`);
+    }
+  } catch (error) {
+    console.error(`[SubscriptionNotifier] Error sending SMS to ${phone}:`, error);
   }
 }
 

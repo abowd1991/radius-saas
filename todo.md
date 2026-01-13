@@ -1513,3 +1513,20 @@
   - [ ] SMS history/logs display (future enhancement)
 - [x] Add SMS page to sidebar navigation (Super Admin only)
 - [x] Add SMS page route to App.tsx
+
+
+## SMS Enhancements (Jan 13, 2026)
+- [x] SMS Logs System
+  - [x] Create sms_logs table in database
+  - [x] Log all sent SMS with status, recipient, message
+  - [x] Display SMS history in management page
+  - [x] Filter by status, type
+- [x] SMS Templates System
+  - [x] Create sms_templates table in database
+  - [x] Default templates (subscription expiry, welcome, payment reminder)
+  - [x] CRUD operations for templates
+  - [x] Template variables support ({name}, {days}, {amount})
+- [x] Automatic Subscription Expiry Notification
+  - [x] Integrated with subscriptionNotifier service
+  - [x] Send SMS 2 days before subscription expires
+  - [x] Track notification status to avoid duplicates (sms_notification_tracking table)

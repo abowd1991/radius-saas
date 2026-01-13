@@ -17,6 +17,8 @@
  * - -999: Failed sent by SMS provider
  */
 
+import * as smsDb from "../db/sms";
+
 // TweetSMS credentials from environment
 
 // Configuration from environment
@@ -31,6 +33,17 @@ interface SendSmsResult {
   mobileNumber?: string;
   errorCode?: number;
   errorMessage?: string;
+  logId?: number; // Database log ID
+}
+
+// Options for sending SMS with logging
+interface SendSmsOptions {
+  userId?: number;
+  templateId?: number;
+  type?: "manual" | "bulk" | "automatic";
+  triggeredBy?: string;
+  sentBy?: number;
+  skipLogging?: boolean;
 }
 
 interface BalanceResult {
@@ -117,7 +130,8 @@ function parseResponse(response: string): { success: boolean; smsId?: string; mo
 export async function sendSms(
   to: string,
   message: string,
-  sender?: string
+  sender?: string,
+  options: SendSmsOptions = {}
 ): Promise<SendSmsResult> {
   try {
     // Validate credentials
@@ -132,6 +146,25 @@ export async function sendSms(
 
     // Format phone number
     const formattedPhone = formatPhoneNumber(to);
+    
+    // Create log entry before sending
+    let logId: number | undefined;
+    if (!options.skipLogging) {
+      try {
+        logId = await smsDb.createSmsLog({
+          phone: formattedPhone,
+          userId: options.userId,
+          message: message,
+          templateId: options.templateId,
+          status: "pending",
+          type: options.type || "manual",
+          triggeredBy: options.triggeredBy,
+          sentBy: options.sentBy,
+        });
+      } catch (logError) {
+        console.warn("[TweetSMS] Failed to create log entry:", logError);
+      }
+    }
     
     // Build URL with parameters
     const params = new URLSearchParams({
@@ -172,22 +205,94 @@ export async function sendSms(
     
     if (parsed.success) {
       console.log(`[TweetSMS] SMS sent successfully. ID: ${parsed.smsId}`);
+      
+      // Update log entry with success
+      if (logId) {
+        try {
+          await smsDb.updateSmsLogStatus(logId, "sent", parsed.smsId);
+        } catch (logError) {
+          console.warn("[TweetSMS] Failed to update log entry:", logError);
+        }
+      }
+      
       return {
         success: true,
         smsId: parsed.smsId,
         mobileNumber: parsed.mobileNumber || formattedPhone,
+        logId,
       };
     } else {
       const errorMessage = ERROR_MESSAGES[parsed.errorCode || -999] || 'Unknown error';
       console.error(`[TweetSMS] Failed: ${errorMessage} (code: ${parsed.errorCode})`);
+      
+      // Update log entry with failure
+      if (logId) {
+        try {
+          await smsDb.updateSmsLogStatus(
+            logId,
+            "failed",
+            undefined,
+            String(parsed.errorCode),
+            errorMessage
+          );
+        } catch (logError) {
+          console.warn("[TweetSMS] Failed to update log entry:", logError);
+        }
+      }
+      
       return {
         success: false,
         errorCode: parsed.errorCode,
         errorMessage,
+        logId,
       };
     }
   } catch (error) {
     console.error('[TweetSMS] Error:', error);
+    return {
+      success: false,
+      errorCode: -999,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Send SMS using a template
+ */
+export async function sendSmsWithTemplate(
+  to: string,
+  templateType: "subscription_expiry" | "welcome" | "payment_reminder" | "custom",
+  variables: Record<string, string | number>,
+  language: "ar" | "en" = "ar",
+  options: SendSmsOptions = {}
+): Promise<SendSmsResult> {
+  try {
+    // Get template
+    const template = await smsDb.getSmsTemplateByType(templateType);
+    if (!template) {
+      return {
+        success: false,
+        errorCode: -100,
+        errorMessage: `Template not found: ${templateType}`,
+      };
+    }
+    
+    // Get content based on language
+    const content = language === "ar" && template.contentAr 
+      ? template.contentAr 
+      : template.content;
+    
+    // Replace variables
+    const message = smsDb.replaceTemplateVariables(content, variables);
+    
+    // Send SMS
+    return sendSms(to, message, undefined, {
+      ...options,
+      templateId: template.id,
+    });
+  } catch (error) {
+    console.error('[TweetSMS] Template send error:', error);
     return {
       success: false,
       errorCode: -999,
@@ -276,14 +381,18 @@ export async function checkBalance(): Promise<BalanceResult> {
 export async function sendBulkSms(
   recipients: string[],
   message: string,
-  sender?: string
+  sender?: string,
+  options: Omit<SendSmsOptions, "type"> = {}
 ): Promise<{ total: number; sent: number; failed: number; results: SendSmsResult[] }> {
   const results: SendSmsResult[] = [];
   let sent = 0;
   let failed = 0;
 
   for (const recipient of recipients) {
-    const result = await sendSms(recipient, message, sender);
+    const result = await sendSms(recipient, message, sender, {
+      ...options,
+      type: "bulk",
+    });
     results.push(result);
     
     if (result.success) {
@@ -307,6 +416,7 @@ export async function sendBulkSms(
 // Export service object for compatibility
 export const tweetsmsService = {
   sendSms,
+  sendSmsWithTemplate,
   checkBalance,
   sendBulkSms,
   formatPhoneNumber,

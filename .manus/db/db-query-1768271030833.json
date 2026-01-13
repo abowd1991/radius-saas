@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `sms_logs` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `phone` varchar(20) NOT NULL,\n  `userId` int,\n  `message` text NOT NULL,\n  `templateId` int,\n  `status` enum('pending','sent','delivered','failed') NOT NULL DEFAULT 'pending',\n  `smsId` varchar(100),\n  `errorCode` varchar(20),\n  `errorMessage` text,\n  `type` enum('manual','bulk','automatic') NOT NULL DEFAULT 'manual',\n  `triggeredBy` varchar(50),\n  `sentBy` int,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `sentAt` timestamp NULL,\n  CONSTRAINT `sms_logs_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute CREATE TABLE IF NOT EXISTS `sms_logs` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `phone` varchar(20) NOT NULL,\n  `userId` int,\n  `message` text NOT NULL,\n  `templateId` int,\n  `status` enum('pending','sent','delivered','failed') NOT NULL DEFAULT 'pending',\n  `smsId` varchar(100),\n  `errorCode` varchar(20),\n  `errorMessage` text,\n  `type` enum('manual','bulk','automatic') NOT NULL DEFAULT 'manual',\n  `triggeredBy` varchar(50),\n  `sentBy` int,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `sentAt` timestamp NULL,\n  CONSTRAINT `sms_logs_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 562
+}

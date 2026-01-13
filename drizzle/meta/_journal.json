@@ -43,6 +43,13 @@
       "when": 1768256034871,
       "tag": "0005_milky_robin_chapel",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1768271011923,
+      "tag": "0006_hard_speed_demon",
+      "breakpoints": true
     }
   ]
 }

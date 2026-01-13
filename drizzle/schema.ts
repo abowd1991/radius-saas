@@ -1023,3 +1023,94 @@ export const saasSubscriptions = mysqlTable("saas_subscriptions", {
 
 export type SaasSubscription = typeof saasSubscriptions.$inferSelect;
 export type InsertSaasSubscription = typeof saasSubscriptions.$inferInsert;
+
+
+// ============================================================================
+// SMS LOGS (Track all sent SMS messages)
+// ============================================================================
+
+export const smsLogs = mysqlTable("sms_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Recipient info
+  phone: varchar("phone", { length: 20 }).notNull(),
+  userId: int("userId"), // Optional: if sent to a registered user
+  
+  // Message content
+  message: text("message").notNull(),
+  templateId: int("templateId"), // Optional: if using a template
+  
+  // Delivery status
+  status: mysqlEnum("status", ["pending", "sent", "delivered", "failed"]).default("pending").notNull(),
+  smsId: varchar("smsId", { length: 100 }), // TweetSMS message ID
+  errorCode: varchar("errorCode", { length: 20 }),
+  errorMessage: text("errorMessage"),
+  
+  // Metadata
+  type: mysqlEnum("type", ["manual", "bulk", "automatic"]).default("manual").notNull(),
+  triggeredBy: varchar("triggeredBy", { length: 50 }), // e.g., "subscription_expiry", "admin_manual"
+  sentBy: int("sentBy"), // Admin who sent (for manual)
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  sentAt: timestamp("sentAt"),
+});
+
+export type SmsLog = typeof smsLogs.$inferSelect;
+export type InsertSmsLog = typeof smsLogs.$inferInsert;
+
+// ============================================================================
+// SMS TEMPLATES (Reusable message templates)
+// ============================================================================
+
+export const smsTemplates = mysqlTable("sms_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Template info
+  name: varchar("name", { length: 100 }).notNull(),
+  nameAr: varchar("nameAr", { length: 100 }),
+  
+  // Template content (supports variables like {name}, {days}, {plan})
+  content: text("content").notNull(),
+  contentAr: text("contentAr"),
+  
+  // Template type
+  type: mysqlEnum("type", ["subscription_expiry", "welcome", "payment_reminder", "custom"]).default("custom").notNull(),
+  
+  // Settings
+  isActive: boolean("isActive").default(true).notNull(),
+  isSystem: boolean("isSystem").default(false).notNull(), // System templates can't be deleted
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SmsTemplate = typeof smsTemplates.$inferSelect;
+export type InsertSmsTemplate = typeof smsTemplates.$inferInsert;
+
+// ============================================================================
+// SMS NOTIFICATION TRACKING (Prevent duplicate notifications)
+// ============================================================================
+
+export const smsNotificationTracking = mysqlTable("sms_notification_tracking", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Target
+  userId: int("userId").notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  
+  // Notification type
+  notificationType: varchar("notificationType", { length: 50 }).notNull(), // e.g., "subscription_expiry_2days"
+  
+  // Reference (e.g., subscription ID)
+  referenceId: int("referenceId"),
+  referenceType: varchar("referenceType", { length: 50 }), // e.g., "tenant_subscription"
+  
+  // Status
+  smsLogId: int("smsLogId"), // Reference to sms_logs
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+});
+
+export type SmsNotificationTracking = typeof smsNotificationTracking.$inferSelect;
+export type InsertSmsNotificationTracking = typeof smsNotificationTracking.$inferInsert;

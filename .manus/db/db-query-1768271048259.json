@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO `sms_templates` (`name`, `nameAr`, `content`, `contentAr`, `type`, `isSystem`) VALUES\n('Subscription Expiry Warning', 'تنبيه انتهاء الاشتراك', 'Dear {name}, your subscription will expire in {days} days. Please renew to continue using our services.', 'عزيزي {name}، اشتراكك سينتهي خلال {days} يوم. يرجى التجديد لمواصلة استخدام خدماتنا.', 'subscription_expiry', true),\n('Welcome Message', 'رسالة ترحيب', 'Welcome {name}! Your account has been activated. Enjoy our services.', 'مرحباً {name}! تم تفعيل حسابك. استمتع بخدماتنا.', 'welcome', true),\n('Payment Reminder', 'تذكير بالدفع', 'Dear {name}, you have an outstanding payment of {amount}. Please pay to avoid service interruption.', 'عزيزي {name}، لديك مبلغ مستحق قدره {amount}. يرجى الدفع لتجنب انقطاع الخدمة.', 'payment_reminder', true);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute INSERT INTO `sms_templates` (`name`, `nameAr`, `content`, `contentAr`, `type`, `isSystem`) VALUES\n('Subscription Expiry Warning', 'تنبيه انتهاء الاشتراك', 'Dear {name}, your subscription will expire in {days} days. Please renew to continue using our services.', 'عزيزي {name}، اشتراكك سينتهي خلال {days} يوم. يرجى التجديد لمواصلة استخدام خدماتنا.', 'subscription_expiry', true),\n('Welcome Message', 'رسالة ترحيب', 'Welcome {name}! Your account has been activated. Enjoy our services.', 'مرحباً {name}! تم تفعيل حسابك. استمتع بخدماتنا.', 'welcome', true),\n('Payment Reminder', 'تذكير بالدفع', 'Dear {name}, you have an outstanding payment of {amount}. Please pay to avoid service interruption.', 'عزيزي {name}، لديك مبلغ مستحق قدره {amount}. يرجى الدفع لتجنب انقطاع الخدمة.', 'payment_reminder', true);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 393
+}
