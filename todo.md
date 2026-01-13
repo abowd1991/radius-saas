@@ -1483,3 +1483,22 @@
 - [x] Add audit log for reload operations
 - [x] Update SaaS app to call reload after NAS add/update
 - [x] Test full flow: Add NAS → Auto reload → NAS works immediately
+
+
+## TweetSMS Integration (Jan 13, 2026)
+- [x] Create TweetSMS service (tweetsmsService.ts)
+  - [x] Send SMS function with phone number formatting
+  - [x] Check balance function
+  - [x] Bulk SMS function
+  - [x] Error code handling
+- [x] Create Multi-Channel Notification Service
+  - [x] Support Email, SMS, and Push notifications
+  - [x] Arabic and English message templates
+  - [x] User language preference support
+- [x] Add SMS API endpoints
+  - [x] getSmsBalance (Super Admin)
+  - [x] sendTestSms (Super Admin)
+  - [x] sendSmsToUser (Super Admin)
+  - [x] sendBulkSms (Super Admin)
+- [x] Configure TweetSMS credentials (TWEETSMS_USERNAME, TWEETSMS_PASSWORD, TWEETSMS_SENDER)
+- [x] Unit tests for TweetSMS service (9 tests passing)

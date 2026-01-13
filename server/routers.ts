@@ -30,6 +30,8 @@ import * as radiusSubscribers from "./db/radiusSubscribers";
 import { logAudit } from "./services/auditLogService";
 import * as vpnIpPool from "./db/vpnIpPool";
 import * as freeradiusService from "./services/freeradiusService";
+import * as multiChannelNotification from "./services/multiChannelNotificationService";
+import * as tweetsmsService from "./services/tweetsmsService";
 
 // ============================================================================
 // AUTH ROUTER
@@ -2673,6 +2675,56 @@ const notificationsRouter = router({
   getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
     return notificationDb.getUnreadCount(ctx.user.id);
   }),
+
+  // SMS Balance Check (Super Admin only)
+  getSmsBalance: superAdminProcedure.query(async () => {
+    return multiChannelNotification.getSmsBalance();
+  }),
+
+  // Send Test SMS (Super Admin only)
+  sendTestSms: superAdminProcedure
+    .input(z.object({
+      phone: z.string().min(9, "رقم الهاتف غير صالح"),
+      message: z.string().min(1, "الرسالة مطلوبة").max(160, "الرسالة طويلة جداً"),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await tweetsmsService.sendSms(input.phone, input.message);
+      if (!result.success) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: result.errorMessage || 'فشل إرسال الرسالة' });
+      }
+      return { success: true, smsId: result.smsId };
+    }),
+
+  // Send SMS to User (Super Admin only)
+  sendSmsToUser: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      message: z.string().min(1).max(160),
+    }))
+    .mutation(async ({ input }) => {
+      const results = await multiChannelNotification.sendCustomNotification(
+        input.userId,
+        { ar: 'رسالة من الإدارة', en: 'Message from Admin' },
+        { ar: input.message, en: input.message },
+        ['sms', 'push']
+      );
+      const smsResult = results.find(r => r.channel === 'sms');
+      if (!smsResult?.success) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: smsResult?.error || 'فشل إرسال الرسالة' });
+      }
+      return { success: true };
+    }),
+
+  // Send Bulk SMS (Super Admin only)
+  sendBulkSms: superAdminProcedure
+    .input(z.object({
+      phones: z.array(z.string()).min(1),
+      message: z.string().min(1).max(160),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await tweetsmsService.sendBulkSms(input.phones, input.message);
+      return result;
+    }),
 });
 
 // ============================================================================
