@@ -1475,3 +1475,11 @@
 - [x] تنبيه عند فشل VPN
 - [x] تنبيه عند فشل DHCP
 - [x] Health monitor كل دقيقة مع auto-restart
+
+## FreeRADIUS Reload Endpoint (Jan 13, 2026)
+- [x] Add /api/radius/reload endpoint to VPN API on server
+- [x] Implement rate-limit (30 seconds minimum between reloads)
+- [x] Implement lock to prevent concurrent reloads
+- [x] Add audit log for reload operations
+- [x] Update SaaS app to call reload after NAS add/update
+- [x] Test full flow: Add NAS → Auto reload → NAS works immediately

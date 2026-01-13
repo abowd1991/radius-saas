@@ -404,3 +404,65 @@ export async function deleteDhcpReservation(hostname: string): Promise<{ success
     };
   }
 }
+
+/**
+ * Reload FreeRADIUS to pick up new NAS clients from database
+ * This should be called after adding/updating NAS devices
+ */
+export async function reloadFreeRadius(): Promise<{ 
+  success: boolean; 
+  message?: string; 
+  error?: string;
+  timestamp?: string;
+  cooldown?: number;
+}> {
+  try {
+    const config = await getApiConfig();
+    
+    const response = await fetch(`${config.url}/api/radius/reload`, {
+      method: 'POST',
+      headers: {
+        'X-API-Key': config.apiKey,
+      },
+    });
+    
+    const data = await response.json();
+    console.log('FreeRADIUS Reload:', data);
+    return data;
+  } catch (error: any) {
+    console.error('VPN API Error (reloadFreeRadius):', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to connect to VPN API',
+    };
+  }
+}
+
+/**
+ * Get FreeRADIUS service status
+ */
+export async function getFreeRadiusStatus(): Promise<{ 
+  success: boolean; 
+  status?: string;
+  isActive?: boolean;
+  error?: string;
+}> {
+  try {
+    const config = await getApiConfig();
+    
+    const response = await fetch(`${config.url}/api/radius/status`, {
+      method: 'GET',
+      headers: {
+        'X-API-Key': config.apiKey,
+      },
+    });
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('VPN API Error (getFreeRadiusStatus):', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to connect to VPN API',
+    };
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "query": "SELECT id, shortname, nasname, vpnUsername, provisioningStatus, allocatedIp FROM nas;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, shortname, nasname, vpnUsername, provisioningStatus, allocatedIp FROM nas;",
+  "rows": [
+    {
+      "id": "120006",
+      "shortname": "Lolo",
+      "nasname": "192.168.30.11",
+      "vpnUsername": "lolo-mkbq1xlj",
+      "provisioningStatus": "ready",
+      "allocatedIp": "192.168.30.11"
+    },
+    {
+      "id": "120007",
+      "shortname": "Netabd",
+      "nasname": "192.168.30.11",
+      "vpnUsername": "netabd-mkbqr9vi",
+      "provisioningStatus": "ready",
+      "allocatedIp": "192.168.30.11"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tshortname\tnasname\tvpnUsername\tprovisioningStatus\tallocatedIp\n120006\tLolo\t192.168.30.11\tlolo-mkbq1xlj\tready\t192.168.30.11\n120007\tNetabd\t192.168.30.11\tnetabd-mkbqr9vi\tready\t192.168.30.11\n",
+  "stderr": "",
+  "execution_time_ms": 394
+}

@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, nasname, shortname, secret, type, connectionType, allocatedIp, provisioningStatus FROM nas LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret, type, connectionType, allocatedIp, provisioningStatus FROM nas LIMIT 10;",
+  "rows": [
+    {
+      "id": "120006",
+      "nasname": "192.168.30.11",
+      "shortname": "Lolo",
+      "secret": "329324567",
+      "type": "mikrotik",
+      "connectionType": "vpn_l2tp",
+      "allocatedIp": "192.168.30.11",
+      "provisioningStatus": "ready"
+    },
+    {
+      "id": "120007",
+      "nasname": "192.168.30.11",
+      "shortname": "Netabd",
+      "secret": "567899",
+      "type": "mikrotik",
+      "connectionType": "vpn_l2tp",
+      "allocatedIp": "192.168.30.11",
+      "provisioningStatus": "ready"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\ttype\tconnectionType\tallocatedIp\tprovisioningStatus\n120006\t192.168.30.11\tLolo\t329324567\tmikrotik\tvpn_l2tp\t192.168.30.11\tready\n120007\t192.168.30.11\tNetabd\t567899\tmikrotik\tvpn_l2tp\t192.168.30.11\tready\n",
+  "stderr": "",
+  "execution_time_ms": 387
+}

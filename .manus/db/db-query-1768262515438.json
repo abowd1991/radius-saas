@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO nas (nasname, shortname, type, secret, status, ownerId) VALUES ('192.168.30.99', 'TestNAS', 'other', 'test_secret_123', 'active', 1);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute INSERT INTO nas (nasname, shortname, type, secret, status, ownerId) VALUES ('192.168.30.99', 'TestNAS', 'other', 'test_secret_123', 'active', 1);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 392
+}
