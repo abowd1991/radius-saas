@@ -51,6 +51,7 @@ import {
   Wifi,
   History,
   Network,
+  Smartphone,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -113,6 +114,7 @@ const getMenuItems = (role: string, t: (key: string) => string) => {
     { icon: BarChart3, label: "تقارير الباندويث", path: "/bandwidth" },
     { icon: CreditCard, label: "خطط الاشتراك SaaS", path: "/saas-plans" },
     { icon: Users, label: "إدارة المستخدمين", path: "/users-management" },
+    { icon: Smartphone, label: "إدارة SMS", path: "/sms" },
   ];
 
   const resellerItems = [

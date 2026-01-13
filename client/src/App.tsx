@@ -36,6 +36,7 @@ import BandwidthReports from "./pages/BandwidthReports";
 import SaasPlansManagement from "./pages/SaasPlansManagement";
 import ClientManagement from "./pages/ClientManagement";
 import UsersManagement from "./pages/UsersManagement";
+import SmsManagement from "./pages/SmsManagement";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -142,6 +143,11 @@ function Router() {
       </Route>
       <Route path="/saas-plans">
         <SaasPlansManagement />
+      </Route>
+      <Route path="/sms">
+        <DashboardLayout>
+          <SmsManagement />
+        </DashboardLayout>
       </Route>
       <Route path="/client-management">
         <ClientManagement />

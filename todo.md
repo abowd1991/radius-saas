@@ -1502,3 +1502,14 @@
   - [x] sendBulkSms (Super Admin)
 - [x] Configure TweetSMS credentials (TWEETSMS_USERNAME, TWEETSMS_PASSWORD, TWEETSMS_SENDER)
 - [x] Unit tests for TweetSMS service (9 tests passing)
+
+
+## SMS Management Page (Jan 13, 2026)
+- [x] Create SMS Management page for Super Admin
+  - [x] Display SMS balance with refresh button
+  - [x] Send test SMS form (phone + message)
+  - [x] Send SMS to specific user (select user + message)
+  - [x] Bulk SMS form (multiple phones + message)
+  - [ ] SMS history/logs display (future enhancement)
+- [x] Add SMS page to sidebar navigation (Super Admin only)
+- [x] Add SMS page route to App.tsx
