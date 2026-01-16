@@ -1764,3 +1764,24 @@
 - **كلمة المرور:** !@Abowd022963385
 - **الصلاحية:** super_admin
 
+
+
+## نظام التحديث بدون توقف (Zero Downtime Update) - Jan 16, 2026 ✅
+
+### المتطلبات المكتملة:
+- [x] تحديث بضغطة زر من Manus
+- [x] Zero Downtime - بدون توقف الخدمة
+- [x] استمرار الخدمات للمشتركين أثناء التحديث
+- [x] PM2 Reload بدلاً من Restart
+
+### المهام المكتملة:
+- [x] إنشاء سكربت التحديث على VPS (/usr/local/bin/radius-update.sh)
+- [x] إنشاء API endpoint للتحديث (vpsManagement.deployUpdate)
+- [x] تحديث VPS Management API لدعم /api/deploy
+- [x] اختبار التحديث بدون توقف - ناجح!
+
+### طريقة التحديث:
+1. أعمل التعديلات في Manus
+2. أضغط على زر "تحديث VPS" في صفحة System Admin
+3. يتم التحديث تلقائياً بدون توقف الخدمة
+

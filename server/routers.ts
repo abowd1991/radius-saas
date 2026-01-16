@@ -5364,6 +5364,59 @@ const vpsManagementRouter = router({
       }
       return result.data;
     }),
+
+  // Deploy update from Manus (Zero Downtime)
+  deployUpdate: superAdminProcedure
+    .input(z.object({
+      packageData: z.string().describe('Base64 encoded tar.gz package')
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await vpsManagementService.deployUpdate(input.packageData);
+      
+      // Log the action
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'system_deploy',
+        targetType: 'system',
+        targetId: 'vps',
+        details: result.success 
+          ? { message: 'Zero downtime deployment successful' }
+          : { message: `Deployment failed: ${result.error}` },
+        result: result.success ? 'success' : 'failure',
+        ipAddress: '',
+      });
+      
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Deployment failed' });
+      }
+      return result.data;
+    }),
+
+  // Quick reload app (Zero Downtime)
+  reloadApp: superAdminProcedure
+    .mutation(async ({ ctx }) => {
+      const result = await vpsManagementService.reloadApp();
+      
+      // Log the action
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'app_reload',
+        targetType: 'system',
+        targetId: 'vps',
+        details: result.success 
+          ? { message: 'Application reloaded successfully' }
+          : { message: `Reload failed: ${result.error}` },
+        result: result.success ? 'success' : 'failure',
+        ipAddress: '',
+      });
+      
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Reload failed' });
+      }
+      return result.data;
+    }),
 });
 
 // ============================================================================

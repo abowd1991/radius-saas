@@ -173,6 +173,21 @@ export async function manageService(
   );
 }
 
+/**
+ * Deploy update package to VPS (Zero Downtime)
+ * @param packageData Base64 encoded tar.gz file
+ */
+export async function deployUpdate(packageData: string): Promise<ApiResponse<{ message: string; output: string }>> {
+  return callVpsApi<{ message: string; output: string }>("/api/deploy", "POST", { package: packageData });
+}
+
+/**
+ * Quick reload of the application (Zero Downtime)
+ */
+export async function reloadApp(): Promise<ApiResponse<{ message: string; status: string; output: string }>> {
+  return callVpsApi<{ message: string; status: string; output: string }>("/api/reload", "POST");
+}
+
 export const vpsManagementService = {
   getSystemStatus,
   getVersions,
@@ -183,4 +198,6 @@ export const vpsManagementService = {
   restoreBackup,
   getServiceLogs,
   manageService,
+  deployUpdate,
+  reloadApp,
 };
