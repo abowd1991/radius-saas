@@ -1155,6 +1155,24 @@ const nasRouter = router({
         } catch (error) {
           console.error('[NAS Delete] Failed to disconnect VPN session:', error);
         }
+        
+        // 4. Delete DHCP reservation from VPS (Hard Delete - Single Source of Truth)
+        try {
+          // DHCP hostname format: nas-{ip without dots}
+          const allocatedIp = nasCheck.allocatedIp;
+          if (allocatedIp) {
+            const dhcpHostname = `nas-${allocatedIp.replace(/\./g, '')}`;
+            console.log(`[NAS Delete] Deleting DHCP reservation: ${dhcpHostname}`);
+            const dhcpResult = await vpnApi.deleteDhcpReservation(dhcpHostname);
+            if (dhcpResult.success) {
+              console.log(`[NAS Delete] DHCP reservation deleted: ${dhcpHostname}`);
+            } else {
+              console.error(`[NAS Delete] Failed to delete DHCP reservation:`, dhcpResult.error);
+            }
+          }
+        } catch (error) {
+          console.error('[NAS Delete] Failed to delete DHCP reservation:', error);
+        }
       }
       
       // Reload FreeRADIUS to remove deleted NAS client

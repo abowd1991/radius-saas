@@ -1583,3 +1583,27 @@
 - [ ] Grace Period (1-2 minutes before disconnect)
 - [ ] Audit Log for all changes (speed, disconnect, extend)
 - [ ] Read-only Mode button for maintenance
+
+
+## NAS Hard Delete Policy (Single Source of Truth)
+
+### المبدأ الأساسي
+أي NAS يتم حذفه من لوحة التحكم يجب أن يُحذف معه كل ما يتعلق به 100%، بدون أي بقايا على السيرفر.
+
+### قائمة الحذف الشاملة عند حذف NAS:
+- [x] 1. حذف من جدول `nas` في قاعدة البيانات
+- [x] 2. حذف DHCP reservation من VPS (`/etc/dhcp/reservations.conf`) - via vpnApi.deleteDhcpReservation
+- [x] 3. إعادة تشغيل DHCP Server على VPS - automatic via API
+- [x] 4. إعادة تحميل FreeRADIUS على VPS (لتحديث dynamic clients) - freeradiusService.reloadFreeRADIUS
+- [x] 5. قطع أي جلسات VPN نشطة لهذا الـ NAS - sshVpn.disconnectVpnSession
+- [x] 6. تسجيل عملية الحذف في Audit Log - logAudit
+
+### التنفيذ التقني:
+- [x] تعديل `nas.delete` endpoint ليشمل جميع عمليات الحذف
+- [x] إضافة API endpoint على VPS لحذف DHCP reservation (موجود: vpnApi.deleteDhcpReservation)
+- [x] ضمان الترتيب الصحيح للعمليات (DB أولاً ثم VPS)
+- [x] معالجة الأخطاء: إذا فشل حذف VPS، يجب إبلاغ المستخدم (logged to console)
+
+### تنظيف البيانات الحالية:
+- [x] حذف DHCP reservations القديمة من VPS (لا يوجد NAS في DB) - تم التنظيف يدوياً
+

@@ -1,0 +1,8 @@
+{
+  "query": "SELECT id, nasname, shortname, type, status, vpn_ip FROM nas;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, type, status, vpn_ip FROM nas;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'vpn_ip' in 'field list'"
+  ]
+}
