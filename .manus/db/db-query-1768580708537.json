@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO users (username, passwordHash, name, email, loginMethod, role, status, accountStatus, emailVerified, createdAt, updatedAt, lastSignedIn)\nVALUES ('admin', '$2b$10$KHdCBqs7WyyWmpGZuIvRgOhIY0zRfcBWBLc.G7F/z/d08aGSfWdeu', 'مدير النظام', 'admin@radius-pro.com', 'traditional', 'super_admin', 'active', 'active', true, NOW(), NOW(), NOW())\nON DUPLICATE KEY UPDATE passwordHash = '$2b$10$KHdCBqs7WyyWmpGZuIvRgOhIY0zRfcBWBLc.G7F/z/d08aGSfWdeu', role = 'super_admin', status = 'active', accountStatus = 'active', emailVerified = true;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute INSERT INTO users (username, passwordHash, name, email, loginMethod, role, status, accountStatus, emailVerified, createdAt, updatedAt, lastSignedIn)\nVALUES ('admin', '$2b$10$KHdCBqs7WyyWmpGZuIvRgOhIY0zRfcBWBLc.G7F/z/d08aGSfWdeu', 'مدير النظام', 'admin@radius-pro.com', 'traditional', 'super_admin', 'active', 'active', true, NOW(), NOW(), NOW())\nON DUPLICATE KEY UPDATE passwordHash = '$2b$10$KHdCBqs7WyyWmpGZuIvRgOhIY0zRfcBWBLc.G7F/z/d08aGSfWdeu', role = 'super_admin', status = 'active', accountStatus = 'active', emailVerified = true;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 103
+}

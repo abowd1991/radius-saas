@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getLoginUrl } from "@/const";
+// Using local auth page instead of OAuth
 import { useLocation } from "wouter";
 import {
   Wifi,
@@ -290,7 +290,7 @@ export default function Home() {
             انضم إلى مئات مزودي خدمات الإنترنت الذين يستخدمون منصتنا لإدارة أعمالهم بكفاءة
           </p>
           <Button size="lg" variant="secondary" asChild>
-            <a href={getLoginUrl()}>
+            <a href="/auth">
               ابدأ الآن مجاناً
               <ArrowRight className="mr-2 h-5 w-5" />
             </a>

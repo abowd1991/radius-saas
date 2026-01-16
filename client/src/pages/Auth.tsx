@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, User, Mail, Lock, Phone, Globe, ArrowRight, CheckCircle } from "lucide-react";
-import { getLoginUrl } from "@/const";
+// OAuth removed - using local authentication only
 
 type AuthView = "login" | "register" | "forgot-password" | "reset-password" | "verify-email";
 
@@ -273,26 +273,7 @@ export default function Auth() {
             </Button>
           </form>
 
-          {/* OAuth Login Option */}
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-600" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-slate-800 px-2 text-slate-400">أو</span>
-              </div>
-            </div>
-
-            <Button
-              variant="outline"
-              className="w-full mt-4 border-slate-600 text-slate-200 hover:bg-slate-700"
-              onClick={() => window.location.href = getLoginUrl()}
-            >
-              <Globe className="ml-2 h-4 w-4" />
-              تسجيل الدخول عبر Manus
-            </Button>
-          </div>
+          {/* Local authentication only - OAuth removed */}
         </TabsContent>
 
         {/* Register Tab */}
