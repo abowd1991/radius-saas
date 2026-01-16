@@ -1,0 +1,15 @@
+[Unit]
+Description=RADIUS SaaS VPS Management API
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/radius-saas
+Environment=VPS_API_SECRET=your-secure-secret-here
+ExecStart=/usr/bin/python3 /opt/radius-saas/vps-scripts/vps_management_api.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

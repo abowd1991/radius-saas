@@ -1607,3 +1607,73 @@
 ### تنظيف البيانات الحالية:
 - [x] حذف DHCP reservations القديمة من VPS (لا يوجد NAS في DB) - تم التنظيف يدوياً
 
+
+
+## FreeRADIUS Dynamic Clients - حل جذري (Critical Fix - Jan 16, 2026)
+
+### المشكلة:
+- FreeRADIUS يقرأ NAS من قاعدة البيانات عند البدء فقط (startup)
+- Reload لا يُعيد قراءة clients
+- هذا يتطلب restart كامل لكل NAS جديد - غير مقبول للإنتاج
+
+### الحل الجذري:
+- [ ] تفعيل Dynamic Clients الحقيقي في FreeRADIUS
+- [ ] إنشاء virtual server `dynamic_clients` يقرأ من SQL لكل طلب
+- [ ] تعديل `clients.conf` لاستخدام dynamic lookup
+- [ ] اختبار End-to-End مع MikroTik حقيقي
+
+
+## SaaS Production System (VPS Management) - Jan 16, 2026
+
+### المبادئ الأساسية:
+- VPS = Production فقط
+- Manus = Development فقط
+- لا تعديل يدوي على السيرفر
+- لا أي Feature تمس FreeRADIUS
+- كل شيء يُدار من لوحة التحكم
+
+### 1. نظام التحديث (Update System)
+- [ ] زر "جلب آخر تحديث" في لوحة التحكم (Admin Only)
+- [ ] Pull آخر إصدار Stable من Git
+- [ ] تشغيل Database migrations (Reversible)
+- [ ] إعادة تشغيل التطبيق فقط (NOT FreeRADIUS)
+- [ ] Health Check تلقائي بعد التحديث
+- [ ] Rollback تلقائي إذا فشل Health Check
+
+### 2. نظام الرجوع (Rollback System)
+- [ ] زر "الرجوع للنسخة السابقة" في لوحة التحكم
+- [ ] حفظ كل إصدار كـ Release
+- [ ] العودة للـ Code السابق
+- [ ] تنفيذ migration rollback
+- [ ] تسجيل العملية في Audit Log
+
+### 3. نظام النسخ الاحتياطي (Backup System)
+- [ ] نسخة تلقائية يومية (Daily Backup)
+  - [ ] قاعدة البيانات
+  - [ ] ملفات النظام المهمة
+  - [ ] إعدادات النظام
+- [ ] نسخة يدوية عند الطلب (On-Demand Backup)
+- [ ] زر "إنشاء نسخة احتياطية الآن"
+
+### 4. نظام الاسترجاع (Restore System)
+- [ ] استرجاع مباشر من السيرفر (اختيار نسخة من القائمة)
+- [ ] استرجاع من ملف خارجي (رفع ZIP)
+- [ ] التحقق من التوقيع والإصدار والتوافق
+- [ ] Restore بدون توقف RADIUS
+
+### 5. الأمان (Security)
+- [ ] لا SSH مباشر من لوحة التحكم
+- [ ] كل العمليات عبر API محدد
+- [ ] صلاحيات Admin فقط
+- [ ] Rate-limit على العمليات الحساسة
+- [ ] Audit Log لكل عملية
+
+### 6. صفحة System Admin
+- [x] عرض حالة النظام (Services Status)
+- [x] عرض الإصدار الحالي
+- [x] قائمة الإصدارات المتاحة
+- [x] قائمة النسخ الاحتياطية
+- [x] أزرار: Update / Rollback / Backup / Restore
+- [x] فحص الصحة (Health Check): التطبيق، API، قاعدة البيانات
+- [x] عرض استخدام القرص
+- [x] تبويبات: التحديث، النسخ الاحتياطي، الخدمات، السجلات

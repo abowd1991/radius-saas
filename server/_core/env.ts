@@ -7,4 +7,7 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  // VPS Management API
+  VPS_MANAGEMENT_URL: process.env.VPS_MANAGEMENT_URL ?? "http://127.0.0.1:8081",
+  VPS_MANAGEMENT_SECRET: process.env.VPS_MANAGEMENT_SECRET ?? "",
 };

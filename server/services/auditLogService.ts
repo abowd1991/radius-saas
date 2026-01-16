@@ -26,7 +26,13 @@ export type AuditAction =
   | 'vpn_connect'
   | 'vpn_disconnect'
   | 'login'
-  | 'logout';
+  | 'logout'
+  // VPS Management actions
+  | 'system_update'
+  | 'system_rollback'
+  | 'backup_create'
+  | 'backup_restore'
+  | 'service_manage';
 
 export type AuditResult = 'success' | 'failure' | 'partial';
 
@@ -36,7 +42,7 @@ export interface AuditLogEntry {
   userId: number;
   userRole: string;
   action: AuditAction;
-  targetType: 'session' | 'nas' | 'card' | 'subscriber' | 'user' | 'vpn';
+  targetType: 'session' | 'nas' | 'card' | 'subscriber' | 'user' | 'vpn' | 'system';
   targetId?: string;
   targetName?: string;
   nasId?: number;

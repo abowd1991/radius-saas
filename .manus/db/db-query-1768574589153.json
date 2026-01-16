@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, nasname, shortname, secret, status FROM nas WHERE status = 'active';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret, status FROM nas WHERE status = 'active';",
+  "rows": [
+    {
+      "id": "150003",
+      "nasname": "192.168.30.11",
+      "shortname": "Khaled",
+      "secret": "32932412345",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\tstatus\n150003\t192.168.30.11\tKhaled\t32932412345\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 50
+}

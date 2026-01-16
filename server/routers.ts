@@ -5186,6 +5186,187 @@ const radiusControlRouter = router({
 });
 
 // ============================================================================
+// VPS MANAGEMENT ROUTER (System Admin)
+// ============================================================================
+import * as vpsManagementService from "./services/vpsManagementService";
+
+const vpsManagementRouter = router({
+  // Get system status
+  getStatus: superAdminProcedure
+    .query(async () => {
+      const result = await vpsManagementService.getSystemStatus();
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to get status' });
+      }
+      return result.data;
+    }),
+
+  // Get available versions
+  getVersions: superAdminProcedure
+    .query(async () => {
+      const result = await vpsManagementService.getVersions();
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to get versions' });
+      }
+      return result.data;
+    }),
+
+  // Update system to latest version
+  updateSystem: superAdminProcedure
+    .mutation(async ({ ctx }) => {
+      const result = await vpsManagementService.updateSystem();
+      
+      // Log the action
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'system_update',
+        targetType: 'system',
+        targetId: 'vps',
+        details: result.success 
+          ? { message: `Updated from ${result.data?.old_version} to ${result.data?.new_version}` }
+          : { message: `Update failed: ${result.error}` },
+        result: result.success ? 'success' : 'failure',
+        ipAddress: '',
+      });
+      
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Update failed' });
+      }
+      return result.data;
+    }),
+
+  // Rollback to previous version
+  rollbackSystem: superAdminProcedure
+    .input(z.object({ version: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await vpsManagementService.rollbackSystem(input.version);
+      
+      // Log the action
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'system_rollback',
+        targetType: 'system',
+        targetId: 'vps',
+        details: result.success 
+          ? { message: `Rolled back from ${result.data?.previous_version} to ${result.data?.current_version}` }
+          : { message: `Rollback failed: ${result.error}` },
+        result: result.success ? 'success' : 'failure',
+        ipAddress: '',
+      });
+      
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Rollback failed' });
+      }
+      return result.data;
+    }),
+
+  // Get backups list
+  getBackups: superAdminProcedure
+    .query(async () => {
+      const result = await vpsManagementService.getBackups();
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to get backups' });
+      }
+      return result.data;
+    }),
+
+  // Create new backup
+  createBackup: superAdminProcedure
+    .input(z.object({ prefix: z.string().default('manual') }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await vpsManagementService.createBackup(input.prefix);
+      
+      // Log the action
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'backup_create',
+        targetType: 'system',
+        targetId: 'vps',
+        details: result.success 
+          ? { message: `Created backup: ${result.data?.backup_id}` }
+          : { message: `Backup failed: ${result.error}` },
+        result: result.success ? 'success' : 'failure',
+        ipAddress: '',
+      });
+      
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Backup failed' });
+      }
+      return result.data;
+    }),
+
+  // Restore from backup
+  restoreBackup: superAdminProcedure
+    .input(z.object({ backupId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await vpsManagementService.restoreBackup(input.backupId);
+      
+      // Log the action
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'backup_restore',
+        targetType: 'system',
+        targetId: 'vps',
+        details: result.success 
+          ? { message: `Restored backup: ${input.backupId}` }
+          : { message: `Restore failed: ${result.error}` },
+        result: result.success ? 'success' : 'failure',
+        ipAddress: '',
+      });
+      
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Restore failed' });
+      }
+      return result.data;
+    }),
+
+  // Get service logs
+  getServiceLogs: superAdminProcedure
+    .input(z.object({ 
+      serviceName: z.enum(['app', 'freeradius', 'vpn', 'dhcp']),
+      lines: z.number().default(100)
+    }))
+    .query(async ({ input }) => {
+      const result = await vpsManagementService.getServiceLogs(input.serviceName, input.lines);
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to get logs' });
+      }
+      return result.data;
+    }),
+
+  // Manage service (only app and dhcp allowed)
+  manageService: superAdminProcedure
+    .input(z.object({
+      serviceName: z.enum(['app', 'dhcp']),
+      action: z.enum(['start', 'stop', 'restart', 'reload'])
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await vpsManagementService.manageService(input.serviceName, input.action);
+      
+      // Log the action
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'service_manage',
+        targetType: 'system',
+        targetId: 'vps',
+        details: { message: `${input.action} ${input.serviceName}: ${result.success ? 'success' : result.error}` },
+        result: result.success ? 'success' : 'failure',
+        ipAddress: '',
+      });
+      
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Service action failed' });
+      }
+      return result.data;
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -5215,6 +5396,7 @@ export const appRouter = router({
   logs: logsRouter,
   diagnostics: diagnosticsRouter,
   radius: radiusControlRouter,
+  vpsManagement: vpsManagementRouter,
 });
 
 export type AppRouter = typeof appRouter;

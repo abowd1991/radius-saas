@@ -1,0 +1,21 @@
+{
+  "query": "SELECT id, nasname, shortname, secret, vpnTunnelIp, allocatedIp, provisioningStatus, status, createdAt FROM nas ORDER BY createdAt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret, vpnTunnelIp, allocatedIp, provisioningStatus, status, createdAt FROM nas ORDER BY createdAt DESC;",
+  "rows": [
+    {
+      "id": "150003",
+      "nasname": "192.168.30.11",
+      "shortname": "Khaled",
+      "secret": "32932412345",
+      "vpnTunnelIp": "192.168.30.22",
+      "allocatedIp": "192.168.30.11",
+      "provisioningStatus": "ready",
+      "status": "active",
+      "createdAt": "2026-01-16 13:50:24"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\tvpnTunnelIp\tallocatedIp\tprovisioningStatus\tstatus\tcreatedAt\n150003\t192.168.30.11\tKhaled\t32932412345\t192.168.30.22\t192.168.30.11\tready\tactive\t2026-01-16 13:50:24\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}
