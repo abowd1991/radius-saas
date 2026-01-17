@@ -33,6 +33,7 @@ import * as freeradiusService from "./services/freeradiusService";
 import * as multiChannelNotification from "./services/multiChannelNotificationService";
 import * as tweetsmsService from "./services/tweetsmsService";
 import * as smsDb from "./db/sms";
+import * as twoPhaseProvisioning from "./services/twoPhaseProvisioningService";
 
 // ============================================================================
 // AUTH ROUTER
@@ -664,6 +665,9 @@ const nasRouter = router({
 
   // Create NAS - any authenticated user can create, ownerId is set automatically
   // Requires active subscription to create new NAS
+  // TWO-PHASE PROVISIONING:
+  // - Phase 1 (here): Create NAS with nasname='pending', status='pending'
+  // - Phase 2 (background): When VPN connects, read actual IP, create DHCP reservation, update nasname
   create: activeSubscriptionProcedure
     .input(z.object({
       name: z.string().min(1),
@@ -685,6 +689,7 @@ const nasRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Set ownerId to current user
       const ownerId = ctx.user.id;
+      
       // For VPN connections, generate unique credentials if not provided
       if (input.connectionType !== 'public_ip') {
         // Generate VPN username if not provided
@@ -696,153 +701,91 @@ const nasRouter = router({
         if (!input.vpnPassword || input.vpnPassword.trim() === '') {
           input.vpnPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         }
-        // For VPN connections, allocate a static IP from the pool
-        // This ensures FreeRADIUS can always identify the NAS by IP
-        // No more placeholders or sync needed - IP is fixed at creation time
-        if (input.ipAddress === 'pending' || input.ipAddress === 'سيتم تعيينه تلقائي' || !input.ipAddress || input.ipAddress.startsWith('vpn-') || input.ipAddress.startsWith('pending-')) {
-          // IP will be allocated after NAS creation (need nasId first)
-          // Set a temporary value that will be replaced immediately
-          input.ipAddress = 'allocating';
-        }
+        // TWO-PHASE PROVISIONING: For VPN connections, IP is 'pending' until VPN connects
+        // nasname will be set to actual IP after VPN connection is established
+        // This prevents IP mismatch between pre-allocated IP and DHCP-assigned IP
+        input.ipAddress = 'pending'; // Will be updated in Phase 2
         
-        // Create VPN user in SoftEther automatically via SSH (for SSTP/PPTP connections)
-        // Using SSH ensures reliable user creation directly on the server
-        // Now using Password Authentication instead of RADIUS Authentication
+        // Create VPN user in SoftEther (without static IP - DHCP will assign)
         try {
-          console.log(`[SSH] Creating VPN user: ${input.vpnUsername} with password auth for connection type: ${input.connectionType}`);
+          console.log(`[Phase 1] Creating VPN user: ${input.vpnUsername} (no static IP - DHCP will assign)`);
           const vpnResult = await sshVpn.createVpnUser(input.vpnUsername, input.vpnPassword!);
-          console.log('[SSH] VPN User creation result:', vpnResult);
+          console.log('[Phase 1] VPN User creation result:', vpnResult);
           
           if (!vpnResult.success) {
-            console.error('[SSH] VPN User creation failed:', vpnResult.error);
-            // Log the error but continue - VPN user might already exist
-            console.log('[SSH] Continuing with NAS creation despite VPN user creation failure');
+            console.error('[Phase 1] VPN User creation failed:', vpnResult.error);
           }
         } catch (error) {
-          console.error('[SSH] Failed to create VPN user:', error);
-          // Continue with NAS creation - VPN user might already exist or will be created manually
+          console.error('[Phase 1] Failed to create VPN user:', error);
         }
         
-        // Create RADIUS entry for VPN user authentication in database directly
+        // Create RADIUS entry for VPN user authentication
         try {
-          console.log(`Creating RADIUS entry in database for VPN user: ${input.vpnUsername}`);
+          console.log(`[Phase 1] Creating RADIUS entry for VPN user: ${input.vpnUsername}`);
           const database = await getDb();
           if (database) {
-            // Check if user already exists
             const existingUser = await database.select()
               .from(radcheck)
               .where(eq(radcheck.username, input.vpnUsername))
               .limit(1);
             
             if (existingUser.length === 0) {
-              // Create RADIUS user with password
               await database.insert(radcheck).values({
                 username: input.vpnUsername,
                 attribute: 'Cleartext-Password',
                 op: ':=',
                 value: input.vpnPassword,
               });
-              console.log(`RADIUS user created in database: ${input.vpnUsername}`);
-            } else {
-              console.log(`RADIUS user already exists: ${input.vpnUsername}`);
+              console.log(`[Phase 1] RADIUS user created: ${input.vpnUsername}`);
             }
           }
         } catch (error) {
-          console.error('Failed to create RADIUS entry in database:', error);
+          console.error('[Phase 1] Failed to create RADIUS entry:', error);
         }
       }
       
-      // For VPN connections, allocate a static IP from the pool BEFORE creating NAS
-      // This ensures the IP is assigned to SoftEther user during creation
-      let allocatedVpnIp: string | null = null;
-      
-      if (input.connectionType === 'vpn_l2tp' || input.connectionType === 'vpn_sstp') {
-        try {
-          // Pre-allocate IP from pool (we'll link it to NAS ID after creation)
-          const preAllocation = await vpnIpPool.getNextAvailableIp();
-          
-          if (preAllocation) {
-            allocatedVpnIp = preAllocation;
-            console.log(`[VPN IP Pool] Pre-allocated static IP ${allocatedVpnIp} for new NAS`);
-            
-            // Update the VPN user creation to include static IP
-            // This tells SoftEther to assign this specific IP to the user
-            if (input.vpnUsername && input.vpnPassword) {
-              try {
-                console.log(`[SSH] Updating VPN user ${input.vpnUsername} with static IP: ${allocatedVpnIp}`);
-                // Re-create VPN user with static IP assignment
-                await sshVpn.createVpnUser(input.vpnUsername, input.vpnPassword, allocatedVpnIp);
-              } catch (error) {
-                console.error('[SSH] Failed to update VPN user with static IP:', error);
-              }
-            }
-          } else {
-            console.error(`[VPN IP Pool] Failed to pre-allocate IP - pool might be exhausted`);
-          }
-        } catch (error) {
-          console.error(`[VPN IP Pool] Error pre-allocating IP:`, error);
-        }
-      }
-      
-      // Create NAS with the allocated IP (or temporary if allocation failed)
+      // Create NAS in database
+      // For VPN: nasname='pending', status='pending', provisioningStatus='pending'
+      // For public_ip: nasname=actual IP, status='active', provisioningStatus='ready'
       const nasInput = { ...input, ownerId };
-      if (allocatedVpnIp) {
-        nasInput.ipAddress = allocatedVpnIp;
-      }
-      
       const newNas = await nasDb.createNas(nasInput);
       
-      // For VPN connections, finalize the IP allocation
-      if ((input.connectionType === 'vpn_l2tp' || input.connectionType === 'vpn_sstp') && allocatedVpnIp) {
-        try {
-          // Now allocate the IP officially with the NAS ID
-          await vpnIpPool.allocateIpForNas(newNas.id, allocatedVpnIp);
-          
-          // Also update vpnTunnelIp field
-          const database = await getDb();
-          if (database) {
-            await database.update(nasDevices)
-              .set({ vpnTunnelIp: allocatedVpnIp })
-              .where(eq(nasDevices.id, newNas.id));
-          }
-          
-          console.log(`[VPN IP Pool] Finalized static IP ${allocatedVpnIp} for NAS ${newNas.id}`);
-          
-          // Start DHCP auto-provisioning in background
-          // This will wait for VPN connection and create DHCP reservation
-          if (input.vpnUsername) {
-            // Run in background - don't await
-            sshVpn.autoProvisionDhcpReservation(
-              input.vpnUsername,
-              allocatedVpnIp,
-              newNas.id,
-              24, // 24 retries
-              5000 // 5 seconds interval = 2 minutes total
-            ).then(result => {
-              if (result.success) {
-                console.log(`[DHCP] Auto-provisioned reservation for NAS ${newNas.id}: ${result.macAddress} -> ${allocatedVpnIp}`);
-              } else {
-                console.error(`[DHCP] Failed to auto-provision for NAS ${newNas.id}:`, result.error);
-              }
-            }).catch(error => {
-              console.error(`[DHCP] Error in auto-provision for NAS ${newNas.id}:`, error);
-            });
-          }
-          
-          // Return NAS with updated IP
-          return { ...newNas, nasname: allocatedVpnIp, vpnTunnelIp: allocatedVpnIp, allocatedVpnIp: allocatedVpnIp };
-        } catch (error) {
-          console.error(`[VPN IP Pool] Error finalizing IP for NAS ${newNas.id}:`, error);
+      console.log(`[Phase 1] NAS created: ID=${newNas.id}, status=${newNas.status}, provisioningStatus=${newNas.provisioningStatus}`);
+      
+      // For VPN connections, start Phase 2 auto-provisioning in background
+      if (input.connectionType === 'vpn_l2tp' || input.connectionType === 'vpn_sstp') {
+        if (input.vpnUsername) {
+          // Run Phase 2 in background - don't await
+          // This will wait for VPN connection, read actual IP, create DHCP reservation, update nasname
+          twoPhaseProvisioning.autoProvisionNewNas(
+            newNas.id,
+            input.vpnUsername,
+            60, // 60 retries (5 minutes total)
+            5000 // 5 seconds interval
+          ).then(result => {
+            if (result.success) {
+              console.log(`[Phase 2] NAS ${newNas.id} provisioned: IP=${result.actualIp}, MAC=${result.macAddress}`);
+            } else {
+              console.error(`[Phase 2] NAS ${newNas.id} provisioning failed:`, result.message);
+            }
+          }).catch(error => {
+            console.error(`[Phase 2] Error provisioning NAS ${newNas.id}:`, error);
+          });
         }
+        
+        // Return NAS with pending status (will be updated when VPN connects)
+        return {
+          ...newNas,
+          nasname: 'pending',
+          status: 'pending',
+          provisioningStatus: 'pending',
+          message: 'NAS created. Connect VPN to complete provisioning.',
+        };
       }
       
-      // Reload FreeRADIUS to pick up new NAS client
-      freeradiusService.reloadFreeRADIUS().then(result => {
-        if (result.success) {
-          console.log(`[NAS Create] FreeRADIUS reloaded successfully for new NAS ${newNas.id}`);
-        } else {
-          console.error(`[NAS Create] Failed to reload FreeRADIUS:`, result.message);
-        }
+      // For public_ip connections, reload FreeRADIUS immediately
+      twoPhaseProvisioning.rateLimitedReload().then(result => {
+        console.log(`[NAS Create] FreeRADIUS reload:`, result.message);
       }).catch(error => {
         console.error(`[NAS Create] Error reloading FreeRADIUS:`, error);
       });
@@ -1864,8 +1807,7 @@ const nasRouter = router({
   triggerProvisioning: superAdminProcedure
     .input(z.object({ nasId: z.number() }))
     .mutation(async ({ input }) => {
-      const { provisionNas } = await import('./services/provisioningService');
-      const result = await provisionNas(input.nasId);
+      const result = await twoPhaseProvisioning.manualProvision(input.nasId);
       return result;
     }),
 

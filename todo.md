@@ -1785,3 +1785,43 @@
 2. أضغط على زر "تحديث VPS" في صفحة System Admin
 3. يتم التحديث تلقائياً بدون توقف الخدمة
 
+
+
+## Two-Phase NAS Provisioning Fix (Jan 17, 2026)
+- [ ] Fix NAS IP allocation to use DHCP Reservation properly
+  - [ ] Remove IP Pool allocation at NAS creation time
+  - [ ] Set nasname='pending' for VPN NAS at creation
+  - [ ] Set provisioningStatus='pending' at creation
+  - [ ] Ensure FreeRADIUS only loads NAS with status='active'
+- [ ] Fix Provisioning worker to finalize NAS
+  - [ ] Read actual IP from VPN Session
+  - [ ] Read MAC from DHCP leases
+  - [ ] Create DHCP Reservation (MAC → actual IP)
+  - [ ] Update nasname = actual IP
+  - [ ] Update status = 'active', provisioningStatus = 'ready'
+  - [ ] Reload FreeRADIUS after update
+- [ ] Add Idempotency checks
+  - [ ] Don't duplicate DHCP Reservation if exists
+  - [ ] Rate-limit FreeRADIUS reload (30 seconds)
+  - [ ] Don't update nasname if already 'ready'
+- [ ] Fix existing NAS with wrong IPs
+
+
+## Two-Phase NAS Provisioning Fix (Jan 17, 2026)
+- [x] Fix NAS IP allocation to use DHCP Reservation properly
+  - [x] Remove IP Pool allocation at NAS creation time
+  - [x] Set nasname='pending' for VPN NAS at creation
+  - [x] Set provisioningStatus='pending' at creation
+  - [x] Ensure FreeRADIUS only loads NAS with status='active' AND provisioningStatus='ready'
+- [x] Fix Provisioning worker to finalize NAS
+  - [x] Read actual IP from VPN Session
+  - [x] Read MAC from DHCP leases
+  - [x] Create DHCP Reservation (MAC → actual IP)
+  - [x] Update nasname = actual IP
+  - [x] Update status = 'active', provisioningStatus = 'ready'
+  - [x] Reload FreeRADIUS after update
+- [x] Add Idempotency checks
+  - [x] Don't duplicate DHCP Reservation if exists
+  - [x] Rate-limit FreeRADIUS reload (30 seconds)
+  - [x] Check actual IP matches before skipping re-provision
+- [x] Fix existing NAS with wrong IPs (NAS 150007: 192.168.30.26 → 192.168.30.11)
