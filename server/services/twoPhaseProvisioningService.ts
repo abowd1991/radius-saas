@@ -32,7 +32,7 @@ import * as sshVpn from './sshVpnService';
 import * as freeradiusService from './freeradiusService';
 import { getDb } from '../db';
 import { nasDevices, allocatedVpnIps } from '../../drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 
 // Rate limiting for FreeRADIUS reload
 let lastReloadTime = 0;
@@ -208,11 +208,12 @@ export async function completeProvisioning(
 /**
  * Background worker to check pending NAS devices
  * This runs periodically to catch any NAS that connected while we weren't watching
+ * Also checks active NAS devices that might need DHCP reservation fix
  */
 export async function checkPendingNasDevices(): Promise<void> {
-  console.log('[Provisioning] Checking pending NAS devices...');
-  
+  // 1. Check pending NAS devices
   const pendingDevices = await nasDb.getPendingNasDevices();
+  console.log(`[Provisioning] Checking ${pendingDevices.length} pending NAS devices...`);
   
   for (const nas of pendingDevices) {
     if (!nas.vpnUsername) continue;
@@ -226,6 +227,78 @@ export async function checkPendingNasDevices(): Promise<void> {
       console.log(`[Provisioning] Successfully provisioned NAS ${nas.id}`);
     } else {
       console.log(`[Provisioning] NAS ${nas.id} not ready: ${result.message}`);
+    }
+  }
+  
+  // 2. Check active NAS devices that might need DHCP reservation fix
+  await checkActiveNasForDhcpFix();
+}
+
+/**
+ * Check active NAS devices that are connected but might not have DHCP reservation
+ * This fixes the case where NAS was provisioned but DHCP reservation is missing
+ */
+export async function checkActiveNasForDhcpFix(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  // Get all active VPN NAS devices
+  const activeVpnNas = await db.select().from(nasDevices)
+    .where(
+      and(
+        eq(nasDevices.status, 'active'),
+        eq(nasDevices.provisioningStatus, 'ready'),
+        ne(nasDevices.connectionType, 'public_ip')
+      )
+    );
+  
+  if (activeVpnNas.length === 0) return;
+  
+  // Get current DHCP reservations
+  const reservations = await sshVpn.listDhcpReservations();
+  const existingReservationHostnames = new Set(
+    (reservations.reservations || []).map(r => r.hostname)
+  );
+  
+  for (const nas of activeVpnNas) {
+    if (!nas.vpnUsername) continue;
+    
+    const hostname = `nas-${nas.id}`;
+    
+    // Check if DHCP reservation exists
+    if (!existingReservationHostnames.has(hostname)) {
+      console.log(`[Provisioning] Active NAS ${nas.id} (${nas.shortname}) missing DHCP reservation, checking VPN session...`);
+      
+      // Try to get MAC from VPN session
+      const sessionInfo = await sshVpn.getSessionMac(nas.vpnUsername);
+      
+      if (sessionInfo.success && sessionInfo.macAddress && sessionInfo.ipAddress) {
+        console.log(`[Provisioning] Found VPN session for ${nas.vpnUsername}: IP=${sessionInfo.ipAddress}, MAC=${sessionInfo.macAddress}`);
+        
+        // Create DHCP reservation
+        const reservationResult = await sshVpn.createDhcpReservation(
+          sessionInfo.macAddress,
+          nas.nasname, // Use the IP from database (the one we want to keep)
+          hostname
+        );
+        
+        if (reservationResult.success) {
+          console.log(`[Provisioning] Created DHCP reservation for NAS ${nas.id}: ${sessionInfo.macAddress} -> ${nas.nasname}`);
+          
+          // Update lastMac in database
+          await db.update(nasDevices)
+            .set({ lastMac: sessionInfo.macAddress })
+            .where(eq(nasDevices.id, nas.id));
+          
+          // If current IP doesn't match nasname, disconnect to force reconnect with correct IP
+          if (sessionInfo.ipAddress !== nas.nasname) {
+            console.log(`[Provisioning] IP mismatch (session: ${sessionInfo.ipAddress}, DB: ${nas.nasname}), disconnecting to force reconnect...`);
+            await sshVpn.disconnectVpnSession(nas.vpnUsername);
+          }
+        } else {
+          console.error(`[Provisioning] Failed to create DHCP reservation for NAS ${nas.id}:`, reservationResult.error);
+        }
+      }
     }
   }
 }

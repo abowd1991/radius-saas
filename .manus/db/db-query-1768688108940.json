@@ -1,0 +1,24 @@
+{
+  "query": "SELECT * FROM allocated_vpn_ips;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT * FROM allocated_vpn_ips;",
+  "rows": [
+    {
+      "id": "90006",
+      "poolId": "1",
+      "ipAddress": "192.168.30.25",
+      "nasId": "150006",
+      "allocatedAt": "2026-01-17 10:36:58"
+    },
+    {
+      "id": "90007",
+      "poolId": "1",
+      "ipAddress": "192.168.30.11",
+      "nasId": "150007",
+      "allocatedAt": "2026-01-17 20:19:20"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpoolId\tipAddress\tnasId\tallocatedAt\n90006\t1\t192.168.30.25\t150006\t2026-01-17 10:36:58\n90007\t1\t192.168.30.11\t150007\t2026-01-17 20:19:20\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

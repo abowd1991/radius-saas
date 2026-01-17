@@ -1825,3 +1825,32 @@
   - [x] Rate-limit FreeRADIUS reload (30 seconds)
   - [x] Check actual IP matches before skipping re-provision
 - [x] Fix existing NAS with wrong IPs (NAS 150007: 192.168.30.26 → 192.168.30.11)
+
+
+## Enterprise Architecture Implementation (Jan 17-18, 2026)
+
+### Phase 1: تنظيف allocated_vpn_ips
+- [x] حذف 14 IP محجوزة لـ NAS محذوفين
+- [x] التأكد من بقاء IPs الصحيحة فقط (Khaled: 192.168.30.25, loayy: 192.168.30.11)
+
+### Phase 2: NAS Lifecycle الصحيح (حذف شامل)
+- [x] إضافة حذف من allocated_vpn_ips عند حذف NAS
+- [x] التأكد من حذف VPN user من SoftEther
+- [x] التأكد من حذف DHCP reservation
+- [x] التأكد من reload FreeRADIUS بعد الحذف
+
+### Phase 3: تثبيت هوية NAS (DHCP Reservation تلقائي)
+- [x] تحسين Provisioning Worker ليكتشف NAS بدون DHCP Reservation
+- [x] إضافة checkActiveNasForDhcpFix() function
+- [ ] إنشاء DHCP Reservation لـ Khaled (ينتظر اتصال VPN)
+- [ ] إنشاء DHCP Reservation لـ loayy (ينتظر اتصال VPN)
+
+### Phase 4: Dynamic Clients من DB بشكل آمن
+- [x] تعديل FreeRADIUS client_query على VPS
+- [x] إضافة فلترة provisioningStatus='ready' للـ query
+- [x] التأكد من عدم وجود static clients بـ secret واحد (فقط localhost للاختبار)
+
+### Phase 5: استقرار بعد Restart
+- [x] التأكد من systemd services للـ bridge (radius-bridge.service)
+- [x] التأكد من ترتيب تشغيل الخدمات (bridge → dhcp → freeradius)
+- [x] التأكد من health-check في radius-bridge.service

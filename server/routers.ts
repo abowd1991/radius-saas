@@ -1116,6 +1116,19 @@ const nasRouter = router({
         } catch (error) {
           console.error('[NAS Delete] Failed to delete DHCP reservation:', error);
         }
+        
+        // 5. Release allocated VPN IP from pool (Hard Delete - Single Source of Truth)
+        try {
+          console.log(`[NAS Delete] Releasing allocated VPN IP for NAS ${input.id}`);
+          const database = await getDb();
+          if (database) {
+            const { allocatedVpnIps } = await import('../drizzle/schema');
+            await database.delete(allocatedVpnIps).where(eq(allocatedVpnIps.nasId, input.id));
+            console.log(`[NAS Delete] Released allocated VPN IP for NAS ${input.id}`);
+          }
+        } catch (error) {
+          console.error('[NAS Delete] Failed to release allocated VPN IP:', error);
+        }
       }
       
       // Reload FreeRADIUS to remove deleted NAS client
