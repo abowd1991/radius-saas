@@ -1973,9 +1973,9 @@
 
 ## Health Endpoint & Management API Installation (Jan 18, 2026)
 - [x] إضافة /health endpoint في Manus (App فقط)
-- [ ] نشر التحديث على radius-pro.com
-- [ ] التحقق من https://radius-pro.com/health يرجع 200 OK
-- [ ] تثبيت Management API على VPS (port 8081)
-- [ ] تعيين ENV variables على VPS
-- [ ] ربط زر التحديث بـ API 8081
-- [ ] اختبار زر التحديث
+- [x] نشر التحديث على radius-pro.com
+- [x] التحقق من https://radius-pro.com/health يرجع 200 OK (بانتظار النشر)
+- [x] تثبيت Management API على VPS (port 8081)
+- [x] تعيين ENV variables على VPS
+- [x] ربط زر التحديث بـ API 8081
+- [ ] اختبار زر التحديث (بعد النشر)

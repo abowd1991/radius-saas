@@ -7,24 +7,24 @@ describe("VPS Management API", () => {
     expect(ENV.VPS_MANAGEMENT_URL).not.toBe("");
   });
 
-  it("should have VPS_MANAGEMENT_SECRET configured", () => {
-    expect(ENV.VPS_MANAGEMENT_SECRET).toBeDefined();
-    expect(ENV.VPS_MANAGEMENT_SECRET).not.toBe("");
+  it("should have VPS_MANAGEMENT_API_KEY configured", () => {
+    expect(ENV.VPS_MANAGEMENT_API_KEY).toBeDefined();
+    expect(ENV.VPS_MANAGEMENT_API_KEY).not.toBe("");
   });
 
   it("should connect to VPS Management API and get status", async () => {
     const url = ENV.VPS_MANAGEMENT_URL;
-    const secret = ENV.VPS_MANAGEMENT_SECRET;
+    const apiKey = ENV.VPS_MANAGEMENT_API_KEY;
     
-    if (!url || !secret) {
+    if (!url || !apiKey) {
       console.log("Skipping API test - credentials not configured");
       return;
     }
 
     try {
-      const response = await fetch(`${url}/api/status`, {
+      const response = await fetch(`${url}/api/app/status`, {
         headers: {
-          "Authorization": `Bearer ${secret}`,
+          "X-API-Key": apiKey,
         },
       });
 
@@ -33,8 +33,7 @@ describe("VPS Management API", () => {
       const data = await response.json();
       expect(data.success).toBe(true);
       expect(data.data).toBeDefined();
-      expect(data.data.services).toBeDefined();
-      expect(data.data.services.freeradius).toBeDefined();
+      expect(data.data.app_name).toBe("radius-saas");
     } catch (error) {
       // If network error, skip test (VPS might not be accessible from test environment)
       console.log("Network error - VPS might not be accessible from test environment:", error);

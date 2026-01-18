@@ -7,7 +7,10 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
-  // VPS Management API
-  VPS_MANAGEMENT_URL: process.env.VPS_MANAGEMENT_URL ?? "http://127.0.0.1:8081",
-  VPS_MANAGEMENT_SECRET: process.env.VPS_MANAGEMENT_SECRET ?? "",
+  // VPS Management API (Port 8081 - App updates only)
+  VPS_MANAGEMENT_URL: process.env.VPS_MANAGEMENT_URL ?? "http://37.60.228.5:8081",
+  VPS_MANAGEMENT_API_KEY: process.env.VPS_MANAGEMENT_API_KEY ?? "",
+  // Legacy VPS API (Port 8080 - RADIUS/VPN/DHCP status)
+  VPS_LEGACY_URL: process.env.VPS_MANAGEMENT_URL ?? "http://37.60.228.5:8080",
+  VPS_LEGACY_SECRET: process.env.VPS_MANAGEMENT_SECRET ?? "radius_api_key_2024_secure",
 };
