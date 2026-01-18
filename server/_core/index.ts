@@ -45,6 +45,23 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   app.use(cookieParser());
+  // Health check endpoint (for Management API)
+  app.get("/health", (req, res) => {
+    res.json({
+      status: "ok",
+      timestamp: Date.now(),
+      service: "radius-dashboard",
+    });
+  });
+  
+  app.get("/api/health", (req, res) => {
+    res.json({
+      status: "ok",
+      timestamp: Date.now(),
+      service: "radius-dashboard",
+    });
+  });
+  
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   

@@ -1919,3 +1919,63 @@
 - [x] Update button shows proper error message when update API not available
 - [x] Rollback button shows proper error message when rollback API not available
 - [x] Improved Toaster configuration for better visibility
+
+
+## VPS Management API (Port 8081) - Enterprise Edition (Jan 18, 2026)
+
+### خط أحمر (لن يُلمس)
+- [ ] ❌ FreeRADIUS / vpnserver / dhcp / br-radius - ممنوع
+- [ ] ❌ /etc/freeradius/* - ممنوع
+- [ ] ❌ إعدادات SoftEther - ممنوع
+- [ ] ❌ ملفات DHCP - ممنوع
+
+### Atomic Release System
+- [ ] إنشاء هيكل /var/www/releases/ للنسخ
+- [ ] Build في مسار جديد /var/www/releases/<timestamp>/
+- [ ] Symlink: /var/www/radius-dashboard -> /var/www/releases/<timestamp>/
+- [ ] الاحتفاظ بآخر 5 releases
+- [ ] Rollback = تبديل symlink فقط
+
+### Management API Endpoints (Port 8081)
+- [ ] GET /api/app/status - حالة التطبيق
+- [ ] GET /api/app/versions - سجل الإصدارات
+- [ ] POST /api/app/update - تحديث التطبيق (Atomic)
+- [ ] POST /api/app/rollback - رجوع للنسخة السابقة
+- [ ] GET /api/app/backups - قائمة النسخ الاحتياطية
+- [ ] GET /api/system/info - معلومات النظام (disk/cpu/memory)
+- [ ] GET /api/app/logs - آخر 200 سطر (بدون secrets)
+
+### Validation & Health Check
+- [ ] pnpm -v و node -v قبل build
+- [ ] pnpm install --frozen-lockfile
+- [ ] pnpm build
+- [ ] Health check: curl http://127.0.0.1:3000/health
+- [ ] فشل = إلغاء تلقائي + بقاء القديم
+
+### Security
+- [ ] API Key من ENV (APP_MANAGEMENT_API_KEY)
+- [ ] IP Allowlist من ENV (ALLOWED_IPS)
+- [ ] File Lock: /tmp/radius-update.lock
+- [ ] Rate Limit: 1 request / 30s على update/rollback
+- [ ] Audit Log JSON لكل عملية
+
+### Backup
+- [ ] tar.gz كطبقة أمان ثانية
+- [ ] حفظ في /var/www/backups/radius-dashboard/
+- [ ] الاحتفاظ بآخر 5 نسخ tar.gz
+
+### Manus Integration
+- [ ] ربط صفحة إدارة النظام بـ API 8081
+- [ ] عرض حالة التطبيق الحقيقية
+- [ ] زر تحديث يعمل
+- [ ] زر Rollback يعمل
+
+
+## Health Endpoint & Management API Installation (Jan 18, 2026)
+- [x] إضافة /health endpoint في Manus (App فقط)
+- [ ] نشر التحديث على radius-pro.com
+- [ ] التحقق من https://radius-pro.com/health يرجع 200 OK
+- [ ] تثبيت Management API على VPS (port 8081)
+- [ ] تعيين ENV variables على VPS
+- [ ] ربط زر التحديث بـ API 8081
+- [ ] اختبار زر التحديث
