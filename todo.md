@@ -1854,3 +1854,42 @@
 - [x] التأكد من systemd services للـ bridge (radius-bridge.service)
 - [x] التأكد من ترتيب تشغيل الخدمات (bridge → dhcp → freeradius)
 - [x] التأكد من health-check في radius-bridge.service
+
+
+## Sidebar Reorganization - Industry Standard (Jan 18, 2026)
+
+### Phase 1: تحليل وإعداد Mockup
+- [ ] تحليل القائمة الحالية
+- [ ] إعداد Mockup للقائمة الجديدة
+- [ ] عرض Mockup للموافقة
+
+### Phase 2: تنفيذ التغييرات (بعد الموافقة)
+- [ ] تعديل DashboardLayout.tsx
+- [ ] إعادة ترتيب الأقسام
+- [ ] تحديث الأسماء والأيقونات
+
+### Phase 3: اختبار
+- [ ] التأكد من عمل جميع الروابط
+- [ ] التأكد من عدم تأثر الوظائف
+
+
+## Sidebar Reorganization (Jan 18, 2026)
+- [x] Analyze current sidebar structure (30 flat items)
+- [x] Create mockup for new organized structure (9 sections)
+- [x] Get user approval for new structure
+- [x] Implement collapsible sections with icons
+- [x] Organize items into 9 main categories:
+  - [x] لوحة التحكم (Dashboard)
+  - [x] المراقبة الحية (Real-Time & Monitoring)
+  - [x] البنية التحتية (Network / Infrastructure)
+  - [x] المستخدمين والعملاء (Users & Clients)
+  - [x] التحكم بالوصول (AAA / Access Control)
+  - [x] البطاقات والمدفوعات (Cards & Payments)
+  - [x] الفواتير والمالية (Billing & Finance)
+  - [x] التقارير والتحليلات (Reports & Analytics)
+  - [x] النظام والإعدادات (System & Settings)
+- [x] Add localStorage persistence for section open/close state
+- [x] Auto-expand section containing active page
+- [x] Test all navigation links work correctly
+- [x] Verify no URLs changed (UI only)
+- [x] Verify no VPS/RADIUS/VPN changes

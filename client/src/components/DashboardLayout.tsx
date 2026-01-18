@@ -20,6 +20,11 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 // Using local auth page instead of OAuth
 import { useIsMobile } from "@/hooks/useMobile";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -41,6 +46,7 @@ import {
   UserCircle,
   Building2,
   ChevronDown,
+  ChevronRight,
   Link2,
   Printer,
   BarChart3,
@@ -52,6 +58,12 @@ import {
   History,
   Network,
   Smartphone,
+  Monitor,
+  Shield,
+  Receipt,
+  PieChart,
+  Cog,
+  type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -85,93 +97,304 @@ function ThemeToggleButton() {
   );
 }
 
-// Menu items based on user role
-const getMenuItems = (role: string, t: (key: string) => string) => {
-  const superAdminItems = [
-    { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
-    { icon: Building2, label: t("nav.resellers"), path: "/resellers" },
-    { icon: Users, label: t("nav.clients"), path: "/clients" },
-    { icon: Package, label: t("nav.plans"), path: "/plans" },
-    { icon: Server, label: t("nav.nas"), path: "/nas" },
-    { icon: Link2, label: t("nav.mikrotikSetup"), path: "/mikrotik-setup" },
-    { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
-    { icon: UserCheck, label: "المشتركين الشهريين", path: "/subscribers" },
-    { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
-    { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
-    { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
-    { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
-    { icon: Globe, label: "اتصالات VPN", path: "/vpn" },
-    { icon: History, label: "سجلات VPN", path: "/vpn-logs" },
-    { icon: History, label: "سجل العمليات", path: "/audit-log" },
-    { icon: MessageSquare, label: t("nav.support"), path: "/support" },
-    { icon: Settings, label: t("nav.settings"), path: "/settings" },
-    { icon: CreditCard, label: "إدارة الاشتراكات", path: "/tenant-subscriptions" },
-    { icon: BarChart3, label: "التقارير", path: "/reports" },
-    { icon: Database, label: "النسخ الاحتياطي", path: "/backups" },
-    { icon: Network, label: "إدارة IP Pool", path: "/ip-pool" },
-    { icon: FileText, label: "سجلات RADIUS", path: "/radius-logs" },
-    { icon: Activity, label: "مراقبة NAS", path: "/nas-health" },
-    { icon: BarChart3, label: "تقارير الباندويث", path: "/bandwidth" },
-    { icon: CreditCard, label: "خطط الاشتراك SaaS", path: "/saas-plans" },
-    { icon: Users, label: "إدارة المستخدمين", path: "/users-management" },
-    { icon: Smartphone, label: "إدارة SMS", path: "/sms" },
-    { icon: Server, label: "لوحة تحكم RADIUS", path: "/radius-control" },
-    { icon: Settings, label: "إدارة النظام", path: "/system-admin" },
+// Menu section type
+type MenuSection = {
+  id: string;
+  icon: LucideIcon;
+  label: string;
+  items: {
+    icon: LucideIcon;
+    label: string;
+    path: string;
+  }[];
+};
+
+// Menu items based on user role - NEW ORGANIZED STRUCTURE
+const getMenuSections = (role: string, t: (key: string) => string): MenuSection[] => {
+  const superAdminSections: MenuSection[] = [
+    // 1. Dashboard (standalone - no section)
+    {
+      id: "dashboard",
+      icon: LayoutDashboard,
+      label: t("nav.dashboard"),
+      items: [
+        { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
+      ],
+    },
+    // 2. Real-Time & Monitoring
+    {
+      id: "monitoring",
+      icon: Monitor,
+      label: "المراقبة الحية",
+      items: [
+        { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
+        { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
+        { icon: FileText, label: "سجلات RADIUS", path: "/radius-logs" },
+        { icon: Activity, label: "مراقبة NAS", path: "/nas-health" },
+        { icon: Network, label: "حالة IP Pool", path: "/ip-pool" },
+      ],
+    },
+    // 3. Network / Infrastructure
+    {
+      id: "network",
+      icon: Globe,
+      label: "البنية التحتية",
+      items: [
+        { icon: Server, label: t("nav.nas"), path: "/nas" },
+        { icon: Link2, label: t("nav.mikrotikSetup"), path: "/mikrotik-setup" },
+        { icon: Globe, label: "اتصالات VPN", path: "/vpn" },
+        { icon: History, label: "سجلات VPN", path: "/vpn-logs" },
+      ],
+    },
+    // 4. Users & Clients
+    {
+      id: "users",
+      icon: Users,
+      label: "المستخدمين والعملاء",
+      items: [
+        { icon: UserCheck, label: "المشتركين", path: "/subscribers" },
+        { icon: Building2, label: t("nav.resellers"), path: "/resellers" },
+        { icon: Users, label: t("nav.clients"), path: "/clients" },
+        { icon: Users, label: "إدارة المستخدمين", path: "/users-management" },
+      ],
+    },
+    // 5. AAA / Access Control
+    {
+      id: "aaa",
+      icon: Shield,
+      label: "التحكم بالوصول",
+      items: [
+        { icon: Package, label: t("nav.plans"), path: "/plans" },
+        { icon: Server, label: "لوحة تحكم RADIUS", path: "/radius-control" },
+      ],
+    },
+    // 6. Cards & Payments
+    {
+      id: "cards",
+      icon: CreditCard,
+      label: "البطاقات والمدفوعات",
+      items: [
+        { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
+        { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
+        { icon: Wallet, label: "المحفظة", path: "/wallet" },
+        { icon: CreditCard, label: "إدارة الاشتراكات", path: "/tenant-subscriptions" },
+      ],
+    },
+    // 7. Billing & Finance
+    {
+      id: "billing",
+      icon: Receipt,
+      label: "الفواتير والمالية",
+      items: [
+        { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
+        { icon: CreditCard, label: "خطط SaaS", path: "/saas-plans" },
+      ],
+    },
+    // 8. Reports & Analytics
+    {
+      id: "reports",
+      icon: PieChart,
+      label: "التقارير والتحليلات",
+      items: [
+        { icon: BarChart3, label: "التقارير", path: "/reports" },
+        { icon: BarChart3, label: "تقارير الباندويث", path: "/bandwidth" },
+      ],
+    },
+    // 9. System & Settings
+    {
+      id: "system",
+      icon: Cog,
+      label: "النظام والإعدادات",
+      items: [
+        { icon: Settings, label: t("nav.settings"), path: "/settings" },
+        { icon: History, label: "سجل العمليات", path: "/audit-log" },
+        { icon: Database, label: "النسخ الاحتياطي", path: "/backups" },
+        { icon: Smartphone, label: "إدارة SMS", path: "/sms" },
+        { icon: Settings, label: "إدارة النظام", path: "/system-admin" },
+        { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+      ],
+    },
   ];
 
-  const resellerItems = [
-    { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
-    { icon: Users, label: t("nav.clients"), path: "/clients" },
-    { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
-    { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
-    { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },
-    { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+  const resellerSections: MenuSection[] = [
+    {
+      id: "dashboard",
+      icon: LayoutDashboard,
+      label: t("nav.dashboard"),
+      items: [
+        { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
+      ],
+    },
+    {
+      id: "users",
+      icon: Users,
+      label: "العملاء",
+      items: [
+        { icon: Users, label: t("nav.clients"), path: "/clients" },
+      ],
+    },
+    {
+      id: "cards",
+      icon: CreditCard,
+      label: "البطاقات",
+      items: [
+        { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
+      ],
+    },
+    {
+      id: "billing",
+      icon: Receipt,
+      label: "المالية",
+      items: [
+        { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
+        { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },
+      ],
+    },
+    {
+      id: "support",
+      icon: MessageSquare,
+      label: t("nav.support"),
+      items: [
+        { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+      ],
+    },
   ];
 
-  const clientItems = [
-    { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
-    { icon: Server, label: t("nav.nas"), path: "/nas" },
-    { icon: Link2, label: t("nav.mikrotikSetup"), path: "/mikrotik-setup" },
-    { icon: Package, label: t("nav.plans"), path: "/plans" },
-    { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
-    { icon: UserCheck, label: "المشتركين الشهريين", path: "/subscribers" },
-    { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
-    { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
-    { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
-    { icon: History, label: "سجل العمليات", path: "/audit-log" },
-    { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
-    { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },
-    { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+  const clientSections: MenuSection[] = [
+    {
+      id: "dashboard",
+      icon: LayoutDashboard,
+      label: t("nav.dashboard"),
+      items: [
+        { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
+      ],
+    },
+    {
+      id: "monitoring",
+      icon: Monitor,
+      label: "المراقبة",
+      items: [
+        { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
+        { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
+      ],
+    },
+    {
+      id: "network",
+      icon: Globe,
+      label: "الشبكة",
+      items: [
+        { icon: Server, label: t("nav.nas"), path: "/nas" },
+        { icon: Link2, label: t("nav.mikrotikSetup"), path: "/mikrotik-setup" },
+      ],
+    },
+    {
+      id: "users",
+      icon: Users,
+      label: "المشتركين",
+      items: [
+        { icon: UserCheck, label: "المشتركين", path: "/subscribers" },
+      ],
+    },
+    {
+      id: "cards",
+      icon: CreditCard,
+      label: "البطاقات",
+      items: [
+        { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
+        { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
+        { icon: Package, label: t("nav.plans"), path: "/plans" },
+      ],
+    },
+    {
+      id: "billing",
+      icon: Receipt,
+      label: "المالية",
+      items: [
+        { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
+        { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },
+      ],
+    },
+    {
+      id: "system",
+      icon: Cog,
+      label: "النظام",
+      items: [
+        { icon: History, label: "سجل العمليات", path: "/audit-log" },
+        { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+      ],
+    },
   ];
 
-  // Support role - view only, no financial access
-  const supportItems = [
-    { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
-    { icon: Users, label: t("nav.clients"), path: "/clients" },
-    { icon: Building2, label: t("nav.resellers"), path: "/resellers" },
-    { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
-    { icon: Server, label: t("nav.nas"), path: "/nas" },
-    { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
-    { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+  const supportSections: MenuSection[] = [
+    {
+      id: "dashboard",
+      icon: LayoutDashboard,
+      label: t("nav.dashboard"),
+      items: [
+        { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
+      ],
+    },
+    {
+      id: "users",
+      icon: Users,
+      label: "المستخدمين",
+      items: [
+        { icon: Users, label: t("nav.clients"), path: "/clients" },
+        { icon: Building2, label: t("nav.resellers"), path: "/resellers" },
+      ],
+    },
+    {
+      id: "cards",
+      icon: CreditCard,
+      label: "البطاقات",
+      items: [
+        { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
+      ],
+    },
+    {
+      id: "network",
+      icon: Globe,
+      label: "الشبكة",
+      items: [
+        { icon: Server, label: t("nav.nas"), path: "/nas" },
+        { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
+      ],
+    },
+    {
+      id: "support",
+      icon: MessageSquare,
+      label: t("nav.support"),
+      items: [
+        { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+      ],
+    },
   ];
 
   switch (role) {
     case "super_admin":
-      return superAdminItems;
+      return superAdminSections;
     case "reseller":
-      return resellerItems;
+      return resellerSections;
     case "support":
-      return supportItems;
+      return supportSections;
     case "client":
     default:
-      return clientItems;
+      return clientSections;
   }
+};
+
+// Flatten sections to get all menu items for finding active item
+const flattenSections = (sections: MenuSection[]) => {
+  return sections.flatMap(section => section.items);
 };
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
+
+// Key for storing expanded sections in localStorage
+const EXPANDED_SECTIONS_KEY = "sidebar-expanded-sections";
 
 export default function DashboardLayout({
   children,
@@ -278,8 +501,48 @@ function DashboardLayoutContent({
   const isMobile = useIsMobile();
   const { language, setLanguage, t, direction } = useLanguage();
 
-  const menuItems = getMenuItems(user?.role || "client", t);
-  const activeMenuItem = menuItems.find((item) => item.path === location);
+  const menuSections = getMenuSections(user?.role || "client", t);
+  const allMenuItems = flattenSections(menuSections);
+  const activeMenuItem = allMenuItems.find((item) => item.path === location);
+
+  // Find which section contains the active item
+  const activeSectionId = menuSections.find(section => 
+    section.items.some(item => item.path === location)
+  )?.id;
+
+  // Expanded sections state
+  const [expandedSections, setExpandedSections] = useState<string[]>(() => {
+    const saved = localStorage.getItem(EXPANDED_SECTIONS_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    // Default: expand dashboard and the section containing active item
+    const defaults = ["dashboard"];
+    if (activeSectionId && !defaults.includes(activeSectionId)) {
+      defaults.push(activeSectionId);
+    }
+    return defaults;
+  });
+
+  // Save expanded sections to localStorage
+  useEffect(() => {
+    localStorage.setItem(EXPANDED_SECTIONS_KEY, JSON.stringify(expandedSections));
+  }, [expandedSections]);
+
+  // Auto-expand section when navigating to a new page
+  useEffect(() => {
+    if (activeSectionId && !expandedSections.includes(activeSectionId)) {
+      setExpandedSections(prev => [...prev, activeSectionId]);
+    }
+  }, [activeSectionId]);
+
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => 
+      prev.includes(sectionId) 
+        ? prev.filter(id => id !== sectionId)
+        : [...prev, sectionId]
+    );
+  };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -375,27 +638,86 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.map((item) => {
+          <SidebarContent className="gap-0 overflow-y-auto">
+            {menuSections.map((section) => {
+              const isExpanded = expandedSections.includes(section.id);
+              const isSingleItem = section.items.length === 1;
+              const sectionHasActiveItem = section.items.some(item => item.path === location);
+
+              // For single-item sections (like Dashboard), render directly
+              if (isSingleItem) {
+                const item = section.items[0];
                 const isActive = location === item.path;
                 return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className="h-10 transition-all font-normal"
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <SidebarMenu key={section.id} className="px-2 py-0.5">
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => setLocation(item.path)}
+                        tooltip={item.label}
+                        className="h-10 transition-all font-normal"
+                      >
+                        <item.icon
+                          className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                        />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
                 );
-              })}
-            </SidebarMenu>
+              }
+
+              // For multi-item sections, render collapsible
+              return (
+                <Collapsible
+                  key={section.id}
+                  open={isExpanded}
+                  onOpenChange={() => toggleSection(section.id)}
+                  className="group/collapsible"
+                >
+                  <SidebarMenu className="px-2 py-0.5">
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          tooltip={section.label}
+                          className={`h-10 transition-all font-medium ${sectionHasActiveItem ? "bg-accent/50" : ""}`}
+                        >
+                          <section.icon
+                            className={`h-4 w-4 ${sectionHasActiveItem ? "text-primary" : ""}`}
+                          />
+                          <span className="flex-1">{section.label}</span>
+                          <ChevronRight
+                            className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                          />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                        <SidebarMenu className={`${direction === "rtl" ? "pr-4 border-r" : "pl-4 border-l"} border-border/50 mt-1 space-y-0.5`}>
+                          {section.items.map((item) => {
+                            const isActive = location === item.path;
+                            return (
+                              <SidebarMenuItem key={item.path}>
+                                <SidebarMenuButton
+                                  isActive={isActive}
+                                  onClick={() => setLocation(item.path)}
+                                  tooltip={item.label}
+                                  className="h-9 transition-all font-normal text-sm"
+                                >
+                                  <item.icon
+                                    className={`h-3.5 w-3.5 ${isActive ? "text-primary" : ""}`}
+                                  />
+                                  <span>{item.label}</span>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            );
+                          })}
+                        </SidebarMenu>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </Collapsible>
+              );
+            })}
           </SidebarContent>
 
           <SidebarFooter className="p-3">
