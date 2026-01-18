@@ -161,8 +161,16 @@ export default function SystemAdmin() {
           <CardContent>
             <div className="flex flex-wrap gap-1">
               {statusQuery.data?.services && Object.entries(statusQuery.data.services).map(([name, status]) => (
-                <Badge key={name} variant="outline" className="text-xs">
-                  {name}: {status === 'active' ? '✓' : '✗'}
+                <Badge 
+                  key={name} 
+                  variant="outline" 
+                  className={`text-xs ${
+                    status === 'active' ? 'border-green-500/50 text-green-400' : 
+                    status === 'not_available' ? 'border-gray-500/50 text-gray-400' : 
+                    'border-red-500/50 text-red-400'
+                  }`}
+                >
+                  {name}: {status === 'active' ? '✓' : status === 'not_available' ? '—' : '✗'}
                 </Badge>
               ))}
             </div>

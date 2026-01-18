@@ -1893,3 +1893,29 @@
 - [x] Test all navigation links work correctly
 - [x] Verify no URLs changed (UI only)
 - [x] Verify no VPS/RADIUS/VPN changes
+
+
+## Update Button Diagnosis (Jan 18, 2026)
+- [ ] Analyze SystemManagement.tsx update button code
+- [ ] Check VPS API endpoint for updates
+- [ ] Diagnose why vpn and app show ❌ status
+- [ ] Add Loading state to update button
+- [ ] Add Success/Fail feedback messages
+- [ ] Add error details display (HTTP status + error message)
+- [ ] Add entry to version history log on update
+- [ ] Test update flow end-to-end
+
+
+## System Management Dashboard Fix (Jan 18, 2026)
+- [x] Fix VPS API connectivity - changed from port 8081 to port 8080
+- [x] Update vpsManagementService.ts to use correct VPS API endpoints:
+  - /api/radius/status for FreeRADIUS status
+  - /api/vpn/status for SoftEther VPN status
+  - /api/dhcp/leases for DHCP status
+- [x] Service status now displays correctly:
+  - FreeRADIUS: ✓ active
+  - VPN: ✓ active (online: true)
+  - DHCP: ✓ active
+- [x] Update button shows proper error message when update API not available
+- [x] Rollback button shows proper error message when rollback API not available
+- [x] Improved Toaster configuration for better visibility
