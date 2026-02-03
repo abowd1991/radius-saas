@@ -69,7 +69,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type UserStatus = "all" | "trial" | "active" | "expired" | "suspended";
-type UserRole = "all" | "client" | "reseller";
+type UserRole = "all" | "owner" | "super_admin" | "client_admin" | "reseller" | "client" | "support";
 
 export default function UsersManagement() {
   const { user } = useAuth();
@@ -220,7 +220,7 @@ export default function UsersManagement() {
     return plan?.name || "-";
   };
 
-  if (user?.role !== "super_admin") {
+  if (user?.role !== "super_admin" && user?.role !== "owner") {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
@@ -351,8 +351,12 @@ export default function UsersManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="client">عملاء</SelectItem>
-                  <SelectItem value="reseller">موزعين</SelectItem>
+                  <SelectItem value="owner">مالك النظام</SelectItem>
+                  <SelectItem value="super_admin">مدير النظام</SelectItem>
+                  <SelectItem value="client_admin">مدير عميل</SelectItem>
+                  <SelectItem value="reseller">موزع</SelectItem>
+                  <SelectItem value="client">عميل</SelectItem>
+                  <SelectItem value="support">دعم فني</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -699,9 +703,12 @@ export default function UsersManagement() {
                     <SelectValue placeholder="اختر الدور" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="client">عميل (Client)</SelectItem>
+                    <SelectItem value="owner">مالك النظام (Owner)</SelectItem>
+                    <SelectItem value="super_admin">مدير النظام (Super Admin)</SelectItem>
+                    <SelectItem value="client_admin">مدير عميل (Client Admin)</SelectItem>
                     <SelectItem value="reseller">موزع (Reseller)</SelectItem>
-                    <SelectItem value="super_admin">مدير (Admin)</SelectItem>
+                    <SelectItem value="client">عميل (Client)</SelectItem>
+                    <SelectItem value="support">دعم فني (Support)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

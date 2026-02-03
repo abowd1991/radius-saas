@@ -2198,3 +2198,12 @@
 - [x] إضافة تغيير كلمة المرور (users.changePassword)
 - [x] إضافة تحديث المعلومات الشخصية (users.updateProfile)
 
+
+## المرحلة 3: توحيد قوائم الإدارة (Feb 4, 2026) ✅
+
+- [x] UsersManagement موجودة بالفعل كصفحة Accounts موحدة
+- [x] إضافة جميع الأدوار في الفلاتر (owner, super_admin, client_admin, reseller, client, support)
+- [x] بحث موحد + فرز موجود
+- [x] أزرار سريعة موجودة (Suspend, Activate, Extend, Delete, Change Role)
+- [x] صلاحيات الوصول محدثة (owner + super_admin)
+
