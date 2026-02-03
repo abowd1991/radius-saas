@@ -263,11 +263,18 @@ export default function Reports() {
     endDate: dateRange.end.toISOString(),
   });
 
+  // Usage report (peak hours, daily/weekly)
+  const { data: usageData, isLoading: usageLoading, refetch: refetchUsage } = trpc.reports.usage.useQuery({
+    startDate: dateRange.start.toISOString(),
+    endDate: dateRange.end.toISOString(),
+  });
+
   const refetchAll = () => {
     refetchRevenue();
     refetchSubscribers();
     refetchCards();
     refetchSessions();
+    refetchUsage();
   };
 
   // Card status data for pie chart
@@ -422,11 +429,12 @@ export default function Reports() {
 
       {/* Tabs for different reports */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="revenue">الإيرادات</TabsTrigger>
           <TabsTrigger value="subscribers">المشتركين</TabsTrigger>
           <TabsTrigger value="cards">الكروت</TabsTrigger>
           <TabsTrigger value="sessions">الجلسات</TabsTrigger>
+          <TabsTrigger value="usage">الاستخدام</TabsTrigger>
         </TabsList>
 
         {/* Revenue Tab */}
@@ -789,6 +797,184 @@ export default function Reports() {
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">إجمالي وقت الجلسات</span>
                   <Badge variant="secondary">{formatDuration(sessionsData?.totalSessionTime || 0)}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Usage Tab */}
+        <TabsContent value="usage" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Peak Hours Chart */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  أوقات الذروة
+                </CardTitle>
+                <CardDescription>توزيع الجلسات حسب ساعات اليوم</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {usageLoading ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={usageData?.peakHours || []}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="hour" 
+                        tickFormatter={(h) => `${h}:00`}
+                      />
+                      <YAxis />
+                      <Tooltip 
+                        labelFormatter={(h) => `الساعة ${h}:00`}
+                        formatter={(value: number, name: string) => [
+                          name === 'sessions' ? value : formatDuration(value),
+                          name === 'sessions' ? 'عدد الجلسات' : 'إجمالي الوقت'
+                        ]}
+                      />
+                      <Legend />
+                      <Bar dataKey="sessions" fill="#3b82f6" name="عدد الجلسات" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Daily Usage Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>الاستخدام اليومي</CardTitle>
+                <CardDescription>عدد الجلسات والمستخدمين لكل يوم</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {usageLoading ? (
+                  <Skeleton className="h-[250px] w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <AreaChart data={usageData?.dailyUsage || []}>
+                      <defs>
+                        <linearGradient id="colorDailySessions" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Area 
+                        type="monotone" 
+                        dataKey="sessions" 
+                        stroke="#10b981" 
+                        fillOpacity={1} 
+                        fill="url(#colorDailySessions)" 
+                        name="الجلسات"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Weekly Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle>الملخص الأسبوعي</CardTitle>
+                <CardDescription>إحصائيات كل أسبوع</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {usageLoading ? (
+                  <Skeleton className="h-[250px] w-full" />
+                ) : (
+                  <div className="space-y-3 max-h-[250px] overflow-y-auto">
+                    {usageData?.weeklySummary?.map((week, idx) => (
+                      <div key={idx} className="p-3 rounded-lg bg-muted/50 border">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium">الأسبوع {week.weekNumber}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {week.startDate} - {week.endDate}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">الجلسات:</span>
+                            <span className="font-bold mr-1">{week.sessions}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">المستخدمين:</span>
+                            <span className="font-bold mr-1">{week.uniqueUsers}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">الوقت:</span>
+                            <span className="font-bold mr-1">{formatDuration(week.totalTime)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {(!usageData?.weeklySummary || usageData.weeklySummary.length === 0) && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        لا توجد بيانات للفترة المحددة
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Top Users by Time */}
+            <Card>
+              <CardHeader>
+                <CardTitle>أكثر المستخدمين استخداماً</CardTitle>
+                <CardDescription>حسب إجمالي وقت الاتصال</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {usageLoading ? (
+                  <Skeleton className="h-[250px] w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={usageData?.topUsersByTime?.slice(0, 10) || []} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" tickFormatter={(v) => formatDuration(v)} />
+                      <YAxis dataKey="username" type="category" width={80} />
+                      <Tooltip formatter={(value: number) => [formatDuration(value), 'الوقت']} />
+                      <Bar dataKey="totalTime" fill="#8b5cf6" name="إجمالي الوقت" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Usage Summary Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle>ملخص الاستخدام</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">إجمالي الجلسات</span>
+                  <span className="font-bold">{usageData?.summary?.totalSessions || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">إجمالي الوقت</span>
+                  <Badge variant="secondary">{formatDuration(usageData?.summary?.totalTime || 0)}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">عدد المستخدمين</span>
+                  <span className="font-bold">{usageData?.summary?.uniqueUsers || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">متوسط مدة الجلسة</span>
+                  <Badge variant="outline">{formatDuration(usageData?.summary?.avgSessionDuration || 0)}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">ساعة الذروة</span>
+                  <Badge variant="default">{usageData?.summary?.peakHour || 0}:00</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">يوم الذروة</span>
+                  <Badge variant="default">{usageData?.summary?.peakDay || '-'}</Badge>
                 </div>
               </CardContent>
             </Card>

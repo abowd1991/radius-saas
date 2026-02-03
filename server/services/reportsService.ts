@@ -566,6 +566,185 @@ export async function getDashboardSummary(ownerId: number): Promise<DashboardSum
 }
 
 // ============================================================================
+// USAGE REPORTS (Peak Hours & Daily/Weekly)
+// ============================================================================
+
+export interface UsageReport {
+  // Peak hours analysis
+  peakHours: { hour: number; sessions: number; totalTime: number }[];
+  // Daily usage
+  dailyUsage: { date: string; sessions: number; totalTime: number; uniqueUsers: number }[];
+  // Weekly summary
+  weeklySummary: {
+    weekNumber: number;
+    startDate: string;
+    endDate: string;
+    sessions: number;
+    totalTime: number;
+    uniqueUsers: number;
+    avgSessionDuration: number;
+  }[];
+  // Top users by time
+  topUsersByTime: { username: string; totalTime: number; sessions: number }[];
+  // Summary stats
+  summary: {
+    totalSessions: number;
+    totalTime: number;
+    uniqueUsers: number;
+    avgSessionDuration: number;
+    peakHour: number;
+    peakDay: string;
+  };
+}
+
+export async function getUsageReport(
+  ownerId: number,
+  startDate: Date,
+  endDate: Date
+): Promise<UsageReport> {
+  const db = await getDb();
+  if (!db) throw new Error("Database connection failed");
+
+  // Get peak hours (sessions by hour of day)
+  const peakHours = await db
+    .select({
+      hour: sql<number>`HOUR(${radacct.acctstarttime})`,
+      sessions: count(),
+      totalTime: sql<number>`COALESCE(SUM(${radacct.acctsessiontime}), 0)`,
+    })
+    .from(radacct)
+    .innerJoin(nasDevices, eq(radacct.nasipaddress, nasDevices.nasname))
+    .where(
+      and(
+        eq(nasDevices.ownerId, ownerId),
+        gte(radacct.acctstarttime, startDate),
+        lte(radacct.acctstarttime, endDate)
+      )
+    )
+    .groupBy(sql`HOUR(${radacct.acctstarttime})`)
+    .orderBy(sql`HOUR(${radacct.acctstarttime})`);
+
+  // Get daily usage
+  const dailyUsage = await db
+    .select({
+      date: sql<string>`DATE_FORMAT(${radacct.acctstarttime}, '%Y-%m-%d')`,
+      sessions: count(),
+      totalTime: sql<number>`COALESCE(SUM(${radacct.acctsessiontime}), 0)`,
+      uniqueUsers: sql<number>`COUNT(DISTINCT ${radacct.username})`,
+    })
+    .from(radacct)
+    .innerJoin(nasDevices, eq(radacct.nasipaddress, nasDevices.nasname))
+    .where(
+      and(
+        eq(nasDevices.ownerId, ownerId),
+        gte(radacct.acctstarttime, startDate),
+        lte(radacct.acctstarttime, endDate)
+      )
+    )
+    .groupBy(sql`DATE_FORMAT(${radacct.acctstarttime}, '%Y-%m-%d')`)
+    .orderBy(asc(sql`DATE_FORMAT(${radacct.acctstarttime}, '%Y-%m-%d')`));
+
+  // Get weekly summary
+  const weeklySummary = await db
+    .select({
+      weekNumber: sql<number>`WEEK(${radacct.acctstarttime}, 1)`,
+      startDate: sql<string>`DATE_FORMAT(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY), '%Y-%m-%d')`,
+      endDate: sql<string>`DATE_FORMAT(DATE_ADD(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY), INTERVAL 6 DAY), '%Y-%m-%d')`,
+      sessions: count(),
+      totalTime: sql<number>`COALESCE(SUM(${radacct.acctsessiontime}), 0)`,
+      uniqueUsers: sql<number>`COUNT(DISTINCT ${radacct.username})`,
+    })
+    .from(radacct)
+    .innerJoin(nasDevices, eq(radacct.nasipaddress, nasDevices.nasname))
+    .where(
+      and(
+        eq(nasDevices.ownerId, ownerId),
+        gte(radacct.acctstarttime, startDate),
+        lte(radacct.acctstarttime, endDate)
+      )
+    )
+    .groupBy(
+      sql`WEEK(${radacct.acctstarttime}, 1)`,
+      sql`DATE_FORMAT(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY), '%Y-%m-%d')`,
+      sql`DATE_FORMAT(DATE_ADD(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY), INTERVAL 6 DAY), '%Y-%m-%d')`
+    )
+    .orderBy(sql`WEEK(${radacct.acctstarttime}, 1)`);
+
+  // Get top users by time
+  const topUsersByTime = await db
+    .select({
+      username: radacct.username,
+      totalTime: sql<number>`COALESCE(SUM(${radacct.acctsessiontime}), 0)`,
+      sessions: count(),
+    })
+    .from(radacct)
+    .innerJoin(nasDevices, eq(radacct.nasipaddress, nasDevices.nasname))
+    .where(
+      and(
+        eq(nasDevices.ownerId, ownerId),
+        gte(radacct.acctstarttime, startDate),
+        lte(radacct.acctstarttime, endDate)
+      )
+    )
+    .groupBy(radacct.username)
+    .orderBy(desc(sql`COALESCE(SUM(${radacct.acctsessiontime}), 0)`))
+    .limit(20);
+
+  // Calculate summary
+  const totalSessions = dailyUsage.reduce((sum: number, d: any) => sum + Number(d.sessions), 0);
+  const totalTime = dailyUsage.reduce((sum: number, d: any) => sum + Number(d.totalTime), 0);
+  const uniqueUsersSet = new Set(topUsersByTime.map((u: any) => u.username));
+  
+  // Find peak hour
+  const peakHourData = peakHours.reduce((max: any, h: any) => 
+    Number(h.sessions) > Number(max?.sessions || 0) ? h : max, 
+    peakHours[0]
+  );
+  
+  // Find peak day
+  const peakDayData = dailyUsage.reduce((max: any, d: any) => 
+    Number(d.sessions) > Number(max?.sessions || 0) ? d : max,
+    dailyUsage[0]
+  );
+
+  return {
+    peakHours: peakHours.map((h: any) => ({
+      hour: Number(h.hour),
+      sessions: Number(h.sessions),
+      totalTime: Number(h.totalTime),
+    })),
+    dailyUsage: dailyUsage.map((d: any) => ({
+      date: d.date,
+      sessions: Number(d.sessions),
+      totalTime: Number(d.totalTime),
+      uniqueUsers: Number(d.uniqueUsers),
+    })),
+    weeklySummary: weeklySummary.map((w: any) => ({
+      weekNumber: Number(w.weekNumber),
+      startDate: w.startDate,
+      endDate: w.endDate,
+      sessions: Number(w.sessions),
+      totalTime: Number(w.totalTime),
+      uniqueUsers: Number(w.uniqueUsers),
+      avgSessionDuration: Number(w.sessions) > 0 ? Number(w.totalTime) / Number(w.sessions) : 0,
+    })),
+    topUsersByTime: topUsersByTime.map((u: any) => ({
+      username: u.username,
+      totalTime: Number(u.totalTime),
+      sessions: Number(u.sessions),
+    })),
+    summary: {
+      totalSessions,
+      totalTime,
+      uniqueUsers: uniqueUsersSet.size,
+      avgSessionDuration: totalSessions > 0 ? totalTime / totalSessions : 0,
+      peakHour: Number(peakHourData?.hour || 0),
+      peakDay: peakDayData?.date || '',
+    },
+  };
+}
+
+// ============================================================================
 // EXPORT HELPERS
 // ============================================================================
 

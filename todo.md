@@ -2064,3 +2064,38 @@
 ### 7. تحديث شامل للوحة التحكم ✅
 - [x] إصلاح: 162 TypeScript Error → 0 أخطاء
 - [x] فحص: CoA Service موجود ويعمل (disconnect, updateAttributes, changeSpeed)
+
+
+## المرحلة الجديدة (Feb 3, 2026)
+
+### 1. تفعيل MikroTik API على أجهزة NAS ✅
+- [x] فحص: الحقول موجودة (apiEnabled, mikrotikApiPort, mikrotikApiUser, mikrotikApiPassword)
+- [x] تنفيذ: واجهة تفعيل/إلغاء API موجودة في NasDevices.tsx (SpecialToolsContent)
+- [x] تنفيذ: اختبار الاتصال موجود (testApiConnection)
+- [x] تنفيذ: تغيير السرعة عبر API موجود (changeSpeedViaApi - Hotspot/Queue/PPP)
+
+### 2. تقارير الاستخدام (Usage Reports) ✅
+- [x] تصميم: هيكل التقارير (يومي/أسبوعي)
+- [x] تنفيذ: API getUsageReport في reportsService.ts
+- [x] تنفيذ: endpoint reports.usage في routers.ts
+- [x] تنفيذ: تبويب "الاستخدام" في Reports.tsx
+- [x] رسوم بيانية: أوقات الذروة، الاستخدام اليومي، الملخص الأسبوعي، أكثر المستخدمين استخداماً
+- [ ] تنفيذ: صفحة عرض التقارير
+- [ ] محتوى: عدد الجلسات، استهلاك الوقت، أوقات الذروة
+
+### 3. تنظيف المستخدمين
+- [ ] فحص: عدد المستخدمين الحاليين
+- [ ] تنفيذ: حذف جميع المستخدمين ما عدا الأدمن
+- [ ] تأكيد: الأدمن الوحيد المتبقي
+
+### 3. تنظيف المستخدمين ✅
+- [x] فحص: 821 مستخدم (367 super_admin + 454 client)
+- [x] حذف: تم حذف 820 مستخدم وهمي - بقي Owner فقط (ID: 3)
+
+### 4. تحديث نظام الأدوار والتسجيل ✅
+- [x] Owner: حساب واحد فقط (ID: 3)، صلاحيات كاملة، لا يُحذف
+- [x] Admin/Super Admin: يُنشأ فقط بواسطة Owner (تم تعديل db.ts)
+- [x] Client: أي تسجيل جديد = Client فقط (تم تعديل authService.ts + db.ts)
+- [x] منع إنشاء Super Admin تلقائياً (تم تعديل db.ts - OAuth يعطي client بدلاً من super_admin)
+- [x] صفحة إدارة الحسابات موجودة (UsersManagement.tsx)
+

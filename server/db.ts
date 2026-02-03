@@ -71,6 +71,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       // Owner gets super_admin role
       values.role = 'super_admin';
       updateSet.role = 'super_admin';
+    } else {
+      // All other OAuth users get client role by default
+      // Admin/Super Admin can only be created manually by Owner
+      values.role = 'client';
+      // Don't update role on duplicate - preserve existing role
     }
 
     if (!values.lastSignedIn) {

@@ -3912,6 +3912,20 @@ const reportsRouter = router({
       return { html, filename: `sessions-report-${input.startDate}-${input.endDate}.html` };
     }),
 
+  // Get usage report (peak hours, daily/weekly)
+  usage: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      return reportsService.getUsageReport(
+        ctx.user.id,
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+    }),
+
   // Get bandwidth usage report from radacct
   getBandwidthUsage: superAdminProcedure
     .input(z.object({
