@@ -486,6 +486,31 @@ const usersRouter = router({
       };
     }),
 
+  // Change user role (Super Admin only)
+  changeRole: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      role: z.enum(['super_admin', 'reseller', 'client']),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await db.getUserById(input.userId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      // Prevent changing own role
+      if (input.userId === ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot change your own role' });
+      }
+      
+      // Only allow promoting to super_admin if current user is super_admin
+      if (input.role === 'super_admin' && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super admin can promote to super admin' });
+      }
+      
+      await db.updateUserRole(input.userId, input.role);
+      console.log(`[User Role] Super admin ${ctx.user.id} changed user ${input.userId} role to ${input.role}`);
+      return { success: true, message: `Role changed to ${input.role}` };
+    }),
+
   // Delete user (Super Admin only)
   delete: superAdminProcedure
     .input(z.object({ userId: z.number() }))

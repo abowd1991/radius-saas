@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO users (username, email, passwordHash, name, role, status, accountStatus, emailVerified, loginMethod, createdAt, lastSignedIn) \nVALUES ('admin', 'admin@radius-pro.com', '$2b$10$o9nAty1D3WB.Zv9APcviDeAckIhXcSxKtLWcYU5e65yRnQ./tME5G', 'مدير النظام', 'super_admin', 'active', 'active', true, 'traditional', NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute INSERT INTO users (username, email, passwordHash, name, role, status, accountStatus, emailVerified, loginMethod, createdAt, lastSignedIn) \nVALUES ('admin', 'admin@radius-pro.com', '$2b$10$o9nAty1D3WB.Zv9APcviDeAckIhXcSxKtLWcYU5e65yRnQ./tME5G', 'مدير النظام', 'super_admin', 'active', 'active', true, 'traditional', NOW(), NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 368
+}

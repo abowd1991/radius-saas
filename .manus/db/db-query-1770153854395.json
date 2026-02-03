@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, username, email, name, role, status, accountStatus FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, username, email, name, role, status, accountStatus FROM users;",
+  "rows": [
+    {
+      "id": "330023",
+      "username": "admin",
+      "email": "admin@radius-pro.com",
+      "name": "مدير النظام",
+      "role": "super_admin",
+      "status": "active",
+      "accountStatus": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\temail\tname\trole\tstatus\taccountStatus\n330023\tadmin\tadmin@radius-pro.com\tمدير النظام\tsuper_admin\tactive\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 351
+}

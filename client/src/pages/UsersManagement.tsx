@@ -81,6 +81,8 @@ export default function UsersManagement() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showExtendDialog, setShowExtendDialog] = useState(false);
   const [extendDays, setExtendDays] = useState(30);
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [newRole, setNewRole] = useState<string>("");
 
   // Fetch all users
   const { data: allUsers, isLoading, refetch } = trpc.users.list.useQuery({});
@@ -122,6 +124,16 @@ export default function UsersManagement() {
       toast.success("تم حذف المستخدم بنجاح");
       refetch();
       setShowDeleteDialog(false);
+      setSelectedUser(null);
+    },
+    onError: (error: any) => toast.error(error.message),
+  });
+
+  const changeRoleMutation = trpc.users.changeRole.useMutation({
+    onSuccess: () => {
+      toast.success("تم تغيير الدور بنجاح");
+      refetch();
+      setShowRoleDialog(false);
       setSelectedUser(null);
     },
     onError: (error: any) => toast.error(error.message),
@@ -492,6 +504,17 @@ export default function UsersManagement() {
                                       تعليق الحساب
                                     </DropdownMenuItem>
                                   )}
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedUser(u);
+                                      setNewRole(u.role || "");
+                                      setShowRoleDialog(true);
+                                    }}
+                                    className="text-blue-400 focus:bg-slate-700"
+                                  >
+                                    <Shield className="h-4 w-4 ml-2" />
+                                    تغيير الدور
+                                  </DropdownMenuItem>
                                   <DropdownMenuSeparator className="bg-slate-700" />
                                   <DropdownMenuItem
                                     onClick={() => {
@@ -654,6 +677,49 @@ export default function UsersManagement() {
                 disabled={extendMutation.isPending}
               >
                 {extendMutation.isPending ? "جارٍ التمديد..." : "تمديد"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Change Role Dialog */}
+        <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
+          <DialogContent className="bg-slate-800 border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="text-white">تغيير الدور</DialogTitle>
+              <DialogDescription className="text-slate-400">
+                تغيير دور المستخدم {selectedUser?.name || selectedUser?.username}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-slate-200">الدور الجديد</Label>
+                <Select value={newRole} onValueChange={setNewRole}>
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                    <SelectValue placeholder="اختر الدور" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="client">عميل (Client)</SelectItem>
+                    <SelectItem value="reseller">موزع (Reseller)</SelectItem>
+                    <SelectItem value="super_admin">مدير (Admin)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-sm text-slate-400 space-y-1">
+                <p><strong>عميل:</strong> صلاحيات محدودة لإدارة شبكته فقط</p>
+                <p><strong>موزع:</strong> يمكنه إنشاء كروت وإدارة عملائه</p>
+                <p><strong>مدير:</strong> صلاحيات كاملة على النظام</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowRoleDialog(false)}>
+                إلغاء
+              </Button>
+              <Button
+                onClick={() => selectedUser && newRole && changeRoleMutation.mutate({ userId: selectedUser.id, role: newRole as any })}
+                disabled={changeRoleMutation.isPending || !newRole}
+              >
+                {changeRoleMutation.isPending ? "جارٍ التغيير..." : "تغيير الدور"}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -2099,3 +2099,16 @@
 - [x] منع إنشاء Super Admin تلقائياً (تم تعديل db.ts - OAuth يعطي client بدلاً من super_admin)
 - [x] صفحة إدارة الحسابات موجودة (UsersManagement.tsx)
 
+
+## المهام الجديدة (Feb 3, 2026)
+
+### 1. إعادة إنشاء حساب Admin ✅
+- [x] حذف جميع المستخدمين من قاعدة البيانات
+- [x] إنشاء حساب Admin جديد (username: admin, password: !@Abowd329324)
+- [x] تعيين الدور super_admin
+
+### 2. إضافة ميزة ترقية الدور ✅
+- [x] إضافة endpoint changeRole في routers.ts
+- [x] إضافة واجهة لتغيير الدور في UsersManagement.tsx
+- [x] Admin يمكنه ترقية client إلى reseller أو super_admin
+
