@@ -185,6 +185,7 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       label: "الفواتير والمالية",
       items: [
         { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
+        { icon: Wallet, label: "سجل المحفظة", path: "/wallet-ledger" },
         { icon: CreditCard, label: "خطط SaaS", path: "/saas-plans" },
       ],
     },

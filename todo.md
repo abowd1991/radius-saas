@@ -2213,3 +2213,21 @@
 - [x] حذف صفحة "العملاء" من قائمة super_admin
 - [x] إصلاح صلاحيات SaasPlansManagement (owner + super_admin)
 
+
+## Phase 4: Billing + Wallet Ledger System
+- [x] Create walletLedger table in schema
+- [x] Create subscriptions table in schema (saasSubscriptions already exists)
+- [x] Create invoices table in schema (already exists)
+- [x] Push database schema changes
+- [x] Create walletLedgerService.ts
+- [ ] Create subscriptionService.ts (skip - saasSubscriptions already has service)
+- [ ] Create invoiceService.ts (skip - invoices already has service)
+- [x] Create billing router endpoints (wallet ledger endpoints added)
+- [x] Create WalletLedger UI page
+- [ ] Create Subscriptions UI page (skip - TenantSubscriptions already exists)
+- [ ] Create Invoices UI page (skip - Invoices page already exists)
+- [x] Add billing pages to sidebar navigation
+- [x] Write vitest tests for billing services
+- [x] Test wallet operations (credit/debit) - 8 tests passed
+- [ ] Test subscription management (skip - existing functionality)
+- [ ] Test invoice generation (skip - existing functionality)

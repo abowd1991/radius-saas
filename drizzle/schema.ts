@@ -1124,3 +1124,46 @@ export const smsNotificationTracking = mysqlTable("sms_notification_tracking", {
 export type SmsNotificationTracking = typeof smsNotificationTracking.$inferSelect;
 export type InsertSmsNotificationTracking = typeof smsNotificationTracking.$inferInsert;
 
+// ============================================================================
+// WALLET LEDGER (Transaction History)
+// ============================================================================
+
+export const walletLedger = mysqlTable("wallet_ledger", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // User reference
+  userId: int("userId").notNull(),
+  
+  // Transaction type
+  type: mysqlEnum("type", ["credit", "debit"]).notNull(),
+  
+  // Amount
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  
+  // Balance before and after
+  balanceBefore: decimal("balanceBefore", { precision: 12, scale: 2 }).notNull(),
+  balanceAfter: decimal("balanceAfter", { precision: 12, scale: 2 }).notNull(),
+  
+  // Reason/Description
+  reason: varchar("reason", { length: 255 }).notNull(),
+  reasonAr: varchar("reasonAr", { length: 255 }),
+  
+  // Reference to related entity
+  entityType: varchar("entityType", { length: 50 }), // e.g., "card", "subscription", "invoice", "manual"
+  entityId: int("entityId"),
+  
+  // Actor (who performed this transaction)
+  actorId: int("actorId"), // User who performed the action (admin/reseller)
+  actorRole: varchar("actorRole", { length: 50 }),
+  
+  // Additional metadata
+  metadata: json("metadata"),
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WalletLedger = typeof walletLedger.$inferSelect;
+export type InsertWalletLedger = typeof walletLedger.$inferInsert;
+
+

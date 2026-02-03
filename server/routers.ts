@@ -1972,6 +1972,89 @@ const walletRouter = router({
     .mutation(async ({ input }) => {
       return walletDb.deposit(input.userId, input.amount, input.description);
     }),
+
+  // Wallet Ledger endpoints
+  addCredit: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      amount: z.number().positive(),
+      reason: z.string(),
+      reasonAr: z.string().optional(),
+      entityType: z.string().optional(),
+      entityId: z.number().optional(),
+      metadata: z.any().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { walletLedgerService } = await import("./services/walletLedgerService");
+      return walletLedgerService.addCredit({
+        ...input,
+        actorId: ctx.user.id,
+        actorRole: ctx.user.role,
+      });
+    }),
+
+  deductBalance: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      amount: z.number().positive(),
+      reason: z.string(),
+      reasonAr: z.string().optional(),
+      entityType: z.string().optional(),
+      entityId: z.number().optional(),
+      metadata: z.any().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { walletLedgerService } = await import("./services/walletLedgerService");
+      return walletLedgerService.deductBalance({
+        ...input,
+        actorId: ctx.user.id,
+        actorRole: ctx.user.role,
+      });
+    }),
+
+  getTransactionHistory: protectedProcedure
+    .input(z.object({
+      userId: z.number().optional(),
+      type: z.enum(["credit", "debit"]).optional(),
+      startDate: z.date().optional(),
+      endDate: z.date().optional(),
+      limit: z.number().default(50),
+      offset: z.number().default(0),
+    }).optional())
+    .query(async ({ input, ctx }) => {
+      const { walletLedgerService } = await import("./services/walletLedgerService");
+      const userId = input?.userId || ctx.user.id;
+      
+      // Only super_admin can view other users' transactions
+      if (userId !== ctx.user.id && ctx.user.role !== "super_admin" && ctx.user.role !== "owner") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      
+      return walletLedgerService.getTransactionHistory({
+        userId,
+        type: input?.type,
+        startDate: input?.startDate,
+        endDate: input?.endDate,
+        limit: input?.limit || 50,
+        offset: input?.offset || 0,
+      });
+    }),
+
+  getWalletSummary: protectedProcedure
+    .input(z.object({
+      userId: z.number().optional(),
+    }).optional())
+    .query(async ({ input, ctx }) => {
+      const { walletLedgerService } = await import("./services/walletLedgerService");
+      const userId = input?.userId || ctx.user.id;
+      
+      // Only super_admin can view other users' summary
+      if (userId !== ctx.user.id && ctx.user.role !== "super_admin" && ctx.user.role !== "owner") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      
+      return walletLedgerService.getWalletSummary(userId);
+    }),
 });
 
 // ============================================================================
