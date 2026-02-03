@@ -2207,3 +2207,9 @@
 - [x] أزرار سريعة موجودة (Suspend, Activate, Extend, Delete, Change Role)
 - [x] صلاحيات الوصول محدثة (owner + super_admin)
 
+
+## إصلاح صفحات الإدارة (Feb 4, 2026) ✅
+
+- [x] حذف صفحة "العملاء" من قائمة super_admin
+- [x] إصلاح صلاحيات SaasPlansManagement (owner + super_admin)
+

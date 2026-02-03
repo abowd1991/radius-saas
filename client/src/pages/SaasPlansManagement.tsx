@@ -43,8 +43,8 @@ export default function SaasPlansManagement() {
     onError: (err) => toast.error(err.message),
   });
 
-  // Check if user is super admin
-  if (user?.role !== "super_admin") {
+  // Check if user is super admin or owner
+  if (user?.role !== "super_admin" && user?.role !== "owner") {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">

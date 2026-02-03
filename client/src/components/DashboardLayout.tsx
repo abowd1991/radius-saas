@@ -153,7 +153,6 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       items: [
         { icon: UserCheck, label: "المشتركين", path: "/subscribers" },
         { icon: Building2, label: t("nav.resellers"), path: "/resellers" },
-        { icon: Users, label: t("nav.clients"), path: "/clients" },
         { icon: Users, label: "إدارة المستخدمين", path: "/users-management" },
       ],
     },
