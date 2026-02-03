@@ -1,0 +1,24 @@
+{
+  "query": "SELECT id, username, email, name, role FROM users WHERE username LIKE '%abowd%' OR email LIKE '%abowd%' OR name LIKE '%abowd%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, username, email, name, role FROM users WHERE username LIKE '%abowd%' OR email LIKE '%abowd%' OR name LIKE '%abowd%';",
+  "rows": [
+    {
+      "id": "330024",
+      "username": "NULL",
+      "email": "abowd19911@gmail.com",
+      "name": "داعية للإسلام",
+      "role": "super_admin"
+    },
+    {
+      "id": "330026",
+      "username": "abowd",
+      "email": "abowd1991@gmail.com",
+      "name": "عبد الرحمن العمراني",
+      "role": "client"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\temail\tname\trole\n330024\tNULL\tabowd19911@gmail.com\tداعية للإسلام\tsuper_admin\n330026\tabowd\tabowd1991@gmail.com\tعبد الرحمن العمراني\tclient\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}

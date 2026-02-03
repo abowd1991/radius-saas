@@ -1,0 +1,730 @@
+{
+  "query": "SELECT id, username, email, name, role, createdAt FROM users ORDER BY createdAt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, username, email, name, role, createdAt FROM users ORDER BY createdAt DESC;",
+  "rows": [
+    {
+      "id": "330114",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:37:49"
+    },
+    {
+      "id": "330113",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:37:21"
+    },
+    {
+      "id": "330112",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:37:13"
+    },
+    {
+      "id": "330111",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:37:06"
+    },
+    {
+      "id": "330110",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:36:48"
+    },
+    {
+      "id": "330109",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:36:42"
+    },
+    {
+      "id": "330108",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:36:32"
+    },
+    {
+      "id": "330107",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:36:02"
+    },
+    {
+      "id": "330106",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:36:02"
+    },
+    {
+      "id": "330105",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:35:31"
+    },
+    {
+      "id": "330104",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:35:27"
+    },
+    {
+      "id": "330103",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:34:57"
+    },
+    {
+      "id": "330102",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:34:52"
+    },
+    {
+      "id": "330101",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:34:43"
+    },
+    {
+      "id": "330100",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:34:22"
+    },
+    {
+      "id": "330099",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:29:35"
+    },
+    {
+      "id": "330098",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:29:01"
+    },
+    {
+      "id": "330097",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:28:39"
+    },
+    {
+      "id": "330096",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:28:27"
+    },
+    {
+      "id": "330095",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:28:12"
+    },
+    {
+      "id": "330094",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:28:06"
+    },
+    {
+      "id": "330093",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:28:05"
+    },
+    {
+      "id": "330092",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:27:59"
+    },
+    {
+      "id": "330091",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:26:03"
+    },
+    {
+      "id": "330090",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:25:58"
+    },
+    {
+      "id": "330089",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:25:35"
+    },
+    {
+      "id": "330088",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:25:27"
+    },
+    {
+      "id": "330087",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:25:18"
+    },
+    {
+      "id": "330086",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:25:05"
+    },
+    {
+      "id": "330085",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:25:03"
+    },
+    {
+      "id": "330084",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:25:02"
+    },
+    {
+      "id": "330083",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:57"
+    },
+    {
+      "id": "330082",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:57"
+    },
+    {
+      "id": "330081",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:55"
+    },
+    {
+      "id": "330080",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:53"
+    },
+    {
+      "id": "330079",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:42"
+    },
+    {
+      "id": "330078",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:26"
+    },
+    {
+      "id": "330077",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:20"
+    },
+    {
+      "id": "330076",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:20"
+    },
+    {
+      "id": "330075",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:15"
+    },
+    {
+      "id": "330074",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:15"
+    },
+    {
+      "id": "330073",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:12"
+    },
+    {
+      "id": "330072",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:12"
+    },
+    {
+      "id": "330071",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:10"
+    },
+    {
+      "id": "330070",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:24:06"
+    },
+    {
+      "id": "330069",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:23:56"
+    },
+    {
+      "id": "330068",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:23:25"
+    },
+    {
+      "id": "330067",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:22:59"
+    },
+    {
+      "id": "330066",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:22:55"
+    },
+    {
+      "id": "330065",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:22:55"
+    },
+    {
+      "id": "330064",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:22:52"
+    },
+    {
+      "id": "330063",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:22:51"
+    },
+    {
+      "id": "330062",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:22:25"
+    },
+    {
+      "id": "330061",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:20:36"
+    },
+    {
+      "id": "330060",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:20:22"
+    },
+    {
+      "id": "330059",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:19:51"
+    },
+    {
+      "id": "330058",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:19:42"
+    },
+    {
+      "id": "330057",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:19:20"
+    },
+    {
+      "id": "330056",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:55"
+    },
+    {
+      "id": "330055",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:53"
+    },
+    {
+      "id": "330054",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:50"
+    },
+    {
+      "id": "330053",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:41"
+    },
+    {
+      "id": "330052",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:30"
+    },
+    {
+      "id": "330051",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:19"
+    },
+    {
+      "id": "330050",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:19"
+    },
+    {
+      "id": "330049",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:15"
+    },
+    {
+      "id": "330048",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:10"
+    },
+    {
+      "id": "330047",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:09"
+    },
+    {
+      "id": "330046",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:18:00"
+    },
+    {
+      "id": "330045",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:17:43"
+    },
+    {
+      "id": "330044",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:17:32"
+    },
+    {
+      "id": "330043",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:17:32"
+    },
+    {
+      "id": "330042",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:17:22"
+    },
+    {
+      "id": "330041",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:17:12"
+    },
+    {
+      "id": "330040",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:17:12"
+    },
+    {
+      "id": "330039",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:16:44"
+    },
+    {
+      "id": "330038",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:16:43"
+    },
+    {
+      "id": "330037",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:16:15"
+    },
+    {
+      "id": "330036",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:16:14"
+    },
+    {
+      "id": "330035",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:15:43"
+    },
+    {
+      "id": "330034",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:15:43"
+    },
+    {
+      "id": "330033",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:15:31"
+    },
+    {
+      "id": "330032",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:15:30"
+    },
+    {
+      "id": "330031",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:15:18"
+    },
+    {
+      "id": "330030",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:14:47"
+    },
+    {
+      "id": "330029",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "client",
+      "createdAt": "2026-02-03 22:14:47"
+    },
+    {
+      "id": "330028",
+      "username": "abowd",
+      "email": "abowd1991@gmail.com",
+      "name": "abd alrhman alomrani",
+      "role": "client",
+      "createdAt": "2026-02-03 22:10:49"
+    },
+    {
+      "id": "330025",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "super_admin",
+      "createdAt": "2026-02-03 21:27:00"
+    },
+    {
+      "id": "330024",
+      "username": "NULL",
+      "email": "abowd19911@gmail.com",
+      "name": "داعية للإسلام",
+      "role": "super_admin",
+      "createdAt": "2026-02-03 21:27:00"
+    },
+    {
+      "id": "330023",
+      "username": "admin",
+      "email": "admin@radius-pro.com",
+      "name": "مدير النظام",
+      "role": "super_admin",
+      "createdAt": "2026-02-03 21:24:09"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\temail\tname\trole\tcreatedAt\n330114\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:37:49\n330113\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:37:21\n330112\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:37:13\n330111\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:37:06\n330110\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:36:48\n330109\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:36:42\n330108\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:36:32\n330107\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:36:02\n330106\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:36:02\n330105\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:35:31\n330104\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:35:27\n330103\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:34:57\n330102\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:34:52\n330101\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:34:43\n330100\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:34:22\n330099\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:29:35\n330098\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:29:01\n330097\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:28:39\n330096\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:28:27\n330095\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:28:12\n330094\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:28:06\n330093\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:28:05\n330092\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:27:59\n330091\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:26:03\n330090\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:25:58\n330089\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:25:35\n330088\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:25:27\n330087\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:25:18\n330086\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:25:05\n330085\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:25:03\n330084\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:25:02\n330083\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:57\n330082\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:57\n330081\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:55\n330080\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:53\n330079\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:42\n330078\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:26\n330077\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:20\n330076\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:20\n330075\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:15\n330074\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:15\n330073\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:12\n330072\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:12\n330071\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:10\n330070\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:24:06\n330069\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:23:56\n330068\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:23:25\n330067\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:22:59\n330066\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:22:55\n330065\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:22:55\n330064\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:22:52\n330063\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:22:51\n330062\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:22:25\n330061\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:20:36\n330060\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:20:22\n330059\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:19:51\n330058\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:19:42\n330057\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:19:20\n330056\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:55\n330055\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:53\n330054\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:50\n330053\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:41\n330052\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:30\n330051\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:19\n330050\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:19\n330049\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:15\n330048\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:10\n330047\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:09\n330046\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:18:00\n330045\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:17:43\n330044\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:17:32\n330043\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:17:32\n330042\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:17:22\n330041\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:17:12\n330040\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:17:12\n330039\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:16:44\n330038\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:16:43\n330037\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:16:15\n330036\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:16:14\n330035\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:15:43\n330034\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:15:43\n330033\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:15:31\n330032\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:15:30\n330031\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:15:18\n330030\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:14:47\n330029\tNULL\tNULL\tNULL\tclient\t2026-02-03 22:14:47\n330028\tabowd\tabowd1991@gmail.com\tabd alrhman alomrani\tclient\t2026-02-03 22:10:49\n330025\tNULL\tNULL\tNULL\tsuper_admin\t2026-02-03 21:27:00\n330024\tNULL\tabowd19911@gmail.com\tداعية للإسلام\tsuper_admin\t2026-02-03 21:27:00\n330023\tadmin\tadmin@radius-pro.com\tمدير النظام\tsuper_admin\t2026-02-03 21:24:09\n",
+  "stderr": "",
+  "execution_time_ms": 363
+}

@@ -283,33 +283,32 @@ class SDKServer {
     }
 
     // If user not in DB and not a local user, sync from OAuth server automatically
-    if (!user && !sessionUserId.startsWith('local_')) {
-      try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-        await db.upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt,
-        });
-        user = await db.getUserByOpenId(userInfo.openId);
-      } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
-      }
-    }
+    // Disabled automatic user creation - users must register explicitly
+    // if (!user && !sessionUserId.startsWith('local_')) {
+    //   try {
+    //     const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+    //     await db.upsertUser({
+    //       openId: userInfo.openId,
+    //       name: userInfo.name || null,
+    //       email: userInfo.email ?? null,
+    //       loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+    //       lastSignedIn: signedInAt,
+    //     });
+    //     user = await db.getUserByOpenId(userInfo.openId);
+    //   } catch (error) {
+    //     console.error("[Auth] Failed to sync user from OAuth:", error);
+    //     throw ForbiddenError("Failed to sync user info");
+    //   }
+    // }
 
     if (!user) {
       throw ForbiddenError("User not found");
     }
 
-    // Update last signed in (only for OAuth users with openId)
+    // Update last signed in without creating new users
     if (user.openId && !sessionUserId.startsWith('local_')) {
-      await db.upsertUser({
-        openId: user.openId,
-        lastSignedIn: signedInAt,
-      });
+      // Only update existing users, don't create new ones
+      await db.updateUserLastSignedIn(user.id, signedInAt);
     }
 
     return user;

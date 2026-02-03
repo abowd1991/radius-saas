@@ -2112,3 +2112,60 @@
 - [x] إضافة واجهة لتغيير الدور في UsersManagement.tsx
 - [x] Admin يمكنه ترقية client إلى reseller أو super_admin
 
+
+## فحص نظام الرسائل (Feb 3, 2026)
+
+### 1. فحص إعدادات SMTP
+- [ ] التحقق من إعدادات SMTP في emailService.ts
+- [ ] فحص سجل إرسال الرسائل في Server logs
+
+### 2. اختبار إرسال رسالة
+- [ ] إرسال رسالة تجريبية للتحقق من عمل النظام
+
+
+## حذف المستخدم abowd (Feb 3, 2026) ✅
+
+- [x] البحث عن المستخدم abowd
+- [x] حذف المستخدم abowd1991@gmail.com من قاعدة البيانات
+
+
+## تفعيل نظام الرسائل SMTP (Feb 3, 2026)
+
+- [ ] تحديث SMTP_USER و SMTP_PASS
+- [ ] اختبار إرسال رسالة تجريبية
+- [ ] التحقق من وصول الرسالة
+
+
+## خطة تطوير النظام الموحد (Feb 3, 2026)
+
+### المرحلة 1: تنظيف الحسابات الوهمية ✅
+- [x] فحص: وجد 90 مستخدم وهمي
+- [x] حذف جميع الحسابات ما عدا admin
+- [x] تحديد السبب: upsertUser في sdk.ts ينشئ مستخدمين تلقائياً
+- [x] الحل: تعطيل upsertUser في sdk.ts + إضافة updateUserLastSignedIn
+
+### المرحلة 2: نظام RBAC موحد + Multi-Tenant (جاري)
+- [x] إعادة بناء قاعدة البيانات من الصفر
+- [x] تحديث schema: إضافة ownerId
+- [x] تحديث Roles: owner, super_admin, client_admin, reseller, client, support
+- [x] إضافة auditLogs table
+- [x] إنشاء حساب admin (owner)
+- [ ] إضافة صفحة Profile موحدة
+- [ ] إضافة Audit Log helper functions
+
+### المرحلة 3: توحيد قوائم الإدارة
+- [ ] إنشاء صفحة Accounts موحدة
+- [ ] إضافة Tabs/Filters حسب الدور
+- [ ] إزالة الصفحات المكررة
+
+### المرحلة 4: Billing + Wallet Ledger
+- [ ] إضافة Subscription model
+- [ ] إضافة Wallet Ledger (credit/debit)
+- [ ] منع إنشاء Cards/NAS عند انتهاء الاشتراك
+
+### المرحلة 5: حماية التسجيل + Anti-bot
+- [ ] Email verification إلزامي
+- [ ] Rate limiting
+- [ ] CAPTCHA
+- [ ] منع إنشاء Users تلقائياً
+

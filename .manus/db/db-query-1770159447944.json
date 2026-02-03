@@ -1,0 +1,17 @@
+{
+  "query": "\nSELECT \n  (SELECT COUNT(*) FROM plans) as plans_count,\n  (SELECT COUNT(*) FROM nas) as nas_count,\n  (SELECT COUNT(*) FROM radius_cards) as cards_count,\n  (SELECT COUNT(*) FROM subscribers) as subscribers_count,\n  (SELECT COUNT(*) FROM reseller_profiles) as reseller_profiles_count;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \nSELECT \n  (SELECT COUNT(*) FROM plans) as plans_count,\n  (SELECT COUNT(*) FROM nas) as nas_count,\n  (SELECT COUNT(*) FROM radius_cards) as cards_count,\n  (SELECT COUNT(*) FROM subscribers) as subscribers_count,\n  (SELECT COUNT(*) FROM reseller_profiles) as reseller_profiles_count;\n",
+  "rows": [
+    {
+      "plans_count": "5",
+      "nas_count": "3",
+      "cards_count": "35",
+      "subscribers_count": "3",
+      "reseller_profiles_count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "plans_count\tnas_count\tcards_count\tsubscribers_count\treseller_profiles_count\n5\t3\t35\t3\t0\n",
+  "stderr": "",
+  "execution_time_ms": 348
+}

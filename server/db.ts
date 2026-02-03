@@ -144,6 +144,14 @@ export async function updateUserStatus(userId: number, status: 'active' | 'suspe
   return { success: true };
 }
 
+export async function updateUserLastSignedIn(userId: number, lastSignedIn: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(users).set({ lastSignedIn }).where(eq(users.id, userId));
+  return { success: true };
+}
+
 export async function updateUserRole(userId: number, role: 'super_admin' | 'reseller' | 'client') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

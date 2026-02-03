@@ -14,7 +14,8 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 20 }),
   address: text("address"),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["super_admin", "reseller", "client", "support"]).default("client").notNull(),
+  role: mysqlEnum("role", ["owner", "super_admin", "client_admin", "reseller", "client", "support"]).default("client").notNull(),
+  ownerId: int("ownerId"), // Tenant/Client owner (null for Owner himself)
   resellerId: int("resellerId"), // For clients: their reseller ID
   status: mysqlEnum("status", ["active", "suspended", "inactive"]).default("active").notNull(),
   accountStatus: mysqlEnum("accountStatus", ["trial", "active", "expired", "suspended"]).default("trial").notNull(),
@@ -1122,3 +1123,4 @@ export const smsNotificationTracking = mysqlTable("sms_notification_tracking", {
 
 export type SmsNotificationTracking = typeof smsNotificationTracking.$inferSelect;
 export type InsertSmsNotificationTracking = typeof smsNotificationTracking.$inferInsert;
+

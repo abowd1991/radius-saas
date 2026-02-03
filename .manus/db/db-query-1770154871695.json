@@ -1,0 +1,31 @@
+{
+  "query": "SELECT id, username, email, name, role FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, username, email, name, role FROM users;",
+  "rows": [
+    {
+      "id": "330023",
+      "username": "admin",
+      "email": "admin@radius-pro.com",
+      "name": "مدير النظام",
+      "role": "super_admin"
+    },
+    {
+      "id": "330024",
+      "username": "NULL",
+      "email": "abowd19911@gmail.com",
+      "name": "داعية للإسلام",
+      "role": "super_admin"
+    },
+    {
+      "id": "330025",
+      "username": "NULL",
+      "email": "NULL",
+      "name": "NULL",
+      "role": "super_admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\temail\tname\trole\n330023\tadmin\tadmin@radius-pro.com\tمدير النظام\tsuper_admin\n330024\tNULL\tabowd19911@gmail.com\tداعية للإسلام\tsuper_admin\n330025\tNULL\tNULL\tNULL\tsuper_admin\n",
+  "stderr": "",
+  "execution_time_ms": 341
+}
