@@ -511,6 +511,74 @@ const usersRouter = router({
       return { success: true, message: `Role changed to ${input.role}` };
     }),
 
+  // Update profile (any authenticated user)
+  updateProfile: protectedProcedure
+    .input(z.object({
+      username: z.string().min(3),
+      email: z.string().email(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      // Check if username is already taken by another user
+      const existingUser = await drizzleDb.select().from(users).where(eq(users.username, input.username));
+      if (existingUser.length > 0 && existingUser[0].id !== ctx.user.id) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Username already taken' });
+      }
+      
+      // Check if email is already taken by another user
+      const existingEmail = await drizzleDb.select().from(users).where(eq(users.email, input.email));
+      if (existingEmail.length > 0 && existingEmail[0].id !== ctx.user.id) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Email already taken' });
+      }
+      
+      await drizzleDb.update(users)
+        .set({
+          username: input.username,
+          email: input.email,
+        })
+        .where(eq(users.id, ctx.user.id));
+      
+      console.log(`[User Profile] User ${ctx.user.id} updated profile`);
+      return { success: true, message: 'Profile updated successfully' };
+    }),
+
+  // Change password (any authenticated user)
+  changePassword: protectedProcedure
+    .input(z.object({
+      currentPassword: z.string(),
+      newPassword: z.string().min(8),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      // Get current user with password
+      const [user] = await drizzleDb.select().from(users).where(eq(users.id, ctx.user.id));
+      if (!user || !user.password) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      }
+      
+      // Verify current password
+      const bcrypt = await import('bcryptjs');
+      const isValid = await bcrypt.compare(input.currentPassword, user.password);
+      if (!isValid) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Current password is incorrect' });
+      }
+      
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+      
+      // Update password
+      await drizzleDb.update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, ctx.user.id));
+      
+      console.log(`[User Password] User ${ctx.user.id} changed password`);
+      return { success: true, message: 'Password changed successfully' };
+    }),
+
   // Delete user (Super Admin only)
   delete: superAdminProcedure
     .input(z.object({ userId: z.number() }))

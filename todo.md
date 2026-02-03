@@ -2183,3 +2183,18 @@
 - [x] إضافة owner إلى switch statement
 - [x] إضافة owner badge (مالك النظام)
 
+
+## المرحلة 2: Profile + Audit Log (Feb 4, 2026)
+
+### Audit Log Helper Functions ✅
+- [x] auditLogService.ts موجود بالفعل
+- [x] logAudit() - تسجيل العمليات
+- [x] getAuditLogs() - جلب السجلات
+- [x] يدعم: session, NAS, cards, subscribers, VPN, system
+
+### صفحة Profile موحدة ✅
+- [x] إنشاء صفحة Profile.tsx
+- [x] عرض معلومات المستخدم (الاسم، البريد، الدور، الحالة)
+- [x] إضافة تغيير كلمة المرور (users.changePassword)
+- [x] إضافة تحديث المعلومات الشخصية (users.updateProfile)
+
