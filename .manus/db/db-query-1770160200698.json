@@ -1,0 +1,34 @@
+{
+  "query": "SHOW TABLES LIKE 'rad%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SHOW TABLES LIKE 'rad%';",
+  "rows": [
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (rad%)": "radacct"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (rad%)": "radcheck"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (rad%)": "radgroupcheck"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (rad%)": "radgroupreply"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (rad%)": "radius_cards"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (rad%)": "radpostauth"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (rad%)": "radreply"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (rad%)": "radusergroup"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_JYruXSQahvP3cr6rPdjNhA (rad%)\nradacct\nradcheck\nradgroupcheck\nradgroupreply\nradius_cards\nradpostauth\nradreply\nradusergroup\n",
+  "stderr": "",
+  "execution_time_ms": 351
+}

@@ -369,6 +369,7 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
   ];
 
   switch (role) {
+    case "owner":
     case "super_admin":
       return superAdminSections;
     case "reseller":
@@ -544,6 +545,8 @@ function DashboardLayoutContent({
 
   const getRoleBadge = (role: string) => {
     switch (role) {
+      case "owner":
+        return { label: language === "ar" ? "مالك النظام" : "Owner", variant: "destructive" as const };
       case "super_admin":
         return { label: language === "ar" ? "مدير النظام" : "Super Admin", variant: "destructive" as const };
       case "reseller":

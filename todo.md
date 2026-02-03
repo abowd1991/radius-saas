@@ -2169,3 +2169,17 @@
 - [ ] CAPTCHA
 - [ ] منع إنشاء Users تلقائياً
 
+
+## إصلاح حساب admin (Feb 4, 2026) ✅
+
+- [x] تحديث accountStatus من trial إلى active
+- [x] إضافة اشتراك دائم في tenant_subscriptions (10 سنوات)
+- [x] إضافة رصيد $10,000 في wallets
+
+
+## إصلاح صلاحيات admin في القائمة (Feb 4, 2026) ✅
+
+- [x] فحص DashboardLayout للعثور على منطق إخفاء الأقسام
+- [x] إضافة owner إلى switch statement
+- [x] إضافة owner badge (مالك النظام)
+

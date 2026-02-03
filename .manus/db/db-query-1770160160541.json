@@ -1,0 +1,9 @@
+{
+  "query": "\n-- تحديث حساب admin\nUPDATE users \nSET accountStatus = 'active', \n    trialEndDate = NULL,\n    subscriptionStartDate = NOW(),\n    subscriptionEndDate = DATE_ADD(NOW(), INTERVAL 10 YEAR)\nWHERE username = 'admin';\n\n-- إضافة اشتراك دائم\nINSERT INTO tenant_subscriptions (tenantId, status, pricePerMonth, startDate, expiresAt, createdAt, updatedAt)\nVALUES (1, 'active', 0.00, NOW(), DATE_ADD(NOW(), INTERVAL 10 YEAR), NOW(), NOW());\n\n-- إضافة محفظة برصيد\nINSERT INTO wallets (userId, balance, currency, createdAt, updatedAt)\nVALUES (1, 10000.00, 'USD', NOW(), NOW());\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- تحديث حساب admin\nUPDATE users \nSET accountStatus = 'active', \n    trialEndDate = NULL,\n    subscriptionStartDate = NOW(),\n    subscriptionEndDate = DATE_ADD(NOW(), INTERVAL 10 YEAR)\nWHERE username = 'admin';\n\n-- إضافة اشتراك دائم\nINSERT INTO tenant_subscriptions (tenantId, status, pricePerMonth, startDate, expiresAt, createdAt, updatedAt)\nVALUES (1, 'active', 0.00, NOW(), DATE_ADD(NOW(), INTERVAL 10 YEAR), NOW(), NOW());\n\n-- إضافة محفظة برصيد\nINSERT INTO wallets (userId, balance, currency, createdAt, updatedAt)\nVALUES (1, 10000.00, 'USD', NOW(), NOW());\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 504
+}
