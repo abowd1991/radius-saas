@@ -112,9 +112,7 @@ function Router() {
         </DashboardLayout>
       </Route>
       <Route path="/online-users">
-        <DashboardLayout>
-          <OnlineUsers />
-        </DashboardLayout>
+        <Redirect to="/sessions" />
       </Route>
       <Route path="/vpn">
         <DashboardLayout>

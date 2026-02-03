@@ -381,7 +381,7 @@ export default function NasDevices() {
     }
   };
 
-  const filteredDevices = devices?.filter(device =>
+  const filteredDevices = devices?.filter((device: any) =>
     (device.shortname || device.nasname).toLowerCase().includes(searchQuery.toLowerCase()) ||
     device.nasname.includes(searchQuery)
   );
@@ -610,7 +610,7 @@ export default function NasDevices() {
     const [connectionTested, setConnectionTested] = useState(false);
 
     // Get selected NAS device
-    const selectedNas = devices?.find(d => d.id === selectedNasId);
+    const selectedNas = devices?.find((d: any) => d.id === selectedNasId);
 
     // Load existing API settings when network is selected
     const handleNetworkSelect = (nasId: string) => {
@@ -619,7 +619,7 @@ export default function NasDevices() {
       setTestResult(null);
       setConnectionTested(false);
       
-      const device = devices?.find(d => d.id === id);
+      const device = devices?.find((d: any) => d.id === id);
       if (device) {
         setApiEnabled(device.apiEnabled || false);
         setApiPort(device.mikrotikApiPort?.toString() || "8728");
@@ -727,7 +727,7 @@ export default function NasDevices() {
                 <SelectValue placeholder={language === "ar" ? "اختر شبكة..." : "Select network..."} />
               </SelectTrigger>
               <SelectContent>
-                {devices?.filter(d => d.type === "mikrotik").map((device) => (
+                {devices?.filter((d: any) => d.type === "mikrotik").map((device: any) => (
                   <SelectItem key={device.id} value={device.id.toString()}>
                     {device.shortname} ({device.nasname})
                     {device.apiEnabled && " ✓"}
@@ -892,7 +892,7 @@ export default function NasDevices() {
           )}
 
           {/* No networks message */}
-          {devices?.filter(d => d.type === "mikrotik").length === 0 && (
+          {devices?.filter((d: any) => d.type === "mikrotik").length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <Router className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>{language === "ar" ? "لا توجد شبكات MikroTik" : "No MikroTik networks found"}</p>
@@ -973,7 +973,7 @@ export default function NasDevices() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-500">
-              {devices?.filter(d => d.status === "active").length || 0}
+              {devices?.filter((d: any) => d.status === "active").length || 0}
             </div>
           </CardContent>
         </Card>
@@ -986,7 +986,7 @@ export default function NasDevices() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-500">
-              {devices?.filter(d => d.status === "inactive").length || 0}
+              {devices?.filter((d: any) => d.status === "inactive").length || 0}
             </div>
           </CardContent>
         </Card>
@@ -999,7 +999,7 @@ export default function NasDevices() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {devices?.filter(d => d.type === "mikrotik").length || 0}
+              {devices?.filter((d: any) => d.type === "mikrotik").length || 0}
             </div>
           </CardContent>
         </Card>
@@ -1048,7 +1048,7 @@ export default function NasDevices() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDevices.map((device) => (
+                {filteredDevices.map((device: any) => (
                   <TableRow key={device.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">

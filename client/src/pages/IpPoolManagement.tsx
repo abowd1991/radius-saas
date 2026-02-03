@@ -413,7 +413,7 @@ export default function IpPoolManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {allocatedData.allocations.map((allocation) => (
+                      {allocatedData.allocations.map((allocation: any) => (
                         <TableRow key={allocation.id}>
                           <TableCell className="font-mono">{allocation.ipAddress}</TableCell>
                           <TableCell>{allocation.nasShortname || "-"}</TableCell>

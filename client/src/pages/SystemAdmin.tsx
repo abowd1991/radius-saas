@@ -414,7 +414,7 @@ export default function SystemAdmin() {
                         <div>
                           <div className="font-medium">{backup.id}</div>
                           <div className="text-xs text-muted-foreground">
-                            {formatBytes(backup.size)} • {formatDate(backup.created)}
+                            {formatBytes(Number(backup.size))} • {formatDate(backup.created)}
                           </div>
                         </div>
                       </div>

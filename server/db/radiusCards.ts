@@ -712,5 +712,5 @@ export async function getSubscriberGroups() {
   const groups = await db.selectDistinct({ groupname: radusergroup.groupname })
     .from(radusergroup);
 
-  return groups.map(g => g.groupname);
+  return groups.map((g: any) => g.groupname);
 }

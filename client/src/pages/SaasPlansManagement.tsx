@@ -101,7 +101,7 @@ export default function SaasPlansManagement() {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {plans?.map((plan) => (
+            {plans?.map((plan: any) => (
               <Card key={plan.id} className={`relative ${!plan.isActive ? 'opacity-60' : ''} ${plan.isPopular ? 'ring-2 ring-primary' : ''}`}>
                 {plan.isPopular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">

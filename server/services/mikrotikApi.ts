@@ -74,9 +74,9 @@ export async function getActiveSessions(): Promise<ActiveSession[]> {
   
   // Get NAS devices for names
   const nasDevicesList = await db.select().from(nasDevices);
-  const nasMap = new Map(nasDevicesList.map(n => [n.nasname, n.shortname || n.nasname]));
+  const nasMap = new Map(nasDevicesList.map((n: any) => [n.nasname, n.shortname || n.nasname]));
   
-  return sessions.map(session => ({
+  return sessions.map((session: any) => ({
     id: session.acctuniqueid,
     username: session.username,
     nasIpAddress: session.nasipaddress,
@@ -104,7 +104,7 @@ export async function getSessionsByUsername(username: string): Promise<ActiveSes
     ))
     .orderBy(desc(radacct.acctstarttime));
   
-  return sessions.map(session => ({
+  return sessions.map((session: any) => ({
     id: session.acctuniqueid,
     username: session.username,
     nasIpAddress: session.nasipaddress,
@@ -131,7 +131,7 @@ export async function getSessionsByNas(nasIp: string): Promise<ActiveSession[]> 
     ))
     .orderBy(desc(radacct.acctstarttime));
   
-  return sessions.map(session => ({
+  return sessions.map((session: any) => ({
     id: session.acctuniqueid,
     username: session.username,
     nasIpAddress: session.nasipaddress,
@@ -238,9 +238,9 @@ export async function getActiveSessionsByOwner(ownerId: number | null): Promise<
   // If super_admin (ownerId is null), return all sessions
   if (ownerId === null) {
     const nasDevicesList = await db.select().from(nasDevices);
-    const nasMap = new Map(nasDevicesList.map(n => [n.nasname, n.shortname || n.nasname]));
+    const nasMap = new Map(nasDevicesList.map((n: any) => [n.nasname, n.shortname || n.nasname]));
     
-    return sessions.map(session => ({
+    return sessions.map((session: any) => ({
       id: session.acctuniqueid,
       username: session.username,
       nasIpAddress: session.nasipaddress,
@@ -259,29 +259,29 @@ export async function getActiveSessionsByOwner(ownerId: number | null): Promise<
   const ownerCards = await db.select({ username: radiusCards.username })
     .from(radiusCards)
     .where(eq(radiusCards.createdBy, ownerId));
-  const cardUsernames = new Set(ownerCards.map(c => c.username));
+  const cardUsernames = new Set<string>(ownerCards.map((c: any) => c.username));
   
   // Get usernames from subscribers created by this owner
   const ownerSubscribers = await db.select({ username: subscribers.username })
     .from(subscribers)
     .where(eq(subscribers.createdBy, ownerId));
-  const subscriberUsernames = new Set(ownerSubscribers.map(s => s.username));
+  const subscriberUsernames = new Set<string>(ownerSubscribers.map((s: any) => s.username));
   
   // Combine all usernames owned by this user
   const ownerUsernames = new Set<string>();
-  cardUsernames.forEach(u => ownerUsernames.add(u));
-  subscriberUsernames.forEach(u => ownerUsernames.add(u));
+  cardUsernames.forEach((u: string) => ownerUsernames.add(u));
+  subscriberUsernames.forEach((u: string) => ownerUsernames.add(u));
   
   // Filter sessions by owner's usernames
-  const filteredSessions = sessions.filter(session => 
+  const filteredSessions = sessions.filter((session: any) => 
     ownerUsernames.has(session.username)
   );
   
   // Get NAS names
   const nasDevicesList = await db.select().from(nasDevices);
-  const nasMap = new Map(nasDevicesList.map(n => [n.nasname, n.shortname || n.nasname]));
+  const nasMap = new Map(nasDevicesList.map((n: any) => [n.nasname, n.shortname || n.nasname]));
   
-  return filteredSessions.map(session => ({
+  return filteredSessions.map((session: any) => ({
     id: session.acctuniqueid,
     username: session.username,
     nasIpAddress: session.nasipaddress,
@@ -309,7 +309,7 @@ export async function getSessionStats() {
   let totalInputOctets = 0;
   let totalOutputOctets = 0;
   
-  activeSessions.forEach(session => {
+  activeSessions.forEach((session: any) => {
     totalSessionTime += session.acctsessiontime || 0;
     totalInputOctets += session.acctinputoctets || 0;
     totalOutputOctets += session.acctoutputoctets || 0;

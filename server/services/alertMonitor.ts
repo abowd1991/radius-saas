@@ -49,7 +49,7 @@ async function getSuperAdmins(): Promise<number[]> {
       .from(users)
       .where(eq(users.role, "super_admin"));
 
-    return admins.map((a) => a.id);
+    return admins.map((a: any) => a.id);
   } catch (error) {
     console.error("[AlertMonitor] Error getting super admins:", error);
     return [];

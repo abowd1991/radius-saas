@@ -154,7 +154,7 @@ export default function Support() {
     });
   };
 
-  const selectedTicket = tickets?.find(t => t.id === selectedTicketId);
+  const selectedTicket = tickets?.find((t: any) => t.id === selectedTicketId);
 
   return (
     <div className="space-y-6">
@@ -245,7 +245,7 @@ export default function Support() {
                 </div>
               ) : (
                 <div className="divide-y">
-                  {tickets?.map((ticket) => (
+                  {tickets?.map((ticket: any) => (
                     <button
                       key={ticket.id}
                       onClick={() => setSelectedTicketId(ticket.id)}
@@ -303,7 +303,7 @@ export default function Support() {
               <CardContent className="p-0">
                 <ScrollArea className="h-[350px] p-4">
                   <div className="space-y-4">
-                    {ticketMessages?.map((msg) => (
+                    {ticketMessages?.map((msg: any) => (
                       <div
                         key={msg.id}
                         className={`flex gap-3 ${

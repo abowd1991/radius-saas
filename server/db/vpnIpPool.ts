@@ -49,7 +49,7 @@ export async function getAllocatedIps(poolId: number): Promise<string[]> {
     .from(allocatedVpnIps)
     .where(eq(allocatedVpnIps.poolId, poolId));
   
-  return allocated.map(a => a.ipAddress);
+  return allocated.map((a: any) => a.ipAddress);
 }
 
 /**

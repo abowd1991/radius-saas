@@ -101,11 +101,11 @@ export default function Invoices() {
   // Calculate stats
   const stats = {
     total: invoices?.length || 0,
-    paid: invoices?.filter(i => i.status === "paid").length || 0,
-    pending: invoices?.filter(i => i.status === "pending").length || 0,
+    paid: invoices?.filter((i: any) => i.status === "paid").length || 0,
+    pending: invoices?.filter((i: any) => i.status === "pending").length || 0,
     overdue: 0, // Overdue calculated based on due date
-    totalAmount: invoices?.reduce((sum, i) => sum + parseFloat(i.total), 0) || 0,
-    paidAmount: invoices?.filter(i => i.status === "paid").reduce((sum, i) => sum + parseFloat(i.total), 0) || 0,
+    totalAmount: invoices?.reduce((sum: any, i: any) => sum + parseFloat(i.total), 0) || 0,
+    paidAmount: invoices?.filter((i: any) => i.status === "paid").reduce((sum: any, i: any) => sum + parseFloat(i.total), 0) || 0,
   };
 
   return (
@@ -233,7 +233,7 @@ export default function Invoices() {
                   </TableCell>
                 </TableRow>
               ) : (
-                invoices?.map((invoice) => (
+                invoices?.map((invoice: any) => (
                   <TableRow key={invoice.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">

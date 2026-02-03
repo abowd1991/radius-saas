@@ -73,6 +73,7 @@ export default function Vouchers() {
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [batchFilter, setBatchFilter] = useState<string>("all");
   const [redeemCode, setRedeemCode] = useState("");
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   
@@ -100,29 +101,29 @@ export default function Vouchers() {
     macBinding: false,
   });
   
-  // Form state for generating cards - Updated with all new fields
+  // Form state for generating cards - Simplified with smart defaults
   const [generateForm, setGenerateForm] = useState({
-    planId: "",
-    quantity: "1",
+    // Basic Info
+    quantity: "10",
+    cardPrice: "10",
     batchName: "",
-    cardPrice: "0",
     prefix: "",
-    simultaneousUse: "1",
-    usernameLength: "6",
+    // Card Settings
+    usernameLength: "5",
     passwordLength: "4",
+    simultaneousUse: "1",
+    // Service & Group
+    planId: "",
     subscriberGroup: "Default group",
     hotspotPort: "",
-    internetTimeValue: "0",
-    internetTimeUnit: "hours" as "hours" | "days",
-    cardTimeValue: "0",
-    cardTimeUnit: "hours" as "hours" | "days",
+    // Time Budget System
+    usageHours: "1",
+    usageMinutes: "0",
+    windowHours: "24",
+    windowMinutes: "0",
+    // Options
     timeFromActivation: true,
     macBinding: false,
-    // New Time Budget System
-    usageHours: "0",
-    usageMinutes: "0",
-    windowHours: "0",
-    windowMinutes: "0",
   });
 
   // Progress state for bulk generation
@@ -384,27 +385,27 @@ export default function Vouchers() {
 
   const resetGenerateForm = () => {
     setGenerateForm({
-      planId: "",
-      quantity: "1",
+      // Basic Info
+      quantity: "10",
+      cardPrice: "10",
       batchName: "",
-      cardPrice: "0",
       prefix: "",
-      simultaneousUse: "1",
-      usernameLength: "6",
+      // Card Settings
+      usernameLength: "5",
       passwordLength: "4",
+      simultaneousUse: "1",
+      // Service & Group
+      planId: "",
       subscriberGroup: "Default group",
       hotspotPort: "",
-      internetTimeValue: "0",
-      internetTimeUnit: "hours",
-      cardTimeValue: "0",
-      cardTimeUnit: "hours",
+      // Time Budget System
+      usageHours: "1",
+      usageMinutes: "0",
+      windowHours: "24",
+      windowMinutes: "0",
+      // Options
       timeFromActivation: true,
       macBinding: false,
-      // New Time Budget System
-      usageHours: "0",
-      usageMinutes: "0",
-      windowHours: "0",
-      windowMinutes: "0",
     });
   };
 
@@ -426,22 +427,23 @@ export default function Vouchers() {
     
     generateMutation.mutate({
       planId: parseInt(generateForm.planId),
-      quantity: parseInt(generateForm.quantity) || 1,
+      quantity: parseInt(generateForm.quantity) || 10,
       batchName: generateForm.batchName || undefined,
       cardPrice: parseFloat(generateForm.cardPrice) || 0,
       prefix: generateForm.prefix || undefined,
       simultaneousUse: parseInt(generateForm.simultaneousUse) || 1,
-      usernameLength: parseInt(generateForm.usernameLength) || 6,
+      usernameLength: parseInt(generateForm.usernameLength) || 5,
       passwordLength: parseInt(generateForm.passwordLength) || 4,
       subscriberGroup: generateForm.subscriberGroup || 'Default group',
       hotspotPort: generateForm.hotspotPort || undefined,
-      internetTimeValue: parseInt(generateForm.internetTimeValue) || 0,
-      internetTimeUnit: generateForm.internetTimeUnit,
-      cardTimeValue: parseInt(generateForm.cardTimeValue) || 0,
-      cardTimeUnit: generateForm.cardTimeUnit,
+      // Legacy fields - set to 0 for backward compatibility
+      internetTimeValue: 0,
+      internetTimeUnit: 'hours',
+      cardTimeValue: 0,
+      cardTimeUnit: 'hours',
       timeFromActivation: generateForm.timeFromActivation,
       macBinding: generateForm.macBinding,
-      // New Time Budget System
+      // Time Budget System (actual values)
       usageBudgetSeconds,
       windowSeconds,
     });
@@ -490,7 +492,11 @@ export default function Vouchers() {
     );
   };
 
-  const filteredVouchers = vouchers?.filter(v => {
+  const filteredVouchers = vouchers?.filter((v: any) => {
+    // Filter by batch
+    if (batchFilter !== "all" && v.batchId !== batchFilter) return false;
+    
+    // Filter by search query
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -787,10 +793,6 @@ export default function Vouchers() {
                       </p>
                     </div>
 
-                    {/* Legacy fields - hidden but kept for backward compatibility */}
-                    <input type="hidden" value={generateForm.internetTimeValue} />
-                    <input type="hidden" value={generateForm.cardTimeValue} />
-
                     {/* Row 6: Switches */}
                     <div className="flex flex-wrap gap-6">
                       <div className="flex items-center gap-2">
@@ -884,7 +886,7 @@ export default function Vouchers() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {vouchers?.filter(v => v.status === 'unused').length || 0}
+              {vouchers?.filter((v: any) => v.status === 'unused').length || 0}
             </div>
           </CardContent>
         </Card>
@@ -897,7 +899,7 @@ export default function Vouchers() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {vouchers?.filter(v => v.status === 'active').length || 0}
+              {vouchers?.filter((v: any) => v.status === 'active').length || 0}
             </div>
           </CardContent>
         </Card>
@@ -939,13 +941,29 @@ export default function Vouchers() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            {/* Batch Filter */}
+            <Select value={batchFilter} onValueChange={setBatchFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Package className="h-4 w-4 me-2" />
+                <SelectValue placeholder={language === 'ar' ? 'الدفعة' : 'Batch'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{language === 'ar' ? 'كل الدفعات' : 'All Batches'}</SelectItem>
+                {batches?.map((batch: any) => (
+                  <SelectItem key={batch.id} value={batch.id}>
+                    {batch.name || `${language === 'ar' ? 'دفعة' : 'Batch'} #${batch.id.slice(0, 6)}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
                 <Filter className="h-4 w-4 me-2" />
                 <SelectValue placeholder={language === 'ar' ? 'الحالة' : 'Status'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{language === 'ar' ? 'الكل' : 'All'}</SelectItem>
+                <SelectItem value="all">{language === 'ar' ? 'كل الحالات' : 'All Status'}</SelectItem>
                 <SelectItem value="unused">{language === 'ar' ? 'غير مستخدم' : 'Unused'}</SelectItem>
                 <SelectItem value="active">{language === 'ar' ? 'نشط' : 'Active'}</SelectItem>
                 <SelectItem value="used">{language === 'ar' ? 'مستخدم' : 'Used'}</SelectItem>
@@ -956,6 +974,14 @@ export default function Vouchers() {
             <Button variant="outline" size="icon" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
+          </div>
+          
+          {/* Results Count */}
+          <div className="text-sm text-muted-foreground">
+            {language === 'ar' 
+              ? `عرض ${filteredVouchers?.length || 0} من ${vouchers?.length || 0} كرت`
+              : `Showing ${filteredVouchers?.length || 0} of ${vouchers?.length || 0} cards`
+            }
           </div>
 
           {/* Cards Table */}

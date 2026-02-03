@@ -133,7 +133,7 @@ export default function AuditLog() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">إجمالي العمليات</p>
-                  <p className="text-2xl font-bold">{stats.reduce((acc, s) => acc + Number(s.count), 0)}</p>
+                  <p className="text-2xl font-bold">{stats.reduce((acc: any, s: any) => acc + Number(s.count), 0)}</p>
                 </div>
                 <History className="w-8 h-8 text-muted-foreground" />
               </div>
@@ -145,7 +145,7 @@ export default function AuditLog() {
                 <div>
                   <p className="text-sm text-muted-foreground">ناجحة</p>
                   <p className="text-2xl font-bold text-green-500">
-                    {stats.filter(s => s.result === 'success').reduce((acc, s) => acc + Number(s.count), 0)}
+                    {stats.filter((s: any) => s.result === 'success').reduce((acc: any, s: any) => acc + Number(s.count), 0)}
                   </p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-green-500" />
@@ -158,7 +158,7 @@ export default function AuditLog() {
                 <div>
                   <p className="text-sm text-muted-foreground">فاشلة</p>
                   <p className="text-2xl font-bold text-red-500">
-                    {stats.filter(s => s.result === 'failure').reduce((acc, s) => acc + Number(s.count), 0)}
+                    {stats.filter((s: any) => s.result === 'failure').reduce((acc: any, s: any) => acc + Number(s.count), 0)}
                   </p>
                 </div>
                 <XCircle className="w-8 h-8 text-red-500" />
@@ -277,7 +277,7 @@ export default function AuditLog() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {logs.map((log) => (
+                  {logs.map((log: any) => (
                     <TableRow key={log.id}>
                       <TableCell className="text-sm">
                         <div className="flex items-center gap-1 text-muted-foreground">

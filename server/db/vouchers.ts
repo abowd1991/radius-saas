@@ -683,7 +683,7 @@ export async function getSubscriberGroups() {
     const groups = await db.selectDistinct({ groupname: radusergroup.groupname })
       .from(radusergroup);
 
-    const groupNames = groups.map(g => g.groupname).filter(Boolean);
+    const groupNames = groups.map((g: any) => g.groupname).filter(Boolean);
     
     // Always include default group
     if (!groupNames.includes('Default group')) {
@@ -712,11 +712,11 @@ export async function getBatchStats(batchId: string) {
     .where(eq(radiusCards.batchId, batchId));
   
   const total = cards.length;
-  const unused = cards.filter(c => c.status === 'unused').length;
-  const active = cards.filter(c => c.status === 'active').length;
-  const used = cards.filter(c => c.status === 'used').length;
-  const expired = cards.filter(c => c.status === 'expired').length;
-  const suspended = cards.filter(c => c.status === 'suspended').length;
+  const unused = cards.filter((c: any) => c.status === 'unused').length;
+  const active = cards.filter((c: any) => c.status === 'active').length;
+  const used = cards.filter((c: any) => c.status === 'used').length;
+  const expired = cards.filter((c: any) => c.status === 'expired').length;
+  const suspended = cards.filter((c: any) => c.status === 'suspended').length;
   
   return {
     total,
@@ -747,7 +747,7 @@ export async function enableBatch(batchId: string) {
     return { success: true, affectedCards: 0 };
   }
   
-  const usernames = cards.map(c => c.username);
+  const usernames = cards.map((c: any) => c.username);
   
   // BULK: Remove Auth-Type := Reject from all cards in batch
   await db.delete(radcheck)
@@ -758,10 +758,10 @@ export async function enableBatch(batchId: string) {
     ));
   
   // BULK: Update suspended cards back to their original status
-  const suspendedCards = cards.filter(c => c.status === 'suspended');
+  const suspendedCards = cards.filter((c: any) => c.status === 'suspended');
   if (suspendedCards.length > 0) {
     // Update cards with activatedAt to 'active'
-    const activatedIds = suspendedCards.filter(c => c.activatedAt).map(c => c.id);
+    const activatedIds = suspendedCards.filter((c: any) => c.activatedAt).map((c: any) => c.id);
     if (activatedIds.length > 0) {
       await db.update(radiusCards)
         .set({ status: 'active' })
@@ -769,7 +769,7 @@ export async function enableBatch(batchId: string) {
     }
     
     // Update cards without activatedAt to 'unused'
-    const unusedIds = suspendedCards.filter(c => !c.activatedAt).map(c => c.id);
+    const unusedIds = suspendedCards.filter((c: any) => !c.activatedAt).map((c: any) => c.id);
     if (unusedIds.length > 0) {
       await db.update(radiusCards)
         .set({ status: 'unused' })
@@ -803,8 +803,8 @@ export async function disableBatch(batchId: string) {
     return { success: true, affectedCards: 0 };
   }
   
-  const usernames = cards.map(c => c.username);
-  const cardIds = cards.map(c => c.id);
+  const usernames = cards.map((c: any) => c.username);
+  const cardIds = cards.map((c: any) => c.id);
   
   // BULK: Remove any existing Auth-Type attributes
   await db.delete(radcheck)
@@ -814,7 +814,7 @@ export async function disableBatch(batchId: string) {
     ));
   
   // BULK: Insert Auth-Type := Reject for all cards
-  const rejectEntries = usernames.map(username => ({
+  const rejectEntries = usernames.map((username: any) => ({
     username,
     attribute: "Auth-Type",
     op: ":=",
@@ -873,8 +873,8 @@ export async function updateBatchTime(batchId: string, data: {
     return { success: true, affectedCards: 0 };
   }
   
-  const usernames = cards.map(c => c.username);
-  const cardIds = cards.map(c => c.id);
+  const usernames = cards.map((c: any) => c.username);
+  const cardIds = cards.map((c: any) => c.id);
   
   // Calculate new session timeout
   let sessionTimeout: number | null = null;
@@ -912,7 +912,7 @@ export async function updateBatchTime(batchId: string, data: {
       ));
     
     // Insert new Session-Timeout for all cards
-    const timeoutEntries = usernames.map(username => ({
+    const timeoutEntries = usernames.map((username: any) => ({
       username,
       attribute: "Session-Timeout",
       op: "=",
@@ -936,7 +936,7 @@ export async function updateBatchTime(batchId: string, data: {
       ));
     
     // Insert new Expiration for all cards
-    const expirationEntries = usernames.map(username => ({
+    const expirationEntries = usernames.map((username: any) => ({
       username,
       attribute: "Expiration",
       op: ":=",
@@ -1002,8 +1002,8 @@ export async function updateBatchProperties(batchId: string, data: {
     return { success: true, affectedCards: 0 };
   }
   
-  const usernames = cards.map(c => c.username);
-  const cardIds = cards.map(c => c.id);
+  const usernames = cards.map((c: any) => c.username);
+  const cardIds = cards.map((c: any) => c.id);
   const BATCH_SIZE = 100;
   
   // Get plan if changing
@@ -1024,7 +1024,7 @@ export async function updateBatchProperties(batchId: string, data: {
       ));
     
     // Insert new Simultaneous-Use for all cards
-    const simUseEntries = usernames.map(username => ({
+    const simUseEntries = usernames.map((username: any) => ({
       username,
       attribute: "Simultaneous-Use",
       op: ":=",
@@ -1055,7 +1055,7 @@ export async function updateBatchProperties(batchId: string, data: {
     }
     
     if (rateLimitValue) {
-      const rateLimitEntries = usernames.map(username => ({
+      const rateLimitEntries = usernames.map((username: any) => ({
         username,
         attribute: "Mikrotik-Rate-Limit",
         op: "=",
@@ -1073,7 +1073,7 @@ export async function updateBatchProperties(batchId: string, data: {
       .where(inArray(radusergroup.username, usernames));
     
     // Insert new user groups for all cards
-    const groupEntries = usernames.map(username => ({
+    const groupEntries = usernames.map((username: any) => ({
       username,
       groupname: `plan_${plan!.id}`,
       priority: 1,
@@ -1122,7 +1122,7 @@ export async function getAllBatchesWithStats() {
   const batches = await db.select().from(cardBatches).orderBy(desc(cardBatches.createdAt));
   
   const batchesWithStats = await Promise.all(
-    batches.map(async (batch) => {
+    batches.map(async (batch: any) => {
       const stats = await getBatchStats(batch.batchId);
       const planResult = await db.select().from(plans).where(eq(plans.id, batch.planId)).limit(1);
       const plan = planResult[0];
@@ -1151,7 +1151,7 @@ export async function getBatchesByResellerWithStats(userId: number) {
     .orderBy(desc(cardBatches.createdAt));
   
   const batchesWithStats = await Promise.all(
-    batches.map(async (batch) => {
+    batches.map(async (batch: any) => {
       const stats = await getBatchStats(batch.batchId);
       const planResult = await db.select().from(plans).where(eq(plans.id, batch.planId)).limit(1);
       const plan = planResult[0];
@@ -1180,8 +1180,8 @@ export async function deleteBatch(batchId: string, deleteCards: boolean = false)
   const cards = await getCardsByBatch(batchId);
   
   if (deleteCards && cards.length > 0) {
-    const usernames = cards.map(c => c.username);
-    const cardIds = cards.map(c => c.id);
+    const usernames = cards.map((c: any) => c.username);
+    const cardIds = cards.map((c: any) => c.id);
     
     // BULK: Delete from radcheck
     await db.delete(radcheck)
@@ -1200,7 +1200,7 @@ export async function deleteBatch(batchId: string, deleteCards: boolean = false)
       .where(inArray(radiusCards.id, cardIds));
   } else if (cards.length > 0) {
     // Just unlink cards from batch (set batchId to null)
-    const cardIds = cards.map(c => c.id);
+    const cardIds = cards.map((c: any) => c.id);
     await db.update(radiusCards)
       .set({ batchId: null })
       .where(inArray(radiusCards.id, cardIds));

@@ -408,7 +408,7 @@ export default function Landing() {
                   </CardContent>
                 </Card>
               ))
-            ) : plans.map((plan, index) => (
+            ) : plans.map((plan: any, index: any) => (
               <Card 
                 key={index} 
                 className={`relative bg-slate-800/50 border-slate-700 ${
@@ -430,7 +430,7 @@ export default function Landing() {
                     <span className="text-slate-400 mr-2">/ {plan.period}</span>
                   </div>
                   <ul className="space-y-3 text-right mb-6">
-                    {plan.features.map((feature, fIndex) => (
+                    {plan.features.map((feature: any, fIndex: any) => (
                       <li key={fIndex} className="flex items-center gap-2 text-slate-300">
                         <Check className="h-5 w-5 text-green-500 shrink-0" />
                         <span>{feature}</span>

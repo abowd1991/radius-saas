@@ -127,8 +127,7 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       icon: Monitor,
       label: "المراقبة الحية",
       items: [
-        { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
-        { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
+        { icon: Wifi, label: "الجلسات النشطة", path: "/sessions" },
         { icon: FileText, label: "سجلات RADIUS", path: "/radius-logs" },
         { icon: Activity, label: "مراقبة NAS", path: "/nas-health" },
         { icon: Network, label: "حالة IP Pool", path: "/ip-pool" },
@@ -274,8 +273,7 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       icon: Monitor,
       label: "المراقبة",
       items: [
-        { icon: Wifi, label: "المتصلين الآن", path: "/online-users" },
-        { icon: Activity, label: t("nav.sessions"), path: "/sessions" },
+        { icon: Wifi, label: "الجلسات النشطة", path: "/sessions" },
       ],
     },
     {

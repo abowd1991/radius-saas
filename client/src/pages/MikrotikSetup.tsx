@@ -19,7 +19,7 @@ export default function MikrotikSetup() {
   // Fetch NAS devices
   const { data: nasDevices, isLoading: nasLoading } = trpc.nas.list.useQuery();
 
-  const selectedNas = nasDevices?.find(nas => nas.id.toString() === selectedNasId);
+  const selectedNas = nasDevices?.find((nas: any) => nas.id.toString() === selectedNasId);
 
   // Fetch setup scripts from API
   const { data: setupData, isLoading: scriptsLoading } = trpc.nas.getSetupScripts.useQuery(
@@ -94,7 +94,7 @@ export default function MikrotikSetup() {
                   <SelectValue placeholder={language === 'ar' ? 'اختر جهاز...' : 'Select device...'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {nasDevices?.map((nas) => (
+                  {nasDevices?.map((nas: any) => (
                     <SelectItem key={nas.id} value={nas.id.toString()}>
                       {nas.shortname} - {nas.nasname}
                     </SelectItem>

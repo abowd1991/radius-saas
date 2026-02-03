@@ -127,7 +127,7 @@ export default function TenantSubscriptions() {
 
   // Get users without subscriptions
   const usersWithoutSubscription = users?.filter(
-    (user) => 
+    (user: any) => 
       user.role !== 'super_admin' && 
       !subscriptions?.some((sub) => sub.tenantId === user.id)
   ) || [];
@@ -338,7 +338,7 @@ export default function TenantSubscriptions() {
                     <SelectValue placeholder="اختر العميل" />
                   </SelectTrigger>
                   <SelectContent>
-                    {usersWithoutSubscription.map((user) => (
+                    {usersWithoutSubscription.map((user: any) => (
                       <SelectItem key={user.id} value={user.id.toString()}>
                         {user.name} ({user.email})
                       </SelectItem>

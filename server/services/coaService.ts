@@ -168,7 +168,7 @@ export async function disconnectUserAllSessions(username: string): Promise<CoARe
       if (allNas.length > 0) {
         // Try to disconnect from each NAS
         const results = await Promise.all(
-          allNas.map(nas => 
+          allNas.map((nas: any) => 
             disconnectSession(username, nas.nasname, undefined, undefined)
           )
         );
@@ -189,7 +189,7 @@ export async function disconnectUserAllSessions(username: string): Promise<CoARe
     
     // Disconnect each session
     const results = await Promise.all(
-      sessions.map(session => 
+      sessions.map((session: any) => 
         disconnectSession(
           username,
           session.nasipaddress,

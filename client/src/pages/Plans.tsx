@@ -248,7 +248,7 @@ export default function Plans() {
       {/* Plans Table for all users who can manage plans */}
       {canManagePlans && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {plans?.map((plan) => (
+          {plans?.map((plan: any) => (
             <Card key={plan.id} className="relative overflow-hidden">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -330,7 +330,7 @@ export default function Plans() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  plans?.map((plan) => (
+                  plans?.map((plan: any) => (
                     <TableRow key={plan.id}>
                       <TableCell>
                         <div>

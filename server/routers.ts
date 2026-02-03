@@ -1545,13 +1545,13 @@ const nasRouter = router({
         .where(isNull(radacct.acctstoptime))
         .groupBy(radacct.nasipaddress);
       
-      const sessionMap = new Map(sessionCounts.map(s => [s.nasipaddress, s.count]));
+      const sessionMap = new Map(sessionCounts.map((s: any) => [s.nasipaddress, s.count]));
       
       // Build health status for each device
-      const healthDevices = devices.map(device => {
+      const healthDevices = devices.map((device: any) => {
         // Determine status based on last activity
         let status: 'online' | 'offline' | 'warning' | 'unknown' = 'unknown';
-        const activeSessions = sessionMap.get(device.nasname) || 0;
+        const activeSessions = Number(sessionMap.get(device.nasname) || 0);
         
         // If device has active sessions, it's online
         if (activeSessions > 0) {
@@ -1682,7 +1682,7 @@ const nasRouter = router({
       const allocated = await db.select({ ipAddress: allocatedVpnIps.ipAddress })
         .from(allocatedVpnIps)
         .where(eq(allocatedVpnIps.poolId, stats.pool.id));
-      const allocatedSet = new Set(allocated.map(a => a.ipAddress));
+      const allocatedSet = new Set(allocated.map((a: any) => a.ipAddress));
       
       // Generate list of available IPs
       const ipToInt = (ip: string): number => {
@@ -1837,7 +1837,7 @@ const nasRouter = router({
         devices = await db.select().from(nasDevices).where(eq(nasDevices.ownerId, ctx.user.id));
       }
       
-      return devices.map(nas => ({
+      return devices.map((nas: any) => ({
         ...nas,
         provisioningStatus: (nas as any).provisioningStatus || 'pending',
         allocatedIp: (nas as any).allocatedIp,
@@ -2094,7 +2094,7 @@ const vouchersRouter = router({
     .query(async ({ ctx, input }) => {
       // Check ownership for non-super_admin
       const batches = await cardDb.getAllBatches();
-      const batch = batches.find(b => b.batchId === input.batchId);
+      const batch = batches.find((b: any) => b.batchId === input.batchId);
       if (batch && ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
@@ -2119,7 +2119,7 @@ const vouchersRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Get batch and cards
       const batches = await cardDb.getAllBatches();
-      const batch = batches.find(b => b.batchId === input.batchId);
+      const batch = batches.find((b: any) => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
       // Check ownership for non-super_admin
       if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
@@ -2133,10 +2133,10 @@ const vouchersRouter = router({
 
       // Get plan details for each card
       const plans = await planDb.getAllPlans();
-      const planMap = new Map(plans.map(p => [p.id, p]));
+      const planMap = new Map(plans.map((p: any) => [p.id, p]));
 
-      const cardData = cards.map(card => {
-        const plan = planMap.get(card.planId);
+      const cardData = cards.map((card: any) => {
+        const plan: any = planMap.get(card.planId);
         return {
           serialNumber: card.serialNumber,
           username: card.username,
@@ -2177,7 +2177,7 @@ const vouchersRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       const batches = await cardDb.getAllBatches();
-      const batch = batches.find(b => b.batchId === input.batchId);
+      const batch = batches.find((b: any) => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
       // Check ownership for non-super_admin
       if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
@@ -2190,10 +2190,10 @@ const vouchersRouter = router({
       }
 
       const plans = await planDb.getAllPlans();
-      const planMap = new Map(plans.map(p => [p.id, p]));
+      const planMap = new Map(plans.map((p: any) => [p.id, p]));
 
-      const cardData = cards.map(card => {
-        const plan = planMap.get(card.planId);
+      const cardData = cards.map((card: any) => {
+        const plan: any = planMap.get(card.planId);
         return {
           serialNumber: card.serialNumber,
           username: card.username,
@@ -2263,7 +2263,7 @@ const vouchersRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Get batch and cards
       const batches = await cardDb.getAllBatches();
-      const batch = batches.find(b => b.batchId === input.batchId);
+      const batch = batches.find((b: any) => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
       // Check ownership for non-super_admin
       if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
@@ -2283,10 +2283,10 @@ const vouchersRouter = router({
 
       // Get plan details for each card
       const plans = await planDb.getAllPlans();
-      const planMap = new Map(plans.map(p => [p.id, p]));
+      const planMap = new Map(plans.map((p: any) => [p.id, p]));
 
-      const cardData = cards.map(card => {
-        const plan = planMap.get(card.planId);
+      const cardData = cards.map((card: any) => {
+        const plan: any = planMap.get(card.planId);
         return {
           serialNumber: card.serialNumber,
           username: card.username,
@@ -2371,7 +2371,7 @@ const vouchersRouter = router({
     .query(async ({ ctx, input }) => {
       // Check ownership for non-super_admin
       const batches = await cardDb.getAllBatches();
-      const batch = batches.find(b => b.batchId === input.batchId);
+      const batch = batches.find((b: any) => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
       if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -2383,10 +2383,10 @@ const vouchersRouter = router({
       }
 
       const plans = await planDb.getAllPlans();
-      const planMap = new Map(plans.map(p => [p.id, p]));
+      const planMap = new Map(plans.map((p: any) => [p.id, p]));
 
-      const cardData = cards.map(card => {
-        const plan = planMap.get(card.planId);
+      const cardData = cards.map((card: any) => {
+        const plan: any = planMap.get(card.planId);
         return {
           serialNumber: card.serialNumber,
           username: card.username,
@@ -2865,7 +2865,7 @@ const dashboardRouter = router({
     } else {
       // Client/Reseller sees only their own stats
       const ownerNasDevices = await nasDb.getNasDevicesByOwner(ctx.user.id);
-      const ownerNasIps = ownerNasDevices.map(n => n.nasname);
+      const ownerNasIps = ownerNasDevices.map((n: any) => n.nasname);
       
       // Get active sessions for owner's NAS devices
       const allSessions = await mikrotikApi.getActiveSessions();
@@ -2913,7 +2913,7 @@ const sessionsRouter = router({
       }
       
       const ownerNasDevices = await nasDb.getNasDevicesByOwner(ctx.user.id);
-      const ownerNasIps = ownerNasDevices.map(n => n.nasname);
+      const ownerNasIps = ownerNasDevices.map((n: any) => n.nasname);
       return sessions.filter((s: any) => ownerNasIps.includes(s.nasIpAddress || s.nasipaddress));
     }),
 
@@ -3209,9 +3209,9 @@ const sessionsRouter = router({
       
       return {
         ...balance,
-        allocatedTimeFormatted: accountingService.formatTime(balance.allocatedTime),
-        usedTimeFormatted: accountingService.formatTime(balance.usedTime),
-        remainingTimeFormatted: accountingService.formatTime(balance.remainingTime),
+        allocatedTimeFormatted: accountingService.formatTime((balance as any).allocatedTime || 0),
+        usedTimeFormatted: accountingService.formatTime((balance as any).usedTime || 0),
+        remainingTimeFormatted: accountingService.formatTime((balance as any).remainingTime || 0),
       };
     }),
 
@@ -3221,9 +3221,9 @@ const sessionsRouter = router({
     .query(async ({ input }) => {
       const threshold = input?.thresholdMinutes || 30;
       const users = await accountingService.getUsersWithLowTime(threshold);
-      return users.map(u => ({
+      return users.map((u: any) => ({
         ...u,
-        remainingTimeFormatted: accountingService.formatTime(u.remainingTime),
+        remainingTimeFormatted: accountingService.formatTime(u.remainingTime || 0),
       }));
     }),
 
@@ -3610,7 +3610,7 @@ const tenantSubscriptionsRouter = router({
     const subscriptions = await tenantSubDb.getAllTenantSubscriptions();
     // Get user info for each subscription
     const enriched = await Promise.all(
-      subscriptions.map(async (sub) => {
+      subscriptions.map(async (sub: any) => {
         const user = await db.getUserById(sub.tenantId);
         return {
           ...sub,
@@ -3983,7 +3983,7 @@ const reportsRouter = router({
       // Get NAS names
       const nasNames = await db.select({ nasname: nasDevices.nasname, shortname: nasDevices.shortname })
         .from(nasDevices);
-      const nasNameMap = new Map(nasNames.map(n => [n.nasname, n.shortname]));
+      const nasNameMap = new Map(nasNames.map((n: any) => [n.nasname, n.shortname]));
       
       // Get overall stats
       const statsResult = await db.select({
@@ -3997,7 +3997,7 @@ const reportsRouter = router({
       const stats = statsResult[0] || { totalDownload: 0, totalUpload: 0, activeUsers: 0 };
       
       return {
-        userUsage: userUsage.map(u => ({
+        userUsage: userUsage.map((u: any) => ({
           username: u.username,
           totalDownload: Number(u.totalDownload) || 0,
           totalUpload: Number(u.totalUpload) || 0,
@@ -4006,7 +4006,7 @@ const reportsRouter = router({
           totalTime: Number(u.totalTime) || 0,
           lastActivity: null,
         })),
-        nasUsage: nasUsage.map(n => ({
+        nasUsage: nasUsage.map((n: any) => ({
           nasipaddress: n.nasipaddress,
           nasShortname: nasNameMap.get(n.nasipaddress) || null,
           totalDownload: Number(n.totalDownload) || 0,
@@ -4643,7 +4643,7 @@ const auditRouter = router({
       const logs = await auditLogService.getAuditLogs(filters);
       
       // Parse details JSON
-      return logs.map(log => ({
+      return logs.map((log: any) => ({
         ...log,
         details: log.details ? JSON.parse(log.details as string) : null,
       }));
@@ -4666,7 +4666,7 @@ const auditRouter = router({
       }
       
       const logs = await auditLogService.getAuditLogsByNas(input.nasId, input.limit);
-      return logs.map(log => ({
+      return logs.map((log: any) => ({
         ...log,
         details: log.details ? JSON.parse(log.details as string) : null,
       }));
@@ -4677,7 +4677,7 @@ const auditRouter = router({
     .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
     .query(async ({ ctx, input }) => {
       const logs = await auditLogService.getRecentActionsByUser(ctx.user.id, input?.limit || 20);
-      return logs.map(log => ({
+      return logs.map((log: any) => ({
         ...log,
         details: log.details ? JSON.parse(log.details as string) : null,
       }));
@@ -5335,7 +5335,7 @@ const vpsManagementRouter = router({
       await logAudit({
         userId: ctx.user.id,
         userRole: ctx.user.role,
-        action: 'system_deploy',
+        action: 'system_deploy' as any,
         targetType: 'system',
         targetId: 'vps',
         details: result.success 
@@ -5360,7 +5360,7 @@ const vpsManagementRouter = router({
       await logAudit({
         userId: ctx.user.id,
         userRole: ctx.user.role,
-        action: 'app_reload',
+        action: 'app_reload' as any,
         targetType: 'system',
         targetId: 'vps',
         details: result.success 

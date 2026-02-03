@@ -85,7 +85,7 @@ async function getActiveSessions(): Promise<ActiveSession[]> {
     .from(radacct)
     .where(isNull(radacct.acctstoptime));
     
-    return sessions.map(s => ({
+    return sessions.map((s: any) => ({
       username: s.username,
       nasIp: s.nasIp,
       sessionId: s.sessionId || '',

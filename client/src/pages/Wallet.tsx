@@ -342,7 +342,7 @@ export default function Wallet() {
                   </TableCell>
                 </TableRow>
               ) : (
-                transactions?.map((tx) => (
+                transactions?.map((tx: any) => (
                   <TableRow key={tx.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">

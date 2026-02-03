@@ -108,12 +108,12 @@ export async function getRevenueReport(
     totalRevenue,
     totalTransactions,
     averageTransaction: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
-    revenueByPeriod: revenueByPeriod.map(r => ({
+    revenueByPeriod: revenueByPeriod.map((r: any) => ({
       date: r.date,
       revenue: Number(r.revenue),
       transactions: Number(r.transactions),
     })),
-    revenueByClient: revenueByClient.map(c => ({
+    revenueByClient: revenueByClient.map((c: any) => ({
       clientId: c.clientId,
       clientName: c.clientName || "غير معروف",
       revenue: Number(c.revenue),
@@ -152,7 +152,7 @@ export async function getSubscribersReport(
     .groupBy(tenantSubscriptions.status);
 
   const statusMap: Record<string, number> = {};
-  statusCounts.forEach(s => {
+  statusCounts.forEach((s: any) => {
     statusMap[s.status] = Number(s.count);
   });
 
@@ -189,7 +189,7 @@ export async function getSubscribersReport(
     expiredSubscribers: statusMap["expired"] || 0,
     suspendedSubscribers: statusMap["suspended"] || 0,
     newSubscribersThisPeriod: Number(newSubscribers[0]?.count || 0),
-    subscriberGrowth: subscriberGrowth.map(g => ({
+    subscriberGrowth: subscriberGrowth.map((g: any) => ({
       date: g.date,
       count: Number(g.count),
     })),
@@ -230,7 +230,7 @@ export async function getCardsReport(
     .groupBy(radiusCards.status);
 
   const statusMap: Record<string, number> = {};
-  cardStatusCounts.forEach(s => {
+  cardStatusCounts.forEach((s: any) => {
     statusMap[s.status] = Number(s.count);
   });
 
@@ -280,17 +280,17 @@ export async function getCardsReport(
     activeCards: statusMap["active"] || 0,
     usedCards: statusMap["used"] || 0,
     expiredCards: statusMap["expired"] || 0,
-    bestSellingPlans: bestSellingPlans.map(p => ({
+    bestSellingPlans: bestSellingPlans.map((p: any) => ({
       planId: p.planId,
       planName: p.planName || "غير معروف",
       count: Number(p.count),
       revenue: Number(p.revenue),
     })),
-    cardsByStatus: cardStatusCounts.map(s => ({
+    cardsByStatus: cardStatusCounts.map((s: any) => ({
       status: s.status,
       count: Number(s.count),
     })),
-    timeConsumptionByCard: timeConsumption.map(t => ({
+    timeConsumptionByCard: timeConsumption.map((t: any) => ({
       cardId: t.cardId,
       username: t.username,
       totalTime: Number(t.totalTime || 0),
@@ -389,12 +389,12 @@ export async function getSessionsReport(
     completedSessions,
     averageSessionDuration: completedSessions > 0 ? totalSessionTime / completedSessions : 0,
     totalSessionTime,
-    sessionsByDay: sessionsByDay.map(s => ({
+    sessionsByDay: sessionsByDay.map((s: any) => ({
       date: s.date,
       count: Number(s.count),
       duration: Number(s.duration),
     })),
-    sessionsByNas: sessionsByNas.map(s => ({
+    sessionsByNas: sessionsByNas.map((s: any) => ({
       nasIp: s.nasIp,
       nasName: s.nasName || s.nasIp,
       count: Number(s.count),
