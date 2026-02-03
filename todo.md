@@ -2001,3 +2001,24 @@
   - [x] أو now >= window_end_time
 - [x] Worker/Cron لتحديث الكروت دورياً (CentralAccounting كل دقيقة)
 - [x] Backfill للكروت القديمة (6 كروت تم تحديثها)
+
+## Bug Fix: منع تسجيل الدخول للكروت المنتهية (Feb 3, 2026) - HIGH SEVERITY ✅
+- [x] إنشاء دالة canLogin(username) للتحقق من صلاحية الكرت
+  - [x] التحقق من used_seconds >= usage_budget_seconds → رفض
+  - [x] التحقق من now >= window_end_time → رفض
+- [x] تحديث radcheck لتعطيل الكروت المنتهية (Auth-Type := Reject)
+- [x] ربط التحقق بـ CentralAccounting لتعطيل الكروت تلقائياً
+- [x] رسائل الرفض:
+  - [x] "الكرت خلص — لا يوجد وقت متبقي" (usage exhausted)
+  - [x] "انتهت صلاحية الكرت" (window expired)
+
+
+## Usage Window Logic Fix (Feb 3, 2026) ✅
+- [x] تسجيل firstUseAt عند أول Login ناجح (من radacct.acctstarttime)
+- [x] حساب windowEndTime = firstUseAt + windowSeconds
+- [x] عند كل Login لاحق:
+  - [x] إذا now > windowEndTime → Reject + "انتهت صلاحية الكرت"
+  - [x] إذا used_seconds >= usage_budget_seconds → Reject + "انتهى وقت الاستخدام"
+  - [x] غير ذلك → Allow
+- [x] تحديث CentralAccounting لتعطيل الكرت عند انتهاء windowEndTime
+- [x] إضافة checkAndDisableExpiredCards() للكروت غير المتصلة

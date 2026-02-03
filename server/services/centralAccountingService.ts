@@ -549,6 +549,7 @@ async function sendDisconnect(session: ActiveSessionInfo, reason: string): Promi
 
 /**
  * Update card status based on disconnect reason
+ * Also disables the card in radcheck to prevent future logins
  */
 async function updateCardStatus(username: string, reason: 'time_exhausted' | 'window_expired' | 'validity_expired'): Promise<void> {
   const db = await getDb();
@@ -556,6 +557,8 @@ async function updateCardStatus(username: string, reason: 'time_exhausted' | 'wi
   
   try {
     const status = reason === 'time_exhausted' ? 'used' : 'expired';
+    
+    // Update card status
     await db.update(radiusCards)
       .set({
         status,
@@ -563,9 +566,72 @@ async function updateCardStatus(username: string, reason: 'time_exhausted' | 'wi
       })
       .where(eq(radiusCards.username, username));
     
-    console.log(`[CentralAccounting] Updated card ${username} status to ${status}`);
+    // CRITICAL: Disable the card in radcheck to prevent future logins
+    await disableCardInRadcheck(username, reason);
+    
+    console.log(`[CentralAccounting] Updated card ${username} status to ${status} and disabled in radcheck`);
   } catch (error) {
     console.error(`[CentralAccounting] Error updating card status for ${username}:`, error);
+  }
+}
+
+/**
+ * Disable a card in radcheck by setting Auth-Type := Reject
+ * This prevents the card from logging in again
+ */
+async function disableCardInRadcheck(username: string, reason: 'time_exhausted' | 'window_expired' | 'validity_expired'): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  
+  try {
+    // CRITICAL: Delete ALL existing Auth-Type entries first to avoid duplicates
+    await db.delete(radcheck)
+      .where(and(
+        eq(radcheck.username, username),
+        eq(radcheck.attribute, 'Auth-Type')
+      ));
+    
+    // Insert new Auth-Type := Reject
+    await db.insert(radcheck).values({
+      username,
+      attribute: 'Auth-Type',
+      op: ':=',
+      value: 'Reject',
+    });
+    
+    // Also add Reply-Message for user feedback
+    const rejectMessage = reason === 'time_exhausted' 
+      ? 'الكرت خلص — لا يوجد وقت متبقي'
+      : 'انتهت صلاحية الكرت';
+    
+    // Check if Reply-Message exists
+    const existingReply = await db.select()
+      .from(radreply)
+      .where(and(
+        eq(radreply.username, username),
+        eq(radreply.attribute, 'Reply-Message')
+      ))
+      .limit(1);
+    
+    if (existingReply.length > 0) {
+      await db.update(radreply)
+        .set({ value: rejectMessage })
+        .where(and(
+          eq(radreply.username, username),
+          eq(radreply.attribute, 'Reply-Message')
+        ));
+    } else {
+      await db.insert(radreply).values({
+        username,
+        attribute: 'Reply-Message',
+        op: '=',
+        value: rejectMessage,
+      });
+    }
+    
+    console.log(`[CentralAccounting] Disabled ${username} in radcheck: ${reason}`);
+  } catch (error) {
+    console.error(`[CentralAccounting] Error disabling card in radcheck for ${username}:`, error);
   }
 }
 
@@ -637,6 +703,12 @@ async function runAccountingJob(): Promise<{
   let synced = 0;
   
   try {
+    // Step 0: Check and disable expired cards (not currently connected)
+    const expiredResult = await checkAndDisableExpiredCards();
+    if (expiredResult.windowExpired > 0 || expiredResult.usageExhausted > 0) {
+      console.log(`[CentralAccounting] Disabled expired cards: ${expiredResult.windowExpired} window expired, ${expiredResult.usageExhausted} usage exhausted`);
+    }
+    
     // Step 1: Clean up stale sessions
     const staleCleaned = await cleanupStaleSessions();
     
@@ -869,5 +941,112 @@ export async function backfillFirstUseAt(): Promise<{
   } catch (error: any) {
     console.error('[CentralAccounting] Error in backfillFirstUseAt:', error);
     return { updated: 0, errors: [error.message] };
+  }
+}
+
+
+/**
+ * Check and disable expired cards (not currently connected)
+ * This runs periodically to disable cards where:
+ * 1. windowEndTime has passed (window expired)
+ * 2. used_seconds >= usage_budget_seconds (usage exhausted)
+ * 
+ * This ensures cards are disabled even if user is not connected when they expire
+ */
+export async function checkAndDisableExpiredCards(): Promise<{
+  windowExpired: number;
+  usageExhausted: number;
+  errors: string[];
+}> {
+  const db = await getDb();
+  if (!db) return { windowExpired: 0, usageExhausted: 0, errors: ['Database not available'] };
+  
+  const errors: string[] = [];
+  let windowExpired = 0;
+  let usageExhausted = 0;
+  const now = new Date();
+  
+  try {
+    // 1. Find cards with expired window (windowEndTime < now) that are still active
+    const windowExpiredCards = await db.select({
+      id: radiusCards.id,
+      username: radiusCards.username,
+      windowEndTime: radiusCards.windowEndTime,
+    })
+    .from(radiusCards)
+    .where(and(
+      eq(radiusCards.status, 'active'),
+      lt(radiusCards.windowEndTime, now)
+    ));
+    
+    for (const card of windowExpiredCards) {
+      try {
+        // Check if already has Auth-Type := Reject
+        const existing = await db.select()
+          .from(radcheck)
+          .where(and(
+            eq(radcheck.username, card.username),
+            eq(radcheck.attribute, 'Auth-Type'),
+            eq(radcheck.value, 'Reject')
+          ))
+          .limit(1);
+        
+        if (existing.length === 0) {
+          await updateCardStatus(card.username, 'window_expired');
+          windowExpired++;
+          console.log(`[CentralAccounting] Disabled ${card.username}: window expired (windowEndTime=${card.windowEndTime?.toISOString()})`);
+        }
+      } catch (error: any) {
+        errors.push(`Error disabling window-expired ${card.username}: ${error.message}`);
+      }
+    }
+    
+    // 2. Find cards with exhausted usage (used_seconds >= usage_budget_seconds) that are still active
+    const activeCardsWithBudget = await db.select({
+      id: radiusCards.id,
+      username: radiusCards.username,
+      usageBudgetSeconds: radiusCards.usageBudgetSeconds,
+      batchId: radiusCards.batchId,
+    })
+    .from(radiusCards)
+    .where(and(
+      eq(radiusCards.status, 'active'),
+      sql`${radiusCards.usageBudgetSeconds} > 0`
+    ));
+    
+    for (const card of activeCardsWithBudget) {
+      try {
+        // Get actual usage from radacct
+        const usageInfo = await getUsedTimeFromRadacct(card.username);
+        
+        // Get budget (from card or batch)
+        const { usageBudgetSeconds } = await getTimeBudget(card);
+        
+        if (usageBudgetSeconds > 0 && usageInfo.totalUsedTime >= usageBudgetSeconds) {
+          // Check if already has Auth-Type := Reject
+          const existing = await db.select()
+            .from(radcheck)
+            .where(and(
+              eq(radcheck.username, card.username),
+              eq(radcheck.attribute, 'Auth-Type'),
+              eq(radcheck.value, 'Reject')
+            ))
+            .limit(1);
+          
+          if (existing.length === 0) {
+            await updateCardStatus(card.username, 'time_exhausted');
+            usageExhausted++;
+            console.log(`[CentralAccounting] Disabled ${card.username}: usage exhausted (used=${usageInfo.totalUsedTime}s >= budget=${usageBudgetSeconds}s)`);
+          }
+        }
+      } catch (error: any) {
+        errors.push(`Error disabling usage-exhausted ${card.username}: ${error.message}`);
+      }
+    }
+    
+    return { windowExpired, usageExhausted, errors };
+  } catch (error: any) {
+    console.error('[CentralAccounting] Error in checkAndDisableExpiredCards:', error);
+    return { windowExpired: 0, usageExhausted: 0, errors: [error.message] };
   }
 }

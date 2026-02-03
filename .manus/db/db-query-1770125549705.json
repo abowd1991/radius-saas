@@ -1,0 +1,28 @@
+{
+  "query": "SELECT username, acctstarttime, acctstoptime, acctsessiontime FROM radacct WHERE username = '27077' ORDER BY acctstarttime DESC LIMIT 3",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT username, acctstarttime, acctstoptime, acctsessiontime FROM radacct WHERE username = '27077' ORDER BY acctstarttime DESC LIMIT 3",
+  "rows": [
+    {
+      "username": "27077",
+      "acctstarttime": "2026-02-03 13:18:54",
+      "acctstoptime": "2026-02-03 13:21:46",
+      "acctsessiontime": "172"
+    },
+    {
+      "username": "27077",
+      "acctstarttime": "2026-02-03 13:07:50",
+      "acctstoptime": "2026-02-03 13:17:50",
+      "acctsessiontime": "600"
+    },
+    {
+      "username": "27077",
+      "acctstarttime": "2026-02-03 13:02:21",
+      "acctstoptime": "2026-02-03 13:07:34",
+      "acctsessiontime": "312"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tacctstarttime\tacctstoptime\tacctsessiontime\n27077\t2026-02-03 13:18:54\t2026-02-03 13:21:46\t172\n27077\t2026-02-03 13:07:50\t2026-02-03 13:17:50\t600\n27077\t2026-02-03 13:02:21\t2026-02-03 13:07:34\t312\n",
+  "stderr": "",
+  "execution_time_ms": 358
+}
