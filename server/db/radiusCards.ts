@@ -227,15 +227,9 @@ export async function createRadiusCard(data: CardCreationOptions) {
     });
   }
 
-  // Idle-Timeout
-  if (plan.idleTimeout && plan.idleTimeout > 0) {
-    radreplyValues.push({
-      username,
-      attribute: 'Idle-Timeout',
-      op: '=',
-      value: plan.idleTimeout.toString(),
-    });
-  }
+  // NOTE: Idle-Timeout is NOT sent from RADIUS
+  // It is managed by MikroTik Hotspot per client: /ip hotspot server set idle-timeout=<time>
+  // This is a network behavior (L2/L3), not AAA policy
 
   // MikroTik Rate-Limit (download/upload)
   if (plan.mikrotikRateLimit) {

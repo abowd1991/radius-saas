@@ -2022,3 +2022,10 @@
   - [x] غير ذلك → Allow
 - [x] تحديث CentralAccounting لتعطيل الكرت عند انتهاء windowEndTime
 - [x] إضافة checkAndDisableExpiredCards() للكروت غير المتصلة
+
+
+## Idle-Timeout Policy (Feb 3, 2026) ✅
+- [x] التحقق من عدم إرسال Idle-Timeout في radreply
+- [x] إزالة أي كود يولد Idle-Timeout (من radiusCards.ts و vouchers.ts)
+- [x] حذف أي سجلات Idle-Timeout موجودة في قاعدة البيانات (0 سجلات)
+- [x] توثيق: Idle-Timeout مسؤولية MikroTik فقط (/ip hotspot server set idle-timeout=<time>)

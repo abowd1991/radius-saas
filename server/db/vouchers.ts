@@ -92,15 +92,8 @@ async function insertRadiusAttributes(db: any, username: string, password: strin
     });
   }
   
-  // Idle timeout
-  if (plan.idleTimeout) {
-    replyAttributes.push({
-      username,
-      attribute: "Idle-Timeout",
-      op: "=",
-      value: String(plan.idleTimeout),
-    });
-  }
+  // NOTE: Idle-Timeout is NOT sent from RADIUS
+  // It is managed by MikroTik Hotspot per client: /ip hotspot server set idle-timeout=<time>
   
   // Address pool
   if (plan.mikrotikAddressPool) {
@@ -406,14 +399,7 @@ export async function generateCards(data: {
       });
     }
     
-    if (plan.idleTimeout) {
-      allRadreplyValues.push({
-        username,
-        attribute: "Idle-Timeout",
-        op: "=",
-        value: String(plan.idleTimeout),
-      });
-    }
+    // NOTE: Idle-Timeout is NOT sent from RADIUS (managed by MikroTik per client)
     
     if (plan.mikrotikAddressPool) {
       allRadreplyValues.push({
