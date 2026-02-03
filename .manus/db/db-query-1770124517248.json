@@ -1,0 +1,19 @@
+{
+  "query": "SELECT username, usageBudgetSeconds, windowSeconds, firstUseAt, windowEndTime, totalSessionTime, status FROM radius_cards WHERE username='27077' LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT username, usageBudgetSeconds, windowSeconds, firstUseAt, windowEndTime, totalSessionTime, status FROM radius_cards WHERE username='27077' LIMIT 1",
+  "rows": [
+    {
+      "username": "27077",
+      "usageBudgetSeconds": "600",
+      "windowSeconds": "900",
+      "firstUseAt": "NULL",
+      "windowEndTime": "NULL",
+      "totalSessionTime": "312341",
+      "status": "used"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tusageBudgetSeconds\twindowSeconds\tfirstUseAt\twindowEndTime\ttotalSessionTime\tstatus\n27077\t600\t900\tNULL\tNULL\t312341\tused\n",
+  "stderr": "",
+  "execution_time_ms": 374
+}

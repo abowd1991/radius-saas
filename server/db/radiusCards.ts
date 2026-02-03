@@ -52,6 +52,9 @@ interface CardCreationOptions {
   usernameLength?: number;
   passwordLength?: number;
   subscriberGroup?: string;
+  // New Time Budget System
+  usageBudgetSeconds?: number; // Total usage time allowed (deducted while connected)
+  windowSeconds?: number; // Validity window duration from first use
 }
 
 // Create RADIUS card and insert into FreeRADIUS tables
@@ -81,6 +84,27 @@ export async function createRadiusCard(data: CardCreationOptions) {
     }
   }
 
+  // Calculate usageBudgetSeconds and windowSeconds if not provided
+  let usageBudgetSeconds = data.usageBudgetSeconds || 0;
+  let windowSeconds = data.windowSeconds || 0;
+  
+  // Fall back to legacy fields if new fields not provided
+  if (usageBudgetSeconds === 0 && data.internetTimeValue && data.internetTimeValue > 0) {
+    if (data.internetTimeUnit === 'days') {
+      usageBudgetSeconds = data.internetTimeValue * 86400;
+    } else {
+      usageBudgetSeconds = data.internetTimeValue * 3600;
+    }
+  }
+  
+  if (windowSeconds === 0 && data.cardTimeValue && data.cardTimeValue > 0) {
+    if (data.cardTimeUnit === 'days') {
+      windowSeconds = data.cardTimeValue * 86400;
+    } else {
+      windowSeconds = data.cardTimeValue * 3600;
+    }
+  }
+
   // Insert into radius_cards table
   const [result] = await db.insert(radiusCards).values({
     username,
@@ -107,6 +131,9 @@ export async function createRadiusCard(data: CardCreationOptions) {
     usernameLength,
     passwordLength,
     subscriberGroup: data.subscriberGroup || 'Default group',
+    // New Time Budget System
+    usageBudgetSeconds,
+    windowSeconds,
   } as any);
 
   const cardId = result.insertId;
@@ -180,9 +207,18 @@ export async function createRadiusCard(data: CardCreationOptions) {
   // Insert into radreply table based on plan settings
   const radreplyValues = [];
 
-  // Session-Timeout (in seconds) - from card settings or plan
-  const finalSessionTimeout = sessionTimeout || plan.sessionTimeout;
-  if (finalSessionTimeout && finalSessionTimeout > 0) {
+  // Session-Timeout (in seconds) - from usageBudgetSeconds, card settings, or plan
+  // Priority: usageBudgetSeconds > sessionTimeout > plan.sessionTimeout
+  let finalSessionTimeout = 0;
+  if (usageBudgetSeconds && usageBudgetSeconds > 0) {
+    finalSessionTimeout = usageBudgetSeconds;
+  } else if (sessionTimeout && sessionTimeout > 0) {
+    finalSessionTimeout = sessionTimeout;
+  } else if (plan.sessionTimeout && plan.sessionTimeout > 0) {
+    finalSessionTimeout = plan.sessionTimeout;
+  }
+  
+  if (finalSessionTimeout > 0) {
     radreplyValues.push({
       username,
       attribute: 'Session-Timeout',
@@ -240,21 +276,8 @@ export async function createRadiusCard(data: CardCreationOptions) {
     });
   }
 
-  // Max-All-Session (total time allowed on internet)
-  if (data.internetTimeValue && data.internetTimeValue > 0) {
-    let maxAllSession: number;
-    if (data.internetTimeUnit === 'days') {
-      maxAllSession = data.internetTimeValue * 24 * 60 * 60;
-    } else {
-      maxAllSession = data.internetTimeValue * 60 * 60;
-    }
-    radreplyValues.push({
-      username,
-      attribute: 'Max-All-Session',
-      op: ':=',
-      value: maxAllSession.toString(),
-    });
-  }
+  // Note: Max-All-Session was removed because it's not a standard FreeRADIUS attribute
+  // Internet time limits should be handled via Session-Timeout or external accounting
 
   // Insert all radreply values
   if (radreplyValues.length > 0) {
@@ -315,6 +338,9 @@ interface BatchCreationOptions {
   passwordLength?: number;
   subscriberGroup?: string;
   cardPrice?: number;
+  // New Time Budget System
+  usageBudgetSeconds?: number;
+  windowSeconds?: number;
 }
 
 // Create batch of RADIUS cards
@@ -347,6 +373,9 @@ export async function createCardBatch(data: BatchCreationOptions) {
     passwordLength: data.passwordLength || 4,
     subscriberGroup: data.subscriberGroup || 'Default group',
     cardPrice: data.cardPrice?.toString() || '0',
+    // New Time Budget System
+    usageBudgetSeconds: data.usageBudgetSeconds || 0,
+    windowSeconds: data.windowSeconds || 0,
   } as any);
 
   // Create cards
@@ -373,6 +402,9 @@ export async function createCardBatch(data: BatchCreationOptions) {
         usernameLength: data.usernameLength,
         passwordLength: data.passwordLength,
         subscriberGroup: data.subscriberGroup,
+        // New Time Budget System
+        usageBudgetSeconds: data.usageBudgetSeconds,
+        windowSeconds: data.windowSeconds,
       });
       cards.push(card);
     } catch (error) {

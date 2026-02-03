@@ -45,20 +45,30 @@ interface CardTimeInfo {
   cardId: number;
   batchId: string | null;
   status: string;
-  // Allocated time from batch
-  allocatedTimeSeconds: number;
+  // New Time Budget System
+  usageBudgetSeconds: number; // Total usage time allowed
+  windowSeconds: number; // Validity window duration from first use
   // Used time from radacct (source of truth)
   usedTimeFromRadacct: number;
   // Current active session time
   currentSessionTime: number;
-  // Calculated remaining
+  // Calculated remaining usage time
+  remainingUsageSeconds: number;
+  // First use tracking
+  firstUseAt: Date | null;
+  windowEndTime: Date | null;
+  windowRemainingSeconds: number;
+  // Expiration status
+  isUsageExpired: boolean; // usedTime >= usageBudgetSeconds
+  isWindowExpired: boolean; // now > windowEndTime
+  // Legacy compatibility
+  allocatedTimeSeconds: number;
   remainingTimeSeconds: number;
-  // Validity
   expiresAt: Date | null;
   isValidityExpired: boolean;
   // Decision
   shouldDisconnect: boolean;
-  disconnectReason: 'time_exhausted' | 'validity_expired' | 'none';
+  disconnectReason: 'time_exhausted' | 'window_expired' | 'validity_expired' | 'none';
 }
 
 interface ActiveSessionInfo {
@@ -167,7 +177,110 @@ async function getUsedTimeFromRadacct(username: string): Promise<{
 }
 
 /**
- * Get allocated time from card batch
+ * Get time budget from card or batch (New Time Budget System)
+ */
+async function getTimeBudget(card: any): Promise<{
+  usageBudgetSeconds: number;
+  windowSeconds: number;
+}> {
+  // Priority 1: Card-level values
+  if (card.usageBudgetSeconds && card.usageBudgetSeconds > 0) {
+    return {
+      usageBudgetSeconds: card.usageBudgetSeconds,
+      windowSeconds: card.windowSeconds || 0,
+    };
+  }
+  
+  // Priority 2: Batch-level values
+  if (!card.batchId) return { usageBudgetSeconds: 0, windowSeconds: 0 };
+  
+  const db = await getDb();
+  if (!db) return { usageBudgetSeconds: 0, windowSeconds: 0 };
+  
+  try {
+    const [batch] = await db.select()
+      .from(cardBatches)
+      .where(eq(cardBatches.batchId, card.batchId))
+      .limit(1);
+    
+    if (!batch) return { usageBudgetSeconds: 0, windowSeconds: 0 };
+    
+    // Try new fields first
+    let usageBudgetSeconds = batch.usageBudgetSeconds || 0;
+    let windowSeconds = batch.windowSeconds || 0;
+    
+    // Fall back to legacy fields
+    if (usageBudgetSeconds === 0 && batch.internetTimeValue) {
+      const timeUnit = batch.internetTimeUnit || 'hours';
+      if (timeUnit === 'hours') {
+        usageBudgetSeconds = batch.internetTimeValue * 3600;
+      } else if (timeUnit === 'days') {
+        usageBudgetSeconds = batch.internetTimeValue * 86400;
+      }
+    }
+    
+    if (windowSeconds === 0 && batch.cardTimeValue) {
+      const timeUnit = batch.cardTimeUnit || 'hours';
+      if (timeUnit === 'hours') {
+        windowSeconds = batch.cardTimeValue * 3600;
+      } else if (timeUnit === 'days') {
+        windowSeconds = batch.cardTimeValue * 86400;
+      }
+    }
+    
+    return { usageBudgetSeconds, windowSeconds };
+  } catch (error) {
+    console.error(`[CentralAccounting] Error getting time budget for batch ${card.batchId}:`, error);
+    return { usageBudgetSeconds: 0, windowSeconds: 0 };
+  }
+}
+
+/**
+ * Record first use of a card (sets firstUseAt and windowEndTime)
+ */
+async function recordFirstUseIfNeeded(card: any, acctstarttime: Date | null): Promise<{
+  firstUseAt: Date | null;
+  windowEndTime: Date | null;
+}> {
+  const db = await getDb();
+  if (!db) return { firstUseAt: card.firstUseAt, windowEndTime: card.windowEndTime };
+  
+  // Already recorded
+  if (card.firstUseAt) {
+    return { firstUseAt: card.firstUseAt, windowEndTime: card.windowEndTime };
+  }
+  
+  // Get window seconds
+  const { windowSeconds } = await getTimeBudget(card);
+  
+  // Use acctstarttime from radacct as firstUseAt
+  const firstUseAt = acctstarttime || new Date();
+  const windowEndTime = windowSeconds > 0 
+    ? new Date(firstUseAt.getTime() + windowSeconds * 1000)
+    : null;
+  
+  try {
+    await db.update(radiusCards)
+      .set({
+        firstUseAt,
+        windowEndTime,
+        status: card.status === 'unused' ? 'active' : card.status,
+        activatedAt: card.activatedAt || firstUseAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(radiusCards.id, card.id));
+    
+    console.log(`[CentralAccounting] Recorded first use for ${card.username}: firstUseAt=${firstUseAt.toISOString()}, windowEndTime=${windowEndTime?.toISOString() || 'none'}`);
+    
+    return { firstUseAt, windowEndTime };
+  } catch (error) {
+    console.error(`[CentralAccounting] Error recording first use for ${card.username}:`, error);
+    return { firstUseAt: card.firstUseAt, windowEndTime: card.windowEndTime };
+  }
+}
+
+/**
+ * Get allocated time from card batch (Legacy compatibility)
  */
 async function getAllocatedTime(batchId: string | null): Promise<number> {
   if (!batchId) return 0;
@@ -179,6 +292,7 @@ async function getAllocatedTime(batchId: string | null): Promise<number> {
     const [batch] = await db.select({
       timeValue: cardBatches.internetTimeValue,
       timeUnit: cardBatches.internetTimeUnit,
+      usageBudgetSeconds: cardBatches.usageBudgetSeconds,
     })
     .from(cardBatches)
     .where(eq(cardBatches.batchId, batchId))
@@ -186,6 +300,12 @@ async function getAllocatedTime(batchId: string | null): Promise<number> {
     
     if (!batch) return 0;
     
+    // Try new field first
+    if (batch.usageBudgetSeconds && batch.usageBudgetSeconds > 0) {
+      return batch.usageBudgetSeconds;
+    }
+    
+    // Fall back to legacy
     const timeValue = batch.timeValue || 0;
     const timeUnit = batch.timeUnit || 'hours';
     
@@ -203,9 +323,9 @@ async function getAllocatedTime(batchId: string | null): Promise<number> {
 }
 
 /**
- * Calculate card time info with all relevant data
+ * Calculate card time info with all relevant data (New Time Budget System)
  */
-async function calculateCardTimeInfo(username: string): Promise<CardTimeInfo | null> {
+async function calculateCardTimeInfo(username: string, acctstarttime?: Date | null): Promise<CardTimeInfo | null> {
   const db = await getDb();
   if (!db) return null;
   
@@ -218,47 +338,81 @@ async function calculateCardTimeInfo(username: string): Promise<CardTimeInfo | n
     
     if (!card) return null;
     
-    // Get allocated time from batch
-    const allocatedTimeSeconds = await getAllocatedTime(card.batchId);
+    // Get time budget (new system)
+    const { usageBudgetSeconds, windowSeconds } = await getTimeBudget(card);
     
-    // Get used time from radacct (SOURCE OF TRUTH)
+    // Record first use if needed (A: عند أول Accounting Start)
+    const { firstUseAt, windowEndTime } = await recordFirstUseIfNeeded(card, acctstarttime || null);
+    
+    // Get used time from radacct (SOURCE OF TRUTH) (B: حساب الوقت المستهلك)
     const usageInfo = await getUsedTimeFromRadacct(username);
     
-    // Calculate remaining time
-    const remainingTimeSeconds = allocatedTimeSeconds > 0 
-      ? Math.max(0, allocatedTimeSeconds - usageInfo.totalUsedTime)
+    // Calculate remaining usage time
+    const remainingUsageSeconds = usageBudgetSeconds > 0 
+      ? Math.max(0, usageBudgetSeconds - usageInfo.totalUsedTime)
       : -1; // -1 means unlimited
     
-    // Check validity expiration
+    // Calculate window remaining time
     const now = new Date();
+    let windowRemainingSeconds = 0;
+    if (windowEndTime) {
+      windowRemainingSeconds = Math.max(0, Math.floor((windowEndTime.getTime() - now.getTime()) / 1000));
+    } else if (windowSeconds > 0 && !firstUseAt) {
+      // Window hasn't started yet
+      windowRemainingSeconds = windowSeconds;
+    }
+    
+    // Check expiration conditions (شروط انتهاء الكرت)
+    const isUsageExpired = usageBudgetSeconds > 0 && usageInfo.totalUsedTime >= usageBudgetSeconds;
+    const isWindowExpired = windowEndTime !== null && now >= windowEndTime;
     const isValidityExpired = card.expiresAt !== null && now >= card.expiresAt;
     
     // Determine if should disconnect and why
     let shouldDisconnect = false;
-    let disconnectReason: 'time_exhausted' | 'validity_expired' | 'none' = 'none';
+    let disconnectReason: 'time_exhausted' | 'window_expired' | 'validity_expired' | 'none' = 'none';
     
-    // Priority 1: Time exhausted (with grace period)
-    if (allocatedTimeSeconds > 0 && remainingTimeSeconds <= 0) {
+    // Priority 1: Usage time exhausted
+    if (isUsageExpired) {
       shouldDisconnect = true;
       disconnectReason = 'time_exhausted';
     }
-    // Priority 2: Validity expired
+    // Priority 2: Window expired
+    else if (isWindowExpired) {
+      shouldDisconnect = true;
+      disconnectReason = 'window_expired';
+    }
+    // Priority 3: Legacy validity expired
     else if (isValidityExpired) {
       shouldDisconnect = true;
       disconnectReason = 'validity_expired';
     }
+    
+    // Legacy compatibility
+    const allocatedTimeSeconds = usageBudgetSeconds || await getAllocatedTime(card.batchId);
+    const remainingTimeSeconds = remainingUsageSeconds;
     
     return {
       username,
       cardId: card.id,
       batchId: card.batchId,
       status: card.status,
-      allocatedTimeSeconds,
+      // New Time Budget System
+      usageBudgetSeconds,
+      windowSeconds,
       usedTimeFromRadacct: usageInfo.totalUsedTime,
       currentSessionTime: usageInfo.currentSessionTime,
+      remainingUsageSeconds,
+      firstUseAt,
+      windowEndTime,
+      windowRemainingSeconds,
+      isUsageExpired,
+      isWindowExpired,
+      // Legacy compatibility
+      allocatedTimeSeconds,
       remainingTimeSeconds,
       expiresAt: card.expiresAt,
       isValidityExpired,
+      // Decision
       shouldDisconnect,
       disconnectReason,
     };
@@ -396,7 +550,7 @@ async function sendDisconnect(session: ActiveSessionInfo, reason: string): Promi
 /**
  * Update card status based on disconnect reason
  */
-async function updateCardStatus(username: string, reason: 'time_exhausted' | 'validity_expired'): Promise<void> {
+async function updateCardStatus(username: string, reason: 'time_exhausted' | 'window_expired' | 'validity_expired'): Promise<void> {
   const db = await getDb();
   if (!db) return;
   
@@ -495,7 +649,8 @@ async function runAccountingJob(): Promise<{
         processed++;
         
         // Calculate time info from radacct (source of truth)
-        const timeInfo = await calculateCardTimeInfo(session.username);
+        // Pass acctstarttime for first use recording
+        const timeInfo = await calculateCardTimeInfo(session.username, session.startTime);
         if (!timeInfo) continue;
         
         // Sync card usage from radacct
@@ -503,15 +658,31 @@ async function runAccountingJob(): Promise<{
         synced++;
         
         // Update Session-Timeout in radreply (calculated output)
-        if (timeInfo.remainingTimeSeconds >= 0) {
-          await updateSessionTimeout(session.username, timeInfo.remainingTimeSeconds);
+        // Use the minimum of remaining usage time and window remaining time
+        let effectiveRemaining = timeInfo.remainingUsageSeconds;
+        if (effectiveRemaining < 0) effectiveRemaining = timeInfo.windowRemainingSeconds; // unlimited usage
+        else if (timeInfo.windowRemainingSeconds > 0) {
+          effectiveRemaining = Math.min(effectiveRemaining, timeInfo.windowRemainingSeconds);
+        }
+        
+        if (effectiveRemaining >= 0) {
+          await updateSessionTimeout(session.username, effectiveRemaining);
         }
         
         // Check if should disconnect
         if (timeInfo.shouldDisconnect && timeInfo.disconnectReason !== 'none') {
-          const reasonText = timeInfo.disconnectReason === 'time_exhausted'
-            ? `Time exhausted: Allocated=${timeInfo.allocatedTimeSeconds}s, Used=${timeInfo.usedTimeFromRadacct}s`
-            : `Validity expired: ExpiresAt=${timeInfo.expiresAt?.toISOString()}`;
+          let reasonText = '';
+          switch (timeInfo.disconnectReason) {
+            case 'time_exhausted':
+              reasonText = `Usage exhausted: Budget=${timeInfo.usageBudgetSeconds}s, Used=${timeInfo.usedTimeFromRadacct}s`;
+              break;
+            case 'window_expired':
+              reasonText = `Window expired: WindowEnd=${timeInfo.windowEndTime?.toISOString()}`;
+              break;
+            case 'validity_expired':
+              reasonText = `Validity expired: ExpiresAt=${timeInfo.expiresAt?.toISOString()}`;
+              break;
+          }
           
           console.log(`[CentralAccounting] ${session.username}: ${reasonText}`);
           
@@ -628,4 +799,75 @@ export async function getUserTimeDetails(username: string): Promise<CardTimeInfo
  */
 export async function forceSyncUserUsage(username: string): Promise<void> {
   await syncCardUsageFromRadacct(username);
+}
+
+
+/**
+ * Backfill firstUseAt for cards that have sessions but no firstUseAt recorded
+ * This is a one-time migration for existing cards
+ */
+export async function backfillFirstUseAt(): Promise<{
+  updated: number;
+  errors: string[];
+}> {
+  const db = await getDb();
+  if (!db) return { updated: 0, errors: ['Database not available'] };
+  
+  const errors: string[] = [];
+  let updated = 0;
+  
+  try {
+    // Find cards with sessions but no firstUseAt
+    const cardsWithoutFirstUse = await db.select({
+      id: radiusCards.id,
+      username: radiusCards.username,
+      windowSeconds: radiusCards.windowSeconds,
+      batchId: radiusCards.batchId,
+    })
+    .from(radiusCards)
+    .where(isNull(radiusCards.firstUseAt));
+    
+    console.log(`[CentralAccounting] Found ${cardsWithoutFirstUse.length} cards without firstUseAt`);
+    
+    for (const card of cardsWithoutFirstUse) {
+      try {
+        // Get first session for this card
+        const [firstSession] = await db.select({
+          startTime: radacct.acctstarttime,
+        })
+        .from(radacct)
+        .where(eq(radacct.username, card.username))
+        .orderBy(radacct.acctstarttime)
+        .limit(1);
+        
+        if (firstSession?.startTime) {
+          // Get window seconds
+          const { windowSeconds } = await getTimeBudget(card);
+          
+          const firstUseAt = firstSession.startTime;
+          const windowEndTime = windowSeconds > 0 
+            ? new Date(firstUseAt.getTime() + windowSeconds * 1000)
+            : null;
+          
+          await db.update(radiusCards)
+            .set({
+              firstUseAt,
+              windowEndTime,
+              updatedAt: new Date(),
+            })
+            .where(eq(radiusCards.id, card.id));
+          
+          updated++;
+          console.log(`[CentralAccounting] Backfilled firstUseAt for ${card.username}: ${firstUseAt.toISOString()}`);
+        }
+      } catch (error: any) {
+        errors.push(`Error backfilling ${card.username}: ${error.message}`);
+      }
+    }
+    
+    return { updated, errors };
+  } catch (error: any) {
+    console.error('[CentralAccounting] Error in backfillFirstUseAt:', error);
+    return { updated: 0, errors: [error.message] };
+  }
 }

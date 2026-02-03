@@ -301,6 +301,11 @@ export const radiusCards = mysqlTable("radius_cards", {
   totalSessionTime: int("totalSessionTime").default(0), // in seconds
   totalDataUsed: bigint("totalDataUsed", { mode: "number" }).default(0), // in bytes
   lastActivity: timestamp("lastActivity"),
+  // Time Budget System (Customer-Defined Window + Usage Budget)
+  usageBudgetSeconds: int("usageBudgetSeconds").default(0), // Total usage time allowed (deducted while connected)
+  windowSeconds: int("windowSeconds").default(0), // Validity window duration from first use
+  firstUseAt: timestamp("firstUseAt"), // When card was first used (triggers window start)
+  windowEndTime: timestamp("windowEndTime"), // When the validity window expires
   // Pricing
   purchasePrice: decimal("purchasePrice", { precision: 10, scale: 2 }),
   salePrice: decimal("salePrice", { precision: 10, scale: 2 }),
@@ -338,12 +343,15 @@ export const cardBatches = mysqlTable("card_batches", {
   // Batch control settings
   enabled: boolean("enabled").default(true).notNull(), // Enable/Disable all cards in batch
   simultaneousUse: int("simultaneousUse").default(1), // Number of devices allowed
-  // Time settings
+  // Time settings (Legacy - kept for backward compatibility)
   cardTimeValue: int("cardTimeValue").default(0), // Card activation time
   cardTimeUnit: mysqlEnum("cardTimeUnit", ["hours", "days"]).default("hours"),
   internetTimeValue: int("internetTimeValue").default(0), // Internet time available
   internetTimeUnit: mysqlEnum("internetTimeUnit", ["hours", "days"]).default("hours"),
   timeFromActivation: boolean("timeFromActivation").default(true), // Count from activation
+  // New Time Budget System
+  usageBudgetSeconds: int("usageBudgetSeconds").default(0), // Total usage time allowed (deducted while connected)
+  windowSeconds: int("windowSeconds").default(0), // Validity window duration from first use
   // Additional settings
   hotspotPort: varchar("hotspotPort", { length: 100 }), // Hotspot port restriction
   macBinding: boolean("macBinding").default(false), // MAC binding option

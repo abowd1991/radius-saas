@@ -118,6 +118,11 @@ export default function Vouchers() {
     cardTimeUnit: "hours" as "hours" | "days",
     timeFromActivation: true,
     macBinding: false,
+    // New Time Budget System
+    usageHours: "0",
+    usageMinutes: "0",
+    windowHours: "0",
+    windowMinutes: "0",
   });
 
   // Progress state for bulk generation
@@ -395,6 +400,11 @@ export default function Vouchers() {
       cardTimeUnit: "hours",
       timeFromActivation: true,
       macBinding: false,
+      // New Time Budget System
+      usageHours: "0",
+      usageMinutes: "0",
+      windowHours: "0",
+      windowMinutes: "0",
     });
   };
 
@@ -403,6 +413,16 @@ export default function Vouchers() {
       toast.error(language === 'ar' ? 'يرجى اختيار الخدمة' : 'Please select a plan');
       return;
     }
+    
+    // Calculate usageBudgetSeconds from hours + minutes
+    const usageBudgetSeconds = 
+      (parseInt(generateForm.usageHours) || 0) * 3600 + 
+      (parseInt(generateForm.usageMinutes) || 0) * 60;
+    
+    // Calculate windowSeconds from hours + minutes
+    const windowSeconds = 
+      (parseInt(generateForm.windowHours) || 0) * 3600 + 
+      (parseInt(generateForm.windowMinutes) || 0) * 60;
     
     generateMutation.mutate({
       planId: parseInt(generateForm.planId),
@@ -421,6 +441,9 @@ export default function Vouchers() {
       cardTimeUnit: generateForm.cardTimeUnit,
       timeFromActivation: generateForm.timeFromActivation,
       macBinding: generateForm.macBinding,
+      // New Time Budget System
+      usageBudgetSeconds,
+      windowSeconds,
     });
   };
 
@@ -701,57 +724,72 @@ export default function Vouchers() {
                       </p>
                     </div>
 
-                    {/* Row 5: Internet Time and Card Time */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'الوقت المتاح على الانترنت' : 'Internet Time Limit'}</Label>
-                        <div className="flex gap-2">
+                    {/* Row 5: Usage Time (actual time deducted while connected) */}
+                    <div className="space-y-2">
+                      <Label className="font-medium">
+                        {language === 'ar' ? 'وقت الاستخدام الفعلي (يُخصم أثناء الاتصال)' : 'Usage Time (deducted while connected)'}
+                      </Label>
+                      <div className="flex gap-2 items-center">
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'ساعات' : 'Hours'}</Label>
                           <Input
                             type="number"
                             min="0"
-                            className="flex-1"
-                            value={generateForm.internetTimeValue}
-                            onChange={(e) => setGenerateForm(prev => ({ ...prev, internetTimeValue: e.target.value }))}
+                            value={generateForm.usageHours}
+                            onChange={(e) => setGenerateForm(prev => ({ ...prev, usageHours: e.target.value }))}
                           />
-                          <Select 
-                            value={generateForm.internetTimeUnit} 
-                            onValueChange={(v: "hours" | "days") => setGenerateForm(prev => ({ ...prev, internetTimeUnit: v }))}
-                          >
-                            <SelectTrigger className="w-24">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="hours">{language === 'ar' ? 'ساعة' : 'Hours'}</SelectItem>
-                              <SelectItem value="days">{language === 'ar' ? 'يوم' : 'Days'}</SelectItem>
-                            </SelectContent>
-                          </Select>
                         </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'الوقت المتاح من تفعيل الكرت' : 'Card Validity Time'}</Label>
-                        <div className="flex gap-2">
+                        <span className="mt-5">:</span>
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'دقائق' : 'Minutes'}</Label>
                           <Input
                             type="number"
                             min="0"
-                            className="flex-1"
-                            value={generateForm.cardTimeValue}
-                            onChange={(e) => setGenerateForm(prev => ({ ...prev, cardTimeValue: e.target.value }))}
+                            max="59"
+                            value={generateForm.usageMinutes}
+                            onChange={(e) => setGenerateForm(prev => ({ ...prev, usageMinutes: e.target.value }))}
                           />
-                          <Select 
-                            value={generateForm.cardTimeUnit} 
-                            onValueChange={(v: "hours" | "days") => setGenerateForm(prev => ({ ...prev, cardTimeUnit: v }))}
-                          >
-                            <SelectTrigger className="w-24">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="hours">{language === 'ar' ? 'ساعة' : 'Hours'}</SelectItem>
-                              <SelectItem value="days">{language === 'ar' ? 'يوم' : 'Days'}</SelectItem>
-                            </SelectContent>
-                          </Select>
                         </div>
                       </div>
                     </div>
+
+                    {/* Row 6: Window Time (validity period from first use) */}
+                    <div className="space-y-2">
+                      <Label className="font-medium">
+                        {language === 'ar' ? 'مدة السماح/النافذة (من أول استخدام)' : 'Validity Window (from first use)'}
+                      </Label>
+                      <div className="flex gap-2 items-center">
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'ساعات' : 'Hours'}</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={generateForm.windowHours}
+                            onChange={(e) => setGenerateForm(prev => ({ ...prev, windowHours: e.target.value }))}
+                          />
+                        </div>
+                        <span className="mt-5">:</span>
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'دقائق' : 'Minutes'}</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={generateForm.windowMinutes}
+                            onChange={(e) => setGenerateForm(prev => ({ ...prev, windowMinutes: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'ar' 
+                          ? 'الكرت ينتهي عند استهلاك وقت الاستخدام أو انتهاء مدة النافذة (أيهما أولاً)' 
+                          : 'Card expires when usage time is depleted OR window period ends (whichever comes first)'}
+                      </p>
+                    </div>
+
+                    {/* Legacy fields - hidden but kept for backward compatibility */}
+                    <input type="hidden" value={generateForm.internetTimeValue} />
+                    <input type="hidden" value={generateForm.cardTimeValue} />
 
                     {/* Row 6: Switches */}
                     <div className="flex flex-wrap gap-6">

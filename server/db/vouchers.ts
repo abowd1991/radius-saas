@@ -260,6 +260,9 @@ export async function generateCards(data: {
   passwordLength?: number;
   subscriberGroup?: string;
   cardPrice?: number;
+  // New Time Budget System
+  usageBudgetSeconds?: number;
+  windowSeconds?: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -299,6 +302,9 @@ export async function generateCards(data: {
     passwordLength,
     subscriberGroup,
     cardPrice: data.cardPrice ? String(data.cardPrice) : '0',
+    // New Time Budget System
+    usageBudgetSeconds: data.usageBudgetSeconds || 0,
+    windowSeconds: data.windowSeconds || 0,
   } as any);
   
   // Calculate session timeout based on card time settings
@@ -427,19 +433,24 @@ export async function generateCards(data: {
       });
     }
     
-    if (data.internetTimeValue && data.internetTimeValue > 0) {
-      let maxAllSession: number;
-      if (data.internetTimeUnit === 'days') {
-        maxAllSession = data.internetTimeValue * 24 * 60 * 60;
+    // Note: Max-All-Session removed - not a standard FreeRADIUS attribute
+    // Session-Timeout from usageBudgetSeconds takes priority
+    if (data.usageBudgetSeconds && data.usageBudgetSeconds > 0) {
+      // Override Session-Timeout with usageBudgetSeconds if provided
+      // Remove any existing Session-Timeout for this user
+      const existingIdx = allRadreplyValues.findIndex(
+        v => v.username === username && v.attribute === 'Session-Timeout'
+      );
+      if (existingIdx >= 0) {
+        allRadreplyValues[existingIdx].value = String(data.usageBudgetSeconds);
       } else {
-        maxAllSession = data.internetTimeValue * 60 * 60;
+        allRadreplyValues.push({
+          username,
+          attribute: "Session-Timeout",
+          op: "=",
+          value: String(data.usageBudgetSeconds),
+        });
       }
-      allRadreplyValues.push({
-        username,
-        attribute: "Max-All-Session",
-        op: ":=",
-        value: String(maxAllSession),
-      });
     }
     
     // Radusergroup values
@@ -462,6 +473,9 @@ export async function generateCards(data: {
       expiresAt,
       purchasePrice: data.purchasePrice ? String(data.purchasePrice) : plan.resellerPrice,
       salePrice: data.salePrice || data.cardPrice ? String(data.salePrice || data.cardPrice) : plan.price,
+      // New Time Budget System
+      usageBudgetSeconds: data.usageBudgetSeconds || 0,
+      windowSeconds: data.windowSeconds || 0,
     });
     
     generatedCards.push({ serialNumber, username, password });

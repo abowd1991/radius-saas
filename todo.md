@@ -1979,3 +1979,25 @@
 - [x] تعيين ENV variables على VPS
 - [x] ربط زر التحديث بـ API 8081
 - [ ] اختبار زر التحديث (بعد النشر)
+
+
+## تبسيط واجهة إدخال الوقت (Feb 3, 2026)
+- [ ] تبسيط حقول الوقت في نموذج إنشاء الكروت
+  - [ ] خانة واحدة للقيمة + قائمة منسدلة للوحدة (دقائق/ساعات/أيام/شهر)
+  - [ ] تحديث وقت الاستخدام (Usage Budget)
+  - [ ] تحديث مدة النافذة (Window Time)
+  - [ ] حساب الثواني بناءً على الوحدة المختارة
+
+
+## Accounting Logic Implementation (Feb 3, 2026)
+- [x] ربط radacct بالكروت (Business Logic)
+  - [x] عند أول Accounting Start: تعيين firstUseAt = acctstarttime
+  - [x] حساب windowEndTime = firstUseAt + windowSeconds
+  - [x] حساب used_seconds = SUM(radacct.acctsessiontime)
+  - [x] للجلسات المفتوحة: إضافة (now - acctstarttime)
+  - [x] التخزين بالثواني فقط (UTC في DB، Asia/Hebron للعرض)
+- [x] شروط انتهاء الكرت:
+  - [x] used_seconds >= usage_budget_seconds
+  - [x] أو now >= window_end_time
+- [x] Worker/Cron لتحديث الكروت دورياً (CentralAccounting كل دقيقة)
+- [x] Backfill للكروت القديمة (6 كروت تم تحديثها)

@@ -50,6 +50,20 @@
       "when": 1768271011923,
       "tag": "0006_hard_speed_demon",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1770071857009,
+      "tag": "0007_brave_dormammu",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1770124753826,
+      "tag": "0008_steep_network",
+      "breakpoints": true
     }
   ]
 }

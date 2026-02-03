@@ -1934,6 +1934,9 @@ const vouchersRouter = router({
       passwordLength: z.number().min(4).max(20).default(4),
       subscriberGroup: z.string().default('Default group'),
       cardPrice: z.number().default(0),
+      // New Time Budget System
+      usageBudgetSeconds: z.number().min(0).default(0),
+      windowSeconds: z.number().min(0).default(0),
     }))
     .mutation(async ({ ctx, input }) => {
       return cardDb.generateCards({
