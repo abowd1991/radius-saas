@@ -135,8 +135,8 @@ export default function Plans() {
     }
   };
 
-  // Allow super_admin, client, and reseller to manage their own plans
-  const canManagePlans = user?.role === "super_admin" || user?.role === "client" || user?.role === "reseller";
+  // Allow owner, super_admin, client, and reseller to manage their own plans
+  const canManagePlans = user?.role === "owner" || user?.role === "super_admin" || user?.role === "client" || user?.role === "reseller";
 
   return (
     <div className="space-y-6">

@@ -50,8 +50,8 @@ export default function Dashboard() {
     return new Intl.NumberFormat(language === "ar" ? "ar-EG" : "en-US").format(num);
   };
 
-  // Super Admin Dashboard
-  if (user?.role === "super_admin") {
+  // Owner/Super Admin Dashboard
+  if (user?.role === "owner" || user?.role === "super_admin") {
     return (
       <div className="space-y-6">
         {/* Account Status Banner */}

@@ -255,13 +255,13 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className={`grid w-full ${user?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'} lg:w-[${user?.role === 'super_admin' ? '500' : '400'}px]`}>
+        <TabsList className={`grid w-full ${(user?.role === 'super_admin' || user?.role === 'owner') ? 'grid-cols-5' : 'grid-cols-4'} lg:w-[${(user?.role === 'super_admin' || user?.role === 'owner') ? '500' : '400'}px]`}>
           <TabsTrigger value="profile">
             <User className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
             {language === "ar" ? "الملف" : "Profile"}
           </TabsTrigger>
-          {/* RADIUS tab - only visible to super_admin */}
-          {user?.role === 'super_admin' && (
+          {/* RADIUS tab - only visible to owner/super_admin */}
+          {(user?.role === 'owner' || user?.role === 'super_admin') && (
             <TabsTrigger value="radius">
               <Server className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
               {language === "ar" ? "RADIUS" : "RADIUS"}
@@ -399,8 +399,8 @@ export default function Settings() {
           </div>
         </TabsContent>
 
-        {/* RADIUS Tab - only visible to super_admin */}
-        {user?.role === 'super_admin' && (
+        {/* RADIUS Tab - only visible to owner/super_admin */}
+        {(user?.role === 'owner' || user?.role === 'super_admin') && (
         <TabsContent value="radius">
           <Card>
             <CardHeader>

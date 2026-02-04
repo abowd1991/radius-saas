@@ -2370,3 +2370,27 @@
 
 ### React Errors
 - [x] Fix Error 5: VpnLogs setState in render phase (wrapped in useEffect)
+
+## Empty Pages Issues - Owner View
+
+### VPN Server Page
+- [x] VPN Server page exists at /vpn (VpnConnections.tsx)
+- [x] Page works correctly with owner role
+- [x] No fixes needed
+
+### Internet Plans Page (Speeds)
+- [x] Fix Internet Plans page - added owner role to canManagePlans
+- [x] Add "Create New Plan" button (now visible for owner)
+- [x] Verify plans list displays correctly
+
+### Card Management Page
+- [x] Fix Card Management page - added owner role to canCreateCards
+- [x] Add "Generate Cards" button (now visible for owner)
+- [x] Verify card templates display correctly
+
+### General
+- [x] Review all owner pages for missing buttons
+- [x] Fixed Dashboard.tsx - added owner role
+- [x] Fixed Settings.tsx - added owner role to RADIUS tab
+- [x] Test all CRUD operations for owner role
+- [ ] Save checkpoint after fixes
