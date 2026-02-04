@@ -2433,3 +2433,27 @@
 - [ ] Fix nasname assignment in database
 - [ ] DO NOT touch FreeRADIUS configuration (RED LINE)
 - [ ] Save checkpoint after verification
+
+
+## Dashboard Refactoring & Enhancement (Feb 4, 2026)
+
+### المرحلة 1: إعادة هيكلة القوائم بأسماء عالمية
+- [x] تحليل القوائم الحالية في DashboardLayout
+- [x] تصميم هيكل القوائم الجديد (Monitoring, Infrastructure, Users & Clients, etc.)
+- [x] تطبيق القوائم الجديدة في DashboardLayout
+- [x] تحديث Owner/Client/Reseller menus
+- [ ] اختبار التنقل بين الصفحات
+
+### المرحلة 2: تحسين UI/UX للوحة التحكم
+- [ ] تحسين Typography و Spacing العام
+- [ ] تطوير تصميم الجداول (Tables)
+- [ ] تحسين الفلترة والبحث
+- [ ] تحسين Mobile Responsive
+- [ ] تبسيط الواجهات وتقليل الازدحام
+
+### المرحلة 3: نظام الصلاحيات + Feature Access Control
+- [ ] إنشاء جدول feature_access_control في schema
+- [ ] إنشاء صفحة Feature Access Control للـ Owner
+- [ ] تطبيق Role-Based Access في القوائم
+- [ ] عزل البيانات حسب الدور (Owner/Client/Reseller)
+- [ ] اختبار الصلاحيات لكل دور

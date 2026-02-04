@@ -109,10 +109,10 @@ type MenuSection = {
   }[];
 };
 
-// Menu items based on user role - NEW ORGANIZED STRUCTURE
+// Menu items based on user role - REFACTORED WITH GLOBAL NAMING
 const getMenuSections = (role: string, t: (key: string) => string): MenuSection[] => {
   const superAdminSections: MenuSection[] = [
-    // 1. Dashboard (standalone - no section)
+    // 1. Dashboard
     {
       id: "dashboard",
       icon: LayoutDashboard,
@@ -121,11 +121,11 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
         { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
       ],
     },
-    // 2. Real-Time & Monitoring
+    // 2. Monitoring (المراقبة)
     {
       id: "monitoring",
       icon: Monitor,
-      label: "المراقبة الحية",
+      label: "المراقبة",
       items: [
         { icon: Wifi, label: "الجلسات النشطة", path: "/sessions" },
         { icon: FileText, label: "سجلات RADIUS", path: "/radius-logs" },
@@ -133,64 +133,64 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
         { icon: Network, label: "حالة IP Pool", path: "/ip-pool" },
       ],
     },
-    // 3. Network / Infrastructure
+    // 3. Infrastructure (البنية التحتية)
     {
-      id: "network",
+      id: "infrastructure",
       icon: Globe,
       label: "البنية التحتية",
       items: [
-        { icon: Server, label: t("nav.nas"), path: "/nas" },
-        { icon: Link2, label: t("nav.mikrotikSetup"), path: "/mikrotik-setup" },
+        { icon: Server, label: "أجهزة NAS", path: "/nas" },
+        { icon: Link2, label: "إعداد MikroTik", path: "/mikrotik-setup" },
         { icon: Globe, label: "اتصالات VPN", path: "/vpn" },
         { icon: History, label: "سجلات VPN", path: "/vpn-logs" },
       ],
     },
-    // 4. Users & Clients
+    // 4. Users & Clients (المستخدمين والعملاء)
     {
       id: "users",
       icon: Users,
       label: "المستخدمين والعملاء",
       items: [
         { icon: UserCheck, label: "المشتركين", path: "/subscribers" },
-        { icon: Building2, label: t("nav.resellers"), path: "/resellers" },
-        { icon: Users, label: "إدارة المستخدمين", path: "/users-management" },
+        { icon: Users, label: "العملاء", path: "/users-management" },
+        { icon: Building2, label: "الموزعين", path: "/resellers" },
       ],
     },
-    // 5. AAA / Access Control
+    // 5. Access Control (التحكم بالوصول)
     {
-      id: "aaa",
+      id: "access",
       icon: Shield,
       label: "التحكم بالوصول",
       items: [
-        { icon: Package, label: t("nav.plans"), path: "/plans" },
+        { icon: Package, label: "الخطط", path: "/plans" },
         { icon: Server, label: "لوحة تحكم RADIUS", path: "/radius-control" },
       ],
     },
-    // 6. Cards & Payments
+    // 6. Cards & Vouchers (البطاقات)
     {
       id: "cards",
       icon: CreditCard,
-      label: "البطاقات والمدفوعات",
+      label: "البطاقات",
       items: [
-        { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
-        { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
-        { icon: Wallet, label: "المحفظة", path: "/wallet" },
-        { icon: CreditCard, label: "إدارة الاشتراكات", path: "/tenant-subscriptions" },
+        { icon: CreditCard, label: "الكروت", path: "/vouchers" },
+        { icon: Printer, label: "طباعة الكروت", path: "/print-cards" },
       ],
     },
-    // 7. Billing & Finance
+    // 7. Billing (الفوترة)
     {
       id: "billing",
       icon: Receipt,
-      label: "الفواتير والمالية",
+      label: "الفوترة",
       items: [
-        { icon: LayoutDashboard, label: "لوحة التحكم المالية", path: "/owner-billing" },
-        { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
+        { icon: LayoutDashboard, label: "لوحة الفوترة", path: "/owner-billing" },
+        { icon: FileText, label: "الفواتير", path: "/invoices" },
+        { icon: Wallet, label: "المحفظة", path: "/wallet" },
         { icon: Wallet, label: "سجل المحفظة", path: "/wallet-ledger" },
-        { icon: CreditCard, label: "خطط SaaS", path: "/saas-plans" },
+        { icon: CreditCard, label: "الاشتراكات", path: "/tenant-subscriptions" },
+        { icon: Package, label: "خطط SaaS", path: "/saas-plans" },
       ],
     },
-    // 8. Reports & Analytics
+    // 8. Reports & Analytics (التقارير والتحليلات)
     {
       id: "reports",
       icon: PieChart,
@@ -200,18 +200,17 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
         { icon: BarChart3, label: "تقارير الباندويث", path: "/bandwidth" },
       ],
     },
-    // 9. System & Settings
+    // 9. System (النظام)
     {
       id: "system",
       icon: Cog,
-      label: "النظام والإعدادات",
+      label: "النظام",
       items: [
-        { icon: Settings, label: t("nav.settings"), path: "/settings" },
+        { icon: Settings, label: "الإعدادات", path: "/settings" },
         { icon: History, label: "سجل العمليات", path: "/audit-log" },
-        { icon: Database, label: "النسخ الاحتياطي", path: "/backups" },
-        { icon: Smartphone, label: "إدارة SMS", path: "/sms" },
         { icon: Settings, label: "إدارة النظام", path: "/system-admin" },
-        { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+        { icon: Smartphone, label: "إدارة SMS", path: "/sms" },
+        { icon: MessageSquare, label: "الدعم الفني", path: "/support" },
       ],
     },
   ];
@@ -230,7 +229,7 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       icon: Users,
       label: "العملاء",
       items: [
-        { icon: Users, label: t("nav.clients"), path: "/clients" },
+        { icon: Users, label: "عملائي", path: "/clients" },
       ],
     },
     {
@@ -238,24 +237,24 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       icon: CreditCard,
       label: "البطاقات",
       items: [
-        { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
+        { icon: CreditCard, label: "الكروت", path: "/vouchers" },
       ],
     },
     {
       id: "billing",
       icon: Receipt,
-      label: "المالية",
+      label: "الفوترة",
       items: [
-        { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
-        { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },
+        { icon: FileText, label: "الفواتير", path: "/invoices" },
+        { icon: Wallet, label: "المحفظة", path: "/wallet" },
       ],
     },
     {
       id: "support",
       icon: MessageSquare,
-      label: t("nav.support"),
+      label: "الدعم",
       items: [
-        { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+        { icon: MessageSquare, label: "الدعم الفني", path: "/support" },
       ],
     },
   ];
@@ -282,8 +281,8 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       icon: Globe,
       label: "الشبكة",
       items: [
-        { icon: Server, label: t("nav.nas"), path: "/nas" },
-        { icon: Link2, label: t("nav.mikrotikSetup"), path: "/mikrotik-setup" },
+        { icon: Server, label: "أجهزة NAS الخاصة بي", path: "/nas" },
+        { icon: Link2, label: "إعداد MikroTik", path: "/mikrotik-setup" },
       ],
     },
     {
@@ -291,7 +290,7 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       icon: Users,
       label: "المشتركين",
       items: [
-        { icon: UserCheck, label: "المشتركين", path: "/subscribers" },
+        { icon: UserCheck, label: "مشتركيني", path: "/subscribers" },
       ],
     },
     {
@@ -299,27 +298,35 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       icon: CreditCard,
       label: "البطاقات",
       items: [
-        { icon: CreditCard, label: t("nav.vouchers"), path: "/vouchers" },
-        { icon: Printer, label: "طباعة البطاقات", path: "/print-cards" },
-        { icon: Package, label: t("nav.plans"), path: "/plans" },
+        { icon: CreditCard, label: "كروتي", path: "/vouchers" },
+        { icon: Printer, label: "طباعة الكروت", path: "/print-cards" },
+        { icon: Package, label: "الخطط", path: "/plans" },
       ],
     },
     {
       id: "billing",
       icon: Receipt,
-      label: "المالية",
+      label: "الفوترة",
       items: [
-        { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
-        { icon: Wallet, label: t("nav.wallet"), path: "/wallet" },
+        { icon: FileText, label: "فواتيري", path: "/invoices" },
+        { icon: Wallet, label: "محفظتي", path: "/wallet" },
+      ],
+    },
+    {
+      id: "reports",
+      icon: PieChart,
+      label: "التقارير",
+      items: [
+        { icon: BarChart3, label: "تقاريري", path: "/reports" },
       ],
     },
     {
       id: "system",
       icon: Cog,
-      label: "النظام",
+      label: "الإعدادات",
       items: [
         { icon: History, label: "سجل العمليات", path: "/audit-log" },
-        { icon: MessageSquare, label: t("nav.support"), path: "/support" },
+        { icon: MessageSquare, label: "الدعم الفني", path: "/support" },
       ],
     },
   ];
