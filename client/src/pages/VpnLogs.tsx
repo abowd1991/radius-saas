@@ -38,7 +38,7 @@ import {
   Play,
   Wifi,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import { useLocation } from "wouter";
 
@@ -60,8 +60,13 @@ export default function VpnLogs() {
   const [selectedEventType, setSelectedEventType] = useState<string>("all");
 
   // Redirect non-admin users
-  if (user?.role !== "super_admin") {
-    setLocation("/dashboard");
+  useEffect(() => {
+    if (user && user.role !== "super_admin" && user.role !== "owner") {
+      setLocation("/dashboard");
+    }
+  }, [user, setLocation]);
+
+  if (!user || (user.role !== "super_admin" && user.role !== "owner")) {
     return null;
   }
 

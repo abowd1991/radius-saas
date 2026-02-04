@@ -71,9 +71,9 @@ export async function createNas(data: {
   // Determine initial status based on connection type
   const isVpnConnection = data.connectionType === 'vpn_l2tp' || data.connectionType === 'vpn_sstp';
   
-  // For VPN connections: start with 'pending' status until provisioned
+  // For VPN connections: start with 'inactive' status until provisioned
   // This prevents FreeRADIUS from loading this NAS until it has a real IP
-  const initialStatus = isVpnConnection ? 'pending' : 'active';
+  const initialStatus = isVpnConnection ? 'inactive' : 'active';
   const initialProvisioningStatus = isVpnConnection ? 'pending' : 'ready';
   const initialNasname = isVpnConnection ? 'pending' : data.ipAddress;
   

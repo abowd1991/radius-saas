@@ -878,11 +878,11 @@ const nasRouter = router({
           });
         }
         
-        // Return NAS with pending status (will be updated when VPN connects)
+        // Return NAS with inactive status (will be updated when VPN connects)
         return {
           ...newNas,
           nasname: 'pending',
-          status: 'pending',
+          status: 'inactive',
           provisioningStatus: 'pending',
           message: 'NAS created. Connect VPN to complete provisioning.',
         };

@@ -27,12 +27,12 @@ const requireUser = t.middleware(async opts => {
 
 export const protectedProcedure = t.procedure.use(requireUser);
 
-// Super Admin only procedure
+// Super Admin only procedure (includes owner role)
 export const superAdminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.role !== 'super_admin') {
+    if (!ctx.user || (ctx.user.role !== 'super_admin' && ctx.user.role !== 'owner')) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
@@ -50,8 +50,8 @@ export const resellerProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    // Allow super_admin, reseller, and client to manage their own resources
-    if (!ctx.user || (ctx.user.role !== 'super_admin' && ctx.user.role !== 'reseller' && ctx.user.role !== 'client')) {
+    // Allow super_admin, owner, reseller, and client to manage their own resources
+    if (!ctx.user || (ctx.user.role !== 'super_admin' && ctx.user.role !== 'owner' && ctx.user.role !== 'reseller' && ctx.user.role !== 'client')) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Access denied. Client, Reseller or Admin access required." });
     }
 
@@ -80,7 +80,7 @@ export const supportProcedure = t.procedure.use(
     }
 
     // Support can access, but also allow higher roles
-    const allowedRoles = ['super_admin', 'support'];
+    const allowedRoles = ['super_admin', 'owner', 'support'];
     if (!allowedRoles.includes(ctx.user.role)) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Access denied. Support access required." });
     }
@@ -135,8 +135,8 @@ export const activeSubscriptionProcedure = t.procedure.use(
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
     }
 
-    // Super admin bypasses subscription check
-    if (ctx.user.role === 'super_admin') {
+    // Super admin and owner bypass subscription check
+    if (ctx.user.role === 'super_admin' || ctx.user.role === 'owner') {
       return next({
         ctx: {
           ...ctx,

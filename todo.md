@@ -2353,3 +2353,20 @@
 - [x] Test owner-only access control (via superAdminProcedure)
 - [x] All 8 tests passed successfully
 - [ ] Save checkpoint
+
+## Bug Fixes - Error Report 2026-02-04
+
+### Permission Errors
+- [x] Fix Error 1: Permission denied (10002) on /support page
+- [x] Fix Error 3: Access denied for Client/Reseller/Admin
+- [x] Fix Error 4: VPN connections - admin only check
+- [x] Fix Error 6: Permission denied (10002) on mutation
+- [x] Updated all procedures to support 'owner' role
+
+### SQL Query Errors
+- [x] Fix Error 2: DATE_FORMAT not compatible with TiDB (replaced with CAST(DATE()) in reportsService.ts)
+- [x] Fix Error 7: NAS insert query failed (changed 'pending' status to 'inactive' in nas.ts)
+- [x] Fix Error 8: NAS insert query failed (same fix as Error 7)
+
+### React Errors
+- [x] Fix Error 5: VpnLogs setState in render phase (wrapped in useEffect)
