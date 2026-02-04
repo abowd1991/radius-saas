@@ -109,12 +109,12 @@ export function NasHealthWidget({ data, isLoading }: NasHealthWidgetProps) {
           <h4 className="text-sm font-semibold mb-3">Top NAS by Active Sessions</h4>
           <div className="space-y-2">
             {data.topNas.slice(0, 5).map((nas, index) => (
-              <div key={nas.nasname} className="flex items-center justify-between text-sm">
+              <div key={`${nas.nasname}-${index}`} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">#{index + 1}</span>
                   <span className="font-medium">{nas.shortname || nas.nasname}</span>
                 </div>
-                <span className="font-semibold">{nas.active_sessions} sessions</span>
+                <span className="font-semibold">{Number(nas.active_sessions) || 0} sessions</span>
               </div>
             ))}
           </div>

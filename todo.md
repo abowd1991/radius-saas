@@ -2612,3 +2612,9 @@
 - [x] Fix Sessions Trend query error (acctstarttime/acctstoptime columns)
 - [x] Fix dashboardStats query error (acctstoptime column)
 - [x] Verify all Dashboard analytics load without errors
+
+## Bug Fix - Dashboard Errors Round 2 (Jan 7, 2026)
+- [x] Fix revenue query error (use DATE() and createdAt column)
+- [x] Fix React key prop warning in NasHealthWidget (added unique keys)
+- [x] Fix NaN value rendering in Dashboard components (added isNaN checks)
+- [x] Verify Dashboard loads without any errors for Owner

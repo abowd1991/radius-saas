@@ -26,6 +26,10 @@ export function RevenueTrendChart({ data, isLoading }: RevenueTrendChartProps) {
   const totalRevenue = data.reduce((sum, item) => sum + Number(item.revenue || 0), 0);
   const avgRevenue = data.length > 0 ? totalRevenue / data.length : 0;
 
+  // Handle NaN values
+  const displayTotal = isNaN(totalRevenue) ? 0 : totalRevenue;
+  const displayAvg = isNaN(avgRevenue) ? 0 : avgRevenue;
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -42,10 +46,10 @@ export function RevenueTrendChart({ data, isLoading }: RevenueTrendChartProps) {
         <div className="text-right">
           <div className="flex items-center gap-2 text-2xl font-bold">
             <DollarSign className="h-6 w-6 text-green-600" />
-            {totalRevenue.toFixed(2)}
+            ${displayTotal.toFixed(2)}
           </div>
           <p className="text-sm text-muted-foreground">
-            Avg: ${avgRevenue.toFixed(2)}/day
+            Avg: ${displayAvg.toFixed(2)}/day
           </p>
         </div>
       </div>

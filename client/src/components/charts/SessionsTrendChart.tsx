@@ -27,6 +27,10 @@ export function SessionsTrendChart({ data, isLoading }: SessionsTrendChartProps)
   const totalSessions = data.reduce((sum, item) => sum + Number(item.total_sessions || 0), 0);
   const totalUsers = data.reduce((sum, item) => sum + Number(item.unique_users || 0), 0);
 
+  // Handle NaN values
+  const displaySessions = isNaN(totalSessions) ? 0 : totalSessions;
+  const displayUsers = isNaN(totalUsers) ? 0 : totalUsers;
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -43,10 +47,10 @@ export function SessionsTrendChart({ data, isLoading }: SessionsTrendChartProps)
         <div className="text-right">
           <div className="flex items-center gap-2 text-2xl font-bold">
             <Users className="h-6 w-6 text-blue-600" />
-            {totalSessions}
+            {displaySessions}
           </div>
           <p className="text-sm text-muted-foreground">
-            {totalUsers} unique users
+            {displayUsers} unique users
           </p>
         </div>
       </div>

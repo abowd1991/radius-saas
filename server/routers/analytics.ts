@@ -22,17 +22,21 @@ const analyticsRouter = router({
         ? '1=1'
         : `user_id = ${ctx.user.id}`;
 
+      const userCondition = ctx.user.role === 'super_admin' || ctx.user.role === 'owner'
+        ? '1=1'
+        : `userId = ${ctx.user.id}`;
+
       const result = await db.execute(sql.raw(`
         SELECT 
-          DATE_FORMAT(created_at, '%Y-%m-%d') as date,
-          SUM(amount) as revenue,
+          DATE(createdAt) as date,
+          SUM(total) as revenue,
           COUNT(*) as transaction_count
         FROM invoices
-        WHERE created_at >= '${startDate.toISOString()}'
-          AND created_at <= '${endDate.toISOString()}'
+        WHERE createdAt >= '${startDate.toISOString()}'
+          AND createdAt <= '${endDate.toISOString()}'
           AND status = 'paid'
-          AND ${ownerCondition}
-        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+          AND ${userCondition}
+        GROUP BY DATE(createdAt)
         ORDER BY date ASC
       `));
 
