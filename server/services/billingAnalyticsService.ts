@@ -235,14 +235,14 @@ export async function getRevenueHistory(days: number = 30): Promise<RevenueDataP
   const result = await db.execute(
     sql`
       SELECT 
-        DATE(createdAt) as date,
+        DATE_FORMAT(createdAt, '%Y-%m-%d') as date,
         SUM(CAST(amount AS DECIMAL(10,2))) as revenue
       FROM wallet_ledger
       WHERE type = 'debit' 
         AND entityType = 'billing'
         AND createdAt >= ${startDate}
-      GROUP BY DATE(createdAt)
-      ORDER BY DATE(createdAt)
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m-%d')
+      ORDER BY DATE_FORMAT(createdAt, '%Y-%m-%d')
     `
   );
 

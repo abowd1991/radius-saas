@@ -65,7 +65,7 @@ export async function getRevenueReport(
 
   const revenueByPeriod = await db
     .select({
-      date: sql<string>`CAST(DATE(${transactions.createdAt}) AS CHAR)`,
+      date: sql<string>`DATE_FORMAT(${transactions.createdAt}, '%Y-%m-%d')`,
       revenue: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
       transactions: count(),
     })
@@ -80,8 +80,8 @@ export async function getRevenueReport(
         sql`${transactions.type} = 'deposit'`
       )
     )
-    .groupBy(sql`DATE(${transactions.createdAt})`)
-    .orderBy(asc(sql`DATE(${transactions.createdAt})`));
+    .groupBy(sql`DATE_FORMAT(${transactions.createdAt}, '%Y-%m-%d')`)
+    .orderBy(asc(sql`DATE_FORMAT(${transactions.createdAt}, '%Y-%m-%d')`));
 
   // Get revenue by client (for super admin - show all clients)
   const revenueByClient = await db
@@ -170,7 +170,7 @@ export async function getSubscribersReport(
   // Get subscriber growth over time
   const subscriberGrowth = await db
     .select({
-      date: sql<string>`CAST(DATE(${tenantSubscriptions.createdAt}) AS CHAR)`,
+      date: sql<string>`DATE_FORMAT(${tenantSubscriptions.createdAt}, '%Y-%m-%d')`,
       count: count(),
     })
     .from(tenantSubscriptions)
@@ -180,8 +180,8 @@ export async function getSubscribersReport(
         lte(tenantSubscriptions.createdAt, endDate)
       )
     )
-    .groupBy(sql`DATE(${tenantSubscriptions.createdAt})`)
-    .orderBy(asc(sql`DATE(${tenantSubscriptions.createdAt})`));
+    .groupBy(sql`DATE_FORMAT(${tenantSubscriptions.createdAt}, '%Y-%m-%d')`)
+    .orderBy(asc(sql`DATE_FORMAT(${tenantSubscriptions.createdAt}, '%Y-%m-%d')`));
 
   return {
     totalSubscribers: Object.values(statusMap).reduce((a, b) => a + b, 0),
@@ -347,7 +347,7 @@ export async function getSessionsReport(
   // Get sessions by day
   const sessionsByDay = await db
     .select({
-      date: sql<string>`CAST(DATE(${radacct.acctstarttime}) AS CHAR)`,
+      date: sql<string>`DATE_FORMAT(${radacct.acctstarttime}, '%Y-%m-%d')`,
       count: count(),
       duration: sql<number>`COALESCE(SUM(${radacct.acctsessiontime}), 0)`,
     })
@@ -360,8 +360,8 @@ export async function getSessionsReport(
         lte(radacct.acctstarttime, endDate)
       )
     )
-    .groupBy(sql`DATE(${radacct.acctstarttime})`)
-    .orderBy(asc(sql`DATE(${radacct.acctstarttime})`));
+    .groupBy(sql`DATE_FORMAT(${radacct.acctstarttime}, '%Y-%m-%d')`)
+    .orderBy(asc(sql`DATE_FORMAT(${radacct.acctstarttime}, '%Y-%m-%d')`));
 
   // Get sessions by NAS
   const sessionsByNas = await db
@@ -627,7 +627,7 @@ export async function getUsageReport(
   // Get daily usage
   const dailyUsage = await db
     .select({
-      date: sql<string>`CAST(DATE(${radacct.acctstarttime}) AS CHAR)`,
+      date: sql<string>`DATE_FORMAT(${radacct.acctstarttime}, '%Y-%m-%d')`,
       sessions: count(),
       totalTime: sql<number>`COALESCE(SUM(${radacct.acctsessiontime}), 0)`,
       uniqueUsers: sql<number>`COUNT(DISTINCT ${radacct.username})`,
@@ -641,15 +641,15 @@ export async function getUsageReport(
         lte(radacct.acctstarttime, endDate)
       )
     )
-    .groupBy(sql`DATE(${radacct.acctstarttime})`)
-    .orderBy(asc(sql`DATE(${radacct.acctstarttime})`));
+    .groupBy(sql`DATE_FORMAT(${radacct.acctstarttime}, '%Y-%m-%d')`)
+    .orderBy(asc(sql`DATE_FORMAT(${radacct.acctstarttime}, '%Y-%m-%d')`));
 
   // Get weekly summary
   const weeklySummary = await db
     .select({
       weekNumber: sql<number>`WEEK(${radacct.acctstarttime}, 1)`,
-      startDate: sql<string>`CAST(DATE(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY)) AS CHAR)`,
-      endDate: sql<string>`CAST(DATE(DATE_ADD(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY), INTERVAL 6 DAY)) AS CHAR)`,
+      startDate: sql<string>`DATE_FORMAT(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY), '%Y-%m-%d')`,
+      endDate: sql<string>`DATE_FORMAT(DATE_ADD(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY), INTERVAL 6 DAY), '%Y-%m-%d')`,
       sessions: count(),
       totalTime: sql<number>`COALESCE(SUM(${radacct.acctsessiontime}), 0)`,
       uniqueUsers: sql<number>`COUNT(DISTINCT ${radacct.username})`,
@@ -665,8 +665,8 @@ export async function getUsageReport(
     )
     .groupBy(
       sql`WEEK(${radacct.acctstarttime}, 1)`,
-      sql`DATE(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY))`,
-      sql`DATE(DATE_ADD(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY), INTERVAL 6 DAY))`
+      sql`DATE_FORMAT(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY), '%Y-%m-%d')`,
+      sql`DATE_FORMAT(DATE_ADD(DATE_SUB(${radacct.acctstarttime}, INTERVAL WEEKDAY(${radacct.acctstarttime}) DAY), INTERVAL 6 DAY), '%Y-%m-%d')`
     )
     .orderBy(sql`WEEK(${radacct.acctstarttime}, 1)`);
 

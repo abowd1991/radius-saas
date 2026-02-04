@@ -29,9 +29,9 @@ import { ar } from "date-fns/locale";
 
 export default function AuditLog() {
   const [filters, setFilters] = useState({
-    action: "",
-    targetType: "",
-    result: "",
+    action: "all",
+    targetType: "all",
+    result: "all",
     startDate: "",
     endDate: "",
     limit: 50,
@@ -39,9 +39,9 @@ export default function AuditLog() {
   });
 
   const { data: logs, isLoading, refetch } = trpc.audit.list.useQuery({
-    action: filters.action || undefined,
-    targetType: filters.targetType || undefined,
-    result: filters.result as any || undefined,
+    action: filters.action === "all" ? undefined : filters.action,
+    targetType: filters.targetType === "all" ? undefined : filters.targetType,
+    result: (filters.result === "all" ? undefined : filters.result) as any,
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
     limit: filters.limit,
@@ -90,9 +90,9 @@ export default function AuditLog() {
 
   const clearFilters = () => {
     setFilters({
-      action: "",
-      targetType: "",
-      result: "",
+      action: "all",
+      targetType: "all",
+      result: "all",
       startDate: "",
       endDate: "",
       limit: 50,
@@ -194,7 +194,7 @@ export default function AuditLog() {
                 <SelectValue placeholder="نوع العملية" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">الكل</SelectItem>
+                <SelectItem value="all">الكل</SelectItem>
                 {actionTypes?.map(type => (
                   <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                 ))}
@@ -206,7 +206,7 @@ export default function AuditLog() {
                 <SelectValue placeholder="نوع الهدف" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">الكل</SelectItem>
+                <SelectItem value="all">الكل</SelectItem>
                 {targetTypes?.map(type => (
                   <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                 ))}
@@ -218,7 +218,7 @@ export default function AuditLog() {
                 <SelectValue placeholder="النتيجة" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">الكل</SelectItem>
+                <SelectItem value="all">الكل</SelectItem>
                 <SelectItem value="success">نجاح</SelectItem>
                 <SelectItem value="failure">فشل</SelectItem>
                 <SelectItem value="partial">جزئي</SelectItem>
