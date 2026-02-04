@@ -1173,3 +1173,49 @@ export type WalletLedger = typeof walletLedger.$inferSelect;
 export type InsertWalletLedger = typeof walletLedger.$inferInsert;
 
 
+
+// ============================================================================
+// FEATURE ACCESS CONTROL (Owner controls what clients can see)
+// ============================================================================
+
+export const featureAccessControl = mysqlTable("feature_access_control", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(), // Client user ID
+  // Dashboard & Monitoring
+  canViewDashboard: boolean("canViewDashboard").default(true).notNull(),
+  canViewActiveSessions: boolean("canViewActiveSessions").default(true).notNull(),
+  canViewRadiusLogs: boolean("canViewRadiusLogs").default(false).notNull(),
+  canViewNasHealth: boolean("canViewNasHealth").default(true).notNull(),
+  // Infrastructure
+  canManageNas: boolean("canManageNas").default(true).notNull(),
+  canViewVpn: boolean("canViewVpn").default(false).notNull(),
+  canManageMikrotik: boolean("canManageMikrotik").default(true).notNull(),
+  // Subscribers & Users
+  canManageSubscribers: boolean("canManageSubscribers").default(true).notNull(),
+  canViewClients: boolean("canViewClients").default(false).notNull(), // For resellers
+  // Access Control
+  canManagePlans: boolean("canManagePlans").default(true).notNull(),
+  canAccessRadiusControl: boolean("canAccessRadiusControl").default(false).notNull(),
+  // Cards & Vouchers
+  canManageCards: boolean("canManageCards").default(true).notNull(),
+  canPrintCards: boolean("canPrintCards").default(true).notNull(),
+  // Billing & Financial
+  canViewWallet: boolean("canViewWallet").default(true).notNull(),
+  canViewInvoices: boolean("canViewInvoices").default(true).notNull(),
+  canViewSubscriptions: boolean("canViewSubscriptions").default(true).notNull(),
+  canViewBillingDashboard: boolean("canViewBillingDashboard").default(false).notNull(),
+  canViewSaasPlans: boolean("canViewSaasPlans").default(false).notNull(),
+  // Reports & Analytics
+  canViewReports: boolean("canViewReports").default(true).notNull(),
+  canViewBandwidthAnalytics: boolean("canViewBandwidthAnalytics").default(true).notNull(),
+  // System
+  canViewSettings: boolean("canViewSettings").default(true).notNull(),
+  canViewAuditLog: boolean("canViewAuditLog").default(false).notNull(),
+  canAccessSupport: boolean("canAccessSupport").default(true).notNull(),
+  canManageSms: boolean("canManageSms").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FeatureAccessControl = typeof featureAccessControl.$inferSelect;
+export type InsertFeatureAccessControl = typeof featureAccessControl.$inferInsert;

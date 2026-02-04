@@ -39,6 +39,7 @@ import UsersManagement from "./pages/UsersManagement";
 import SmsManagement from "./pages/SmsManagement";
 import RadiusControlPanel from "./pages/RadiusControlPanel";
 import SystemAdmin from "./pages/SystemAdmin";
+import FeatureAccessControl from "./pages/FeatureAccessControl";
 import WalletLedger from "./pages/WalletLedger";
 import OwnerBillingDashboard from "./pages/OwnerBillingDashboard";
 import { Redirect } from "wouter";
@@ -169,6 +170,11 @@ function Router() {
       <Route path="/system-admin">
         <DashboardLayout>
           <SystemAdmin />
+        </DashboardLayout>
+      </Route>
+      <Route path="/feature-access">
+        <DashboardLayout>
+          <FeatureAccessControl />
         </DashboardLayout>
       </Route>
       <Route path="/client-management">

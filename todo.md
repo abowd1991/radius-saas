@@ -2459,3 +2459,31 @@
 - [ ] تطبيق Role-Based Access في القوائم
 - [ ] عزل البيانات حسب الدور (Owner/Client/Reseller)
 - [ ] اختبار الصلاحيات لكل دور
+
+
+## Dashboard Refactoring & Enhancement (Feb 4, 2026)
+
+### المرحلة 1: إعادة هيكلة القوائم بأسماء عالمية
+- [x] تحليل القوائم الحالية في DashboardLayout
+- [x] تصميم هيكل القوائم الجديد (Monitoring, Infrastructure, Users & Clients, etc.)
+- [x] تطبيق القوائم الجديدة في DashboardLayout
+- [x] تحديث Owner/Client/Reseller menus
+- [x] اختبار التنقل بين الصفحات
+
+### المرحلة 2: تحسين UI/UX للوحة التحكم
+- [x] تحسين Typography و Spacing العام (index.css)
+- [x] تطوير تصميم الجداول (table.tsx - increased row height, sticky headers)
+- [x] إنشاء FilterBar component للبحث والفلترة
+- [x] إنشاء EmptyState component
+- [x] إنشاء LoadingSkeleton components
+- [ ] تطبيق التحسينات على صفحات رئيسية
+- [ ] تحسين Mobile Responsive
+
+### المرحلة 3: نظام الصلاحيات + Feature Access Control
+- [x] إنشاء جدول feature_access_control في schema
+- [x] إنشاء featureAccess router في backend (getUserPermissions, updatePermissions, listClientsWithPermissions)
+- [x] إنشاء صفحة Feature Access Control للـ Owner
+- [x] إضافة route /feature-access في App.tsx
+- [x] إضافة قائمة "التحكم بالصلاحيات" في System menu
+- [x] كتابة tests (5 tests passed)
+- [ ] تطبيق middleware للتحكم بعرض القوائم ديناميكياً

@@ -34,6 +34,7 @@ import * as multiChannelNotification from "./services/multiChannelNotificationSe
 import * as tweetsmsService from "./services/tweetsmsService";
 import * as smsDb from "./db/sms";
 import * as twoPhaseProvisioning from "./services/twoPhaseProvisioningService";
+import { featureAccessRouter } from "./routers/featureAccess";
 
 // ============================================================================
 // AUTH ROUTER
@@ -5645,6 +5646,7 @@ export const appRouter = router({
   diagnostics: diagnosticsRouter,
   radius: radiusControlRouter,
   vpsManagement: vpsManagementRouter,
+  featureAccess: featureAccessRouter,
 });
 
 export type AppRouter = typeof appRouter;
