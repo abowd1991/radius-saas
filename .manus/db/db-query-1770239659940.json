@@ -1,0 +1,29 @@
+{
+  "query": "\n-- التحقق من جميع المستخدمين وأدوارهم\nSELECT \n  id, \n  username, \n  email,\n  role,\n  accountStatus,\n  subscriptionEndDate\nFROM users \nORDER BY id;\n\n-- التحقق من NAS وowner\nSELECT \n  id,\n  ownerId,\n  nasname,\n  status,\n  provisioningStatus\nFROM nas;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- التحقق من جميع المستخدمين وأدوارهم\nSELECT \n  id, \n  username, \n  email,\n  role,\n  accountStatus,\n  subscriptionEndDate\nFROM users \nORDER BY id;\n\n-- التحقق من NAS وowner\nSELECT \n  id,\n  ownerId,\n  nasname,\n  status,\n  provisioningStatus\nFROM nas;\n",
+  "rows": [
+    {
+      "id": "1",
+      "username": "admin",
+      "email": "admin@radius-pro.com",
+      "role": "owner",
+      "accountStatus": "active",
+      "subscriptionEndDate": "2036-02-04 21:11:12"
+    },
+    {
+      "id": "2",
+      "username": "NULL",
+      "email": "abowd19911@gmail.com",
+      "role": "client",
+      "accountStatus": "trial",
+      "subscriptionEndDate": "NULL"
+    }
+  ],
+  "messages": [
+    "id\townerId\tnasname\tstatus\tprovisioningStatus",
+    "1\t1\t192.168.30.10\tactive\tready"
+  ],
+  "stdout": "id\tusername\temail\trole\taccountStatus\tsubscriptionEndDate\n1\tadmin\tadmin@radius-pro.com\towner\tactive\t2036-02-04 21:11:12\n2\tNULL\tabowd19911@gmail.com\tclient\ttrial\tNULL\nid\townerId\tnasname\tstatus\tprovisioningStatus\n1\t1\t192.168.30.10\tactive\tready\n",
+  "stderr": "",
+  "execution_time_ms": 404
+}

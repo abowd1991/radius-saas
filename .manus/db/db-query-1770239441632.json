@@ -1,0 +1,20 @@
+{
+  "query": "\nSELECT \n  id, \n  username, \n  email,\n  role,\n  accountStatus, \n  trialEndDate, \n  subscriptionEndDate,\n  CASE \n    WHEN accountStatus = 'trial' AND trialEndDate < NOW() THEN 'EXPIRED_TRIAL'\n    WHEN accountStatus = 'active' AND subscriptionEndDate < NOW() THEN 'EXPIRED_SUBSCRIPTION'\n    ELSE 'VALID'\n  END as check_status\nFROM users \nWHERE email = 'admin@radius-pro.com' OR username = 'admin';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \nSELECT \n  id, \n  username, \n  email,\n  role,\n  accountStatus, \n  trialEndDate, \n  subscriptionEndDate,\n  CASE \n    WHEN accountStatus = 'trial' AND trialEndDate < NOW() THEN 'EXPIRED_TRIAL'\n    WHEN accountStatus = 'active' AND subscriptionEndDate < NOW() THEN 'EXPIRED_SUBSCRIPTION'\n    ELSE 'VALID'\n  END as check_status\nFROM users \nWHERE email = 'admin@radius-pro.com' OR username = 'admin';\n",
+  "rows": [
+    {
+      "id": "1",
+      "username": "admin",
+      "email": "admin@radius-pro.com",
+      "role": "owner",
+      "accountStatus": "active",
+      "trialEndDate": "NULL",
+      "subscriptionEndDate": "2036-02-03 23:09:20",
+      "check_status": "VALID"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\temail\trole\taccountStatus\ttrialEndDate\tsubscriptionEndDate\tcheck_status\n1\tadmin\tadmin@radius-pro.com\towner\tactive\tNULL\t2036-02-03 23:09:20\tVALID\n",
+  "stderr": "",
+  "execution_time_ms": 353
+}

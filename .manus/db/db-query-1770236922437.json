@@ -1,0 +1,23 @@
+{
+  "query": "SELECT id, nasname, shortname, connectionType, status, provisioningStatus, vpnTunnelIp, allocatedIp, vpnUsername, createdAt, updatedAt FROM nas ORDER BY id DESC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, connectionType, status, provisioningStatus, vpnTunnelIp, allocatedIp, vpnUsername, createdAt, updatedAt FROM nas ORDER BY id DESC LIMIT 20;",
+  "rows": [
+    {
+      "id": "1",
+      "nasname": "192.168.30.10",
+      "shortname": "80174",
+      "connectionType": "vpn_l2tp",
+      "status": "inactive",
+      "provisioningStatus": "ready",
+      "vpnTunnelIp": "NULL",
+      "allocatedIp": "192.168.30.10",
+      "vpnUsername": "80174-ml8g62dd",
+      "createdAt": "2026-02-04 19:55:26",
+      "updatedAt": "2026-02-04 20:08:55"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tconnectionType\tstatus\tprovisioningStatus\tvpnTunnelIp\tallocatedIp\tvpnUsername\tcreatedAt\tupdatedAt\n1\t192.168.30.10\t80174\tvpn_l2tp\tinactive\tready\tNULL\t192.168.30.10\t80174-ml8g62dd\t2026-02-04 19:55:26\t2026-02-04 20:08:55\n",
+  "stderr": "",
+  "execution_time_ms": 396
+}

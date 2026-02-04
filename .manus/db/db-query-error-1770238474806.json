@@ -1,0 +1,8 @@
+{
+  "query": "\n-- إضافة NAS مؤقت\nINSERT INTO nas (nasname, shortname, secret, type, ports, description, status) \nVALUES ('127.0.1.1', 'localhost-test', '102030', 'other', 1812, 'Temporary test NAS', 'active');\n\n-- التحقق\nSELECT id, nasname, shortname, secret, status FROM nas WHERE nasname IN ('127.0.1.1', '192.168.30.10');\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- إضافة NAS مؤقت\nINSERT INTO nas (nasname, shortname, secret, type, ports, description, status) \nVALUES ('127.0.1.1', 'localhost-test', '102030', 'other', 1812, 'Temporary test NAS', 'active');\n\n-- التحقق\nSELECT id, nasname, shortname, secret, status FROM nas WHERE nasname IN ('127.0.1.1', '192.168.30.10');\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1364 (HY000) at line 3: Field 'ownerId' doesn't have a default value"
+  ]
+}

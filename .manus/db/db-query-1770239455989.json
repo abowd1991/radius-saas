@@ -1,0 +1,22 @@
+{
+  "query": "\n-- الحصول على ID وتفاصيل admin (TiDB compatible)\nSELECT \n  id, \n  username, \n  email,\n  role,\n  accountStatus, \n  trialEndDate,\n  subscriptionEndDate\nFROM users \nWHERE email = 'admin@radius-pro.com' OR username = 'admin'\nLIMIT 1;\n\n-- فحص NAS الخاص بهذا المستخدم\nSELECT id, ownerId, nasname, status, provisioningStatus \nFROM nas \nLIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- الحصول على ID وتفاصيل admin (TiDB compatible)\nSELECT \n  id, \n  username, \n  email,\n  role,\n  accountStatus, \n  trialEndDate,\n  subscriptionEndDate\nFROM users \nWHERE email = 'admin@radius-pro.com' OR username = 'admin'\nLIMIT 1;\n\n-- فحص NAS الخاص بهذا المستخدم\nSELECT id, ownerId, nasname, status, provisioningStatus \nFROM nas \nLIMIT 5;\n",
+  "rows": [
+    {
+      "id": "1",
+      "username": "admin",
+      "email": "admin@radius-pro.com",
+      "role": "owner",
+      "accountStatus": "active",
+      "trialEndDate": "NULL",
+      "subscriptionEndDate": "2036-02-03 23:09:20"
+    }
+  ],
+  "messages": [
+    "id\townerId\tnasname\tstatus\tprovisioningStatus",
+    "1\t1\t192.168.30.10\tactive\tready"
+  ],
+  "stdout": "id\tusername\temail\trole\taccountStatus\ttrialEndDate\tsubscriptionEndDate\n1\tadmin\tadmin@radius-pro.com\towner\tactive\tNULL\t2036-02-03 23:09:20\nid\townerId\tnasname\tstatus\tprovisioningStatus\n1\t1\t192.168.30.10\tactive\tready\n",
+  "stderr": "",
+  "execution_time_ms": 403
+}

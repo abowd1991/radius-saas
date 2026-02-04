@@ -1,0 +1,25 @@
+{
+  "query": "\n-- فحص NAS الحالي\nSELECT id, ownerId, nasname, shortname, secret, type, status, provisioningStatus, allocatedIp, createdAt \nFROM nas \nORDER BY id;\n\n-- فحص VPN connections\nSELECT id, nasId, connectionType, status, localVpnIp, serverIp, createdAt \nFROM vpn_connections \nORDER BY id;\n\n-- فحص عدد pending NAS\nSELECT COUNT(*) as pending_count \nFROM nas \nWHERE provisioningStatus = 'pending';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- فحص NAS الحالي\nSELECT id, ownerId, nasname, shortname, secret, type, status, provisioningStatus, allocatedIp, createdAt \nFROM nas \nORDER BY id;\n\n-- فحص VPN connections\nSELECT id, nasId, connectionType, status, localVpnIp, serverIp, createdAt \nFROM vpn_connections \nORDER BY id;\n\n-- فحص عدد pending NAS\nSELECT COUNT(*) as pending_count \nFROM nas \nWHERE provisioningStatus = 'pending';\n",
+  "rows": [
+    {
+      "id": "1",
+      "ownerId": "1",
+      "nasname": "192.168.30.10",
+      "shortname": "80174",
+      "secret": "102030",
+      "type": "mikrotik",
+      "status": "active",
+      "provisioningStatus": "ready",
+      "allocatedIp": "192.168.30.10",
+      "createdAt": "2026-02-04 19:55:26"
+    }
+  ],
+  "messages": [
+    "pending_count",
+    "0"
+  ],
+  "stdout": "id\townerId\tnasname\tshortname\tsecret\ttype\tstatus\tprovisioningStatus\tallocatedIp\tcreatedAt\n1\t1\t192.168.30.10\t80174\t102030\tmikrotik\tactive\tready\t192.168.30.10\t2026-02-04 19:55:26\npending_count\n0\n",
+  "stderr": "",
+  "execution_time_ms": 441
+}

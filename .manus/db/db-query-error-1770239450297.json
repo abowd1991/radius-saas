@@ -1,0 +1,11 @@
+{
+  "query": "\n-- الحصول على ID وتفاصيل admin\nSELECT \n  id, \n  username, \n  email,\n  role,\n  accountStatus, \n  DATE_FORMAT(trialEndDate, '%Y-%m-%d %H:%i:%s') as trialEndDate,\n  DATE_FORMAT(subscriptionEndDate, '%Y-%m-%d %H:%i:%s') as subscriptionEndDate,\n  DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s') as current_time\nFROM users \nWHERE email = 'admin@radius-pro.com' OR username = 'admin'\nLIMIT 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- الحصول على ID وتفاصيل admin\nSELECT \n  id, \n  username, \n  email,\n  role,\n  accountStatus, \n  DATE_FORMAT(trialEndDate, '%Y-%m-%d %H:%i:%s') as trialEndDate,\n  DATE_FORMAT(subscriptionEndDate, '%Y-%m-%d %H:%i:%s') as subscriptionEndDate,\n  DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s') as current_time\nFROM users \nWHERE email = 'admin@radius-pro.com' OR username = 'admin'\nLIMIT 1;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 3: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 9 column 58 near \"current_time",
+    "FROM users ",
+    "WHERE email = 'admin@radius-pro.com' OR username = 'admin'",
+    "LIMIT 1\""
+  ]
+}

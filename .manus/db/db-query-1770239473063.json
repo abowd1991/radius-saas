@@ -1,0 +1,18 @@
+{
+  "query": "\n-- الحل 1: تحديث حساب Owner (ID=1) - اشتراك دائم\nUPDATE users \nSET \n  accountStatus = 'active',\n  subscriptionEndDate = DATE_ADD(NOW(), INTERVAL 10 YEAR)\nWHERE id = 1;\n\n-- التحقق من التحديث\nSELECT \n  id, \n  username, \n  email,\n  role,\n  accountStatus, \n  subscriptionEndDate\nFROM users \nWHERE id = 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- الحل 1: تحديث حساب Owner (ID=1) - اشتراك دائم\nUPDATE users \nSET \n  accountStatus = 'active',\n  subscriptionEndDate = DATE_ADD(NOW(), INTERVAL 10 YEAR)\nWHERE id = 1;\n\n-- التحقق من التحديث\nSELECT \n  id, \n  username, \n  email,\n  role,\n  accountStatus, \n  subscriptionEndDate\nFROM users \nWHERE id = 1;\n",
+  "rows": [
+    {
+      "id": "1",
+      "username": "admin",
+      "email": "admin@radius-pro.com",
+      "role": "owner",
+      "accountStatus": "active",
+      "subscriptionEndDate": "2036-02-04 21:11:12"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\temail\trole\taccountStatus\tsubscriptionEndDate\n1\tadmin\tadmin@radius-pro.com\towner\tactive\t2036-02-04 21:11:12\n",
+  "stderr": "",
+  "execution_time_ms": 399
+}

@@ -1,0 +1,41 @@
+{
+  "query": "SELECT * FROM nas ORDER BY id DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT * FROM nas ORDER BY id DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "nasname": "192.168.30.10",
+      "shortname": "80174",
+      "type": "mikrotik",
+      "ports": "NULL",
+      "secret": "102030",
+      "server": "NULL",
+      "community": "NULL",
+      "description": "NULL",
+      "location": "NULL",
+      "mikrotikApiPort": "8728",
+      "mikrotikApiUser": "NULL",
+      "mikrotikApiPassword": "NULL",
+      "status": "inactive",
+      "lastSeen": "NULL",
+      "createdAt": "2026-02-04 19:55:26",
+      "updatedAt": "2026-02-04 20:08:55",
+      "connectionType": "vpn_l2tp",
+      "vpnUsername": "80174-ml8g62dd",
+      "vpnPassword": "023f1v65u2uwjgafo199col",
+      "vpnTunnelIp": "NULL",
+      "ownerId": "1",
+      "apiEnabled": "0",
+      "provisioningStatus": "ready",
+      "allocatedIp": "192.168.30.10",
+      "lastTempIp": "192.168.30.10",
+      "lastMac": "ca:cd:e6:1b:e7:64",
+      "provisionedAt": "2026-02-04 20:08:55",
+      "provisioningError": "Failed to provision after 60 attempts"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\ttype\tports\tsecret\tserver\tcommunity\tdescription\tlocation\tmikrotikApiPort\tmikrotikApiUser\tmikrotikApiPassword\tstatus\tlastSeen\tcreatedAt\tupdatedAt\tconnectionType\tvpnUsername\tvpnPassword\tvpnTunnelIp\townerId\tapiEnabled\tprovisioningStatus\tallocatedIp\tlastTempIp\tlastMac\tprovisionedAt\tprovisioningError\n1\t192.168.30.10\t80174\tmikrotik\tNULL\t102030\tNULL\tNULL\tNULL\tNULL\t8728\tNULL\tNULL\tinactive\tNULL\t2026-02-04 19:55:26\t2026-02-04 20:08:55\tvpn_l2tp\t80174-ml8g62dd\t023f1v65u2uwjgafo199col\tNULL\t1\t0\tready\t192.168.30.10\t192.168.30.10\tca:cd:e6:1b:e7:64\t2026-02-04 20:08:55\tFailed to provision after 60 attempts\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}

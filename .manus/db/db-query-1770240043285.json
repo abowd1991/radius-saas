@@ -1,0 +1,38 @@
+{
+  "query": "\n-- الاختبار النهائي: هل NAS لا يزال active؟\nSELECT \n  id, \n  nasname, \n  status, \n  provisioningStatus,\n  updatedAt \nFROM nas \nORDER BY updatedAt DESC \nLIMIT 5;\n\n-- فحص آخر تحديث للمستخدم\nSELECT \n  id,\n  username,\n  role,\n  accountStatus,\n  updatedAt\nFROM users\nORDER BY updatedAt DESC\nLIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- الاختبار النهائي: هل NAS لا يزال active؟\nSELECT \n  id, \n  nasname, \n  status, \n  provisioningStatus,\n  updatedAt \nFROM nas \nORDER BY updatedAt DESC \nLIMIT 5;\n\n-- فحص آخر تحديث للمستخدم\nSELECT \n  id,\n  username,\n  role,\n  accountStatus,\n  updatedAt\nFROM users\nORDER BY updatedAt DESC\nLIMIT 5;\n",
+  "rows": [
+    {
+      "id": "1",
+      "nasname": "192.168.30.10",
+      "status": "active",
+      "provisioningStatus": "ready",
+      "updatedAt": "2026-02-04 20:35:48"
+    },
+    {
+      "id": "id",
+      "nasname": "username",
+      "status": "role",
+      "provisioningStatus": "accountStatus",
+      "updatedAt": "updatedAt"
+    },
+    {
+      "id": "2",
+      "nasname": "NULL",
+      "status": "client",
+      "provisioningStatus": "trial",
+      "updatedAt": "2026-02-04 21:12:03"
+    },
+    {
+      "id": "1",
+      "nasname": "admin",
+      "status": "owner",
+      "provisioningStatus": "active",
+      "updatedAt": "2026-02-04 21:11:12"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tstatus\tprovisioningStatus\tupdatedAt\n1\t192.168.30.10\tactive\tready\t2026-02-04 20:35:48\nid\tusername\trole\taccountStatus\tupdatedAt\n2\tNULL\tclient\ttrial\t2026-02-04 21:12:03\n1\tadmin\towner\tactive\t2026-02-04 21:11:12\n",
+  "stderr": "",
+  "execution_time_ms": 392
+}

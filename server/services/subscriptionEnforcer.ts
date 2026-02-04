@@ -7,7 +7,7 @@
  * 3. Update account status to 'expired'
  */
 
-import { eq, and, lt } from "drizzle-orm";
+import { eq, and, lt, ne } from "drizzle-orm";
 import { getDb } from "../db";
 import { users, nasDevices } from "../../drizzle/schema";
 
@@ -34,12 +34,14 @@ export async function checkExpiredAccounts(): Promise<{
 
   try {
     // 1. Find users with expired trials (accountStatus = 'trial' AND trialEndDate < now)
+    // EXCLUDE Owner role - system accounts should never be disabled
     const expiredTrialUsers = await db
       .select({ id: users.id, username: users.username })
       .from(users)
       .where(and(
         eq(users.accountStatus, "trial"),
-        lt(users.trialEndDate, now)
+        lt(users.trialEndDate, now),
+        ne(users.role, "owner") // Exclude Owner from enforcement
       ));
 
     for (const user of expiredTrialUsers) {
@@ -69,12 +71,14 @@ export async function checkExpiredAccounts(): Promise<{
     }
 
     // 2. Find users with expired subscriptions (accountStatus = 'active' AND subscriptionEndDate < now)
+    // EXCLUDE Owner role - system accounts should never be disabled
     const expiredSubUsers = await db
       .select({ id: users.id, username: users.username })
       .from(users)
       .where(and(
         eq(users.accountStatus, "active"),
-        lt(users.subscriptionEndDate, now)
+        lt(users.subscriptionEndDate, now),
+        ne(users.role, "owner") // Exclude Owner from enforcement
       ));
 
     for (const user of expiredSubUsers) {

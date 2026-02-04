@@ -1,0 +1,10 @@
+{
+  "query": "\n-- فحص NAS الحالي\nSELECT id, ownerId, nasname, shortname, secret, type, status, provisioningStatus, allocatedIp, createdAt \nFROM nas \nORDER BY id;\n\n-- فحص VPN connections\nSELECT id, userId, vpnUsername, vpnPassword, serverIp, allocatedIp, status, createdAt \nFROM vpn_connections \nORDER BY id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- فحص NAS الحالي\nSELECT id, ownerId, nasname, shortname, secret, type, status, provisioningStatus, allocatedIp, createdAt \nFROM nas \nORDER BY id;\n\n-- فحص VPN connections\nSELECT id, userId, vpnUsername, vpnPassword, serverIp, allocatedIp, status, createdAt \nFROM vpn_connections \nORDER BY id;\n",
+  "returncode": 1,
+  "logs": [
+    "id\townerId\tnasname\tshortname\tsecret\ttype\tstatus\tprovisioningStatus\tallocatedIp\tcreatedAt",
+    "1\t1\t192.168.30.10\t80174\t102030\tmikrotik\tactive\tready\t192.168.30.10\t2026-02-04 19:55:26",
+    "ERROR 1054 (42S22) at line 8: Unknown column 'userid' in 'field list'"
+  ]
+}

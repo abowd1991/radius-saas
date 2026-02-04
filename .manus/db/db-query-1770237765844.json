@@ -1,0 +1,15 @@
+{
+  "query": "\n-- إنشاء كرت اختبار\nINSERT INTO radcheck (username, attribute, op, value) \nVALUES ('radiustest001', 'Cleartext-Password', ':=', 'test123456');\n\n-- التحقق من الإنشاء\nSELECT username, attribute, value FROM radcheck WHERE username = 'radiustest001';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- إنشاء كرت اختبار\nINSERT INTO radcheck (username, attribute, op, value) \nVALUES ('radiustest001', 'Cleartext-Password', ':=', 'test123456');\n\n-- التحقق من الإنشاء\nSELECT username, attribute, value FROM radcheck WHERE username = 'radiustest001';\n",
+  "rows": [
+    {
+      "username": "radiustest001",
+      "attribute": "Cleartext-Password",
+      "value": "test123456"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tattribute\tvalue\nradiustest001\tCleartext-Password\ttest123456\n",
+  "stderr": "",
+  "execution_time_ms": 410
+}

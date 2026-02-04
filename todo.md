@@ -2401,3 +2401,35 @@
 - [x] Fix VPN connections endpoint - added owner role support
 - [ ] Test /nas-health page with owner role
 - [ ] Save checkpoint
+
+## VPN + RADIUS Connectivity Issue (CRITICAL)
+
+### Problem
+- [ ] VPN connects successfully but RADIUS traffic doesn't reach FreeRADIUS
+- [ ] RADIUS Requests timeout (No Response)
+- [ ] Need to restore Layer-2 Bridged VPN configuration
+
+### Root Cause Analysis
+- [ ] Check current VPN configuration (SoftEther bridge)
+- [ ] Check IP allocation for new NAS devices
+- [ ] Verify nasname in DB matches actual VPN IP
+- [ ] Check if 192.168.30.0/24 subnet is used correctly
+
+### Required Configuration
+- [ ] Layer-2 Bridged VPN (not NAT/routed)
+- [ ] Subnet: 192.168.30.0/24
+- [ ] FreeRADIUS: 192.168.30.1
+- [ ] MikroTik gets IP from same subnet (192.168.30.x)
+- [ ] nasname in DB = VPN IP of MikroTik
+
+### Testing Checklist
+- [ ] Ping from server to MikroTik VPN IP works
+- [ ] tcpdump shows RADIUS packets (UDP 1812/1813/3799)
+- [ ] freeradius -X shows Access-Request arrival
+- [ ] Document all test results
+
+### Fixes
+- [ ] Fix NAS creation logic (VPN IP allocation)
+- [ ] Fix nasname assignment in database
+- [ ] DO NOT touch FreeRADIUS configuration (RED LINE)
+- [ ] Save checkpoint after verification

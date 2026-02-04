@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, nasname, shortname, secret, status, provisioningStatus, allocatedIp FROM nas WHERE id = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret, status, provisioningStatus, allocatedIp FROM nas WHERE id = 1;",
+  "rows": [
+    {
+      "id": "1",
+      "nasname": "192.168.30.10",
+      "shortname": "80174",
+      "secret": "102030",
+      "status": "inactive",
+      "provisioningStatus": "ready",
+      "allocatedIp": "192.168.30.10"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\tstatus\tprovisioningStatus\tallocatedIp\n1\t192.168.30.10\t80174\t102030\tinactive\tready\t192.168.30.10\n",
+  "stderr": "",
+  "execution_time_ms": 357
+}
