@@ -2445,11 +2445,13 @@
 - [ ] اختبار التنقل بين الصفحات
 
 ### المرحلة 2: تحسين UI/UX للوحة التحكم
-- [ ] تحسين Typography و Spacing العام
-- [ ] تطوير تصميم الجداول (Tables)
-- [ ] تحسين الفلترة والبحث
+- [x] تحسين Typography و Spacing العام (index.css)
+- [x] تطوير تصميم الجداول (table.tsx - increased row height, sticky headers)
+- [x] إنشاء FilterBar component للبحث والفلترة
+- [x] إنشاء EmptyState component
+- [x] إنشاء LoadingSkeleton components
+- [ ] تطبيق التحسينات على صفحات رئيسية
 - [ ] تحسين Mobile Responsive
-- [ ] تبسيط الواجهات وتقليل الازدحام
 
 ### المرحلة 3: نظام الصلاحيات + Feature Access Control
 - [ ] إنشاء جدول feature_access_control في schema
