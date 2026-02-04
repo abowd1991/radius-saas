@@ -783,6 +783,14 @@ const nasRouter = router({
       // Set ownerId to current user
       const ownerId = ctx.user.id;
       
+      // Check billing status - block if past_due
+      if (ctx.user.billingStatus === 'past_due') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot create NAS: Your account has insufficient balance. Please add credit to your wallet.',
+        });
+      }
+      
       // For VPN connections, generate unique credentials if not provided
       if (input.connectionType !== 'public_ip') {
         // Generate VPN username if not provided
@@ -2115,6 +2123,14 @@ const vouchersRouter = router({
       windowSeconds: z.number().min(0).default(0),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Check billing status - block if past_due
+      if (ctx.user.billingStatus === 'past_due') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot generate cards: Your account has insufficient balance. Please add credit to your wallet.',
+        });
+      }
+      
       return cardDb.generateCards({
         ...input,
         createdBy: ctx.user.id,
@@ -4595,8 +4611,63 @@ const subscribersRouter = router({
     }),
 });
 
+/// ============================================================================
+// BILLING ROUTER (SaaS Billing Standard)
 // ============================================================================
-// VPN CONNECTIONS ROUTER
+const billingRouter = router({
+  // Get billing summary for current user
+  getMySummary: protectedProcedure.query(async ({ ctx }) => {
+    const { getUserBillingSummary } = await import("./services/billingService");
+    return getUserBillingSummary(ctx.user.id);
+  }),
+
+  // Get billing summary for any user (owner only)
+  getUserSummary: superAdminProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const { getUserBillingSummary } = await import("./services/billingService");
+      return getUserBillingSummary(input.userId);
+    }),
+
+  // Activate billing for a user (owner only)
+  activateUser: superAdminProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const { activateUserBilling } = await import("./services/billingService");
+      const result = await activateUserBilling(input.userId, ctx.user.id);
+      if (!result.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: result.error || "Failed to activate billing" });
+      }
+      return result;
+    }),
+
+  // Process billing manually for a user (owner only)
+  processUserBilling: superAdminProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const { processUserBilling } = await import("./services/billingService");
+      const result = await processUserBilling(input.userId, ctx.user.id);
+      if (!result.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: result.error || "Billing failed" });
+      }
+      return result;
+    }),
+
+  // Get NAS billing rate
+  getBillingRate: publicProcedure.query(async () => {
+    const { getNasBillingRate } = await import("./services/billingService");
+    return { rate: await getNasBillingRate() };
+  }),
+
+  // Get users due for billing (owner only)
+  getUsersDue: superAdminProcedure.query(async () => {
+    const { getUsersDueForBilling } = await import("./services/billingService");
+    return { userIds: await getUsersDueForBilling() };
+  }),
+});
+
+// ============================================================================
+// VPS MANAGEMENT ROUTER
 // ============================================================================
 import * as vpnConnectionService from "./services/vpnConnectionService";
 
@@ -5578,6 +5649,7 @@ export const appRouter = router({
   saasPlans: saasPlansRouter,
   nas: nasRouter,
   wallet: walletRouter,
+  billing: billingRouter,
   vouchers: vouchersRouter,
   invoices: invoicesRouter,
   subscriptions: subscriptionsRouter,

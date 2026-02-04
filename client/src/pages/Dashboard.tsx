@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { BillingInfo } from "@/components/BillingInfo";
 import { AccountStatusBanner } from "@/components/AccountStatusBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,12 @@ export default function Dashboard() {
 
   // Fetch dashboard stats
   const { data: stats, isLoading, refetch } = trpc.dashboard.getStats.useQuery();
+  
+  // Fetch billing info for clients
+  const { data: billingData, isLoading: isBillingLoading } = trpc.billing.getMySummary.useQuery(
+    undefined,
+    { enabled: user?.role === 'client' }
+  );
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
@@ -361,6 +368,12 @@ export default function Dashboard() {
           {language === "ar" ? "تحديث" : "Refresh"}
         </Button>
       </div>
+
+      {/* Billing Info */}
+      <BillingInfo 
+        data={billingData || null} 
+        isLoading={isBillingLoading} 
+      />
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

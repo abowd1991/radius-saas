@@ -2231,3 +2231,50 @@
 - [x] Test wallet operations (credit/debit) - 8 tests passed
 - [ ] Test subscription management (skip - existing functionality)
 - [ ] Test invoice generation (skip - existing functionality)
+
+## SaaS Billing Standard Implementation (Per NAS - $10/month)
+
+### Phase 1: Database Schema
+- [x] Add billing_start_at to users table
+- [x] Add last_billing_at to users table
+- [x] Add next_billing_at to users table
+- [x] Add billing_status enum (active, past_due, suspended) to users table
+- [x] Add nas_billing_rate global setting (default: 10)
+- [x] Push database schema changes
+
+### Phase 2: Billing Service
+- [x] Create billingService.ts with calculateMonthlyCost()
+- [x] Implement processUserBilling() - deduct from wallet_ledger
+- [x] Implement updateBillingStatus() - set past_due when insufficient
+- [x] Implement getNextBillingDate() helper
+- [x] Implement activateUserBilling() - set billing_start_at
+- [x] Implement getUsersDueForBilling() - get users to bill
+- [x] Implement getUserBillingSummary() - client billing info
+- [x] Add billing router endpoints (5 endpoints)
+
+### Phase 3: Scheduled Job
+- [x] Create billingCronJob.ts
+- [x] Check all users every hour for billing due (30 days passed)
+- [x] Process billing for due users
+- [x] Log all billing operations to audit log
+- [x] Add to server startup in _core/index.ts
+
+### Phase 4: Access Control
+- [x] Block NAS creation when billing_status = past_due
+- [x] Block card generation when billing_status = past_due
+- [x] Add billing status check in endpoints (no middleware needed)
+- [x] DO NOT touch FreeRADIUS (existing sessions continue)
+
+### Phase 5: UI Updates
+- [x] Add billing info card to client dashboard
+- [x] Show: active NAS count, monthly cost, next billing date
+- [x] Show billing status badge
+- [x] Add billing history info (start/last/next dates)
+- [ ] Owner: add "Activate Client" button (can be done via Users Management)
+
+### Phase 6: Testing
+- [x] Write vitest for billing calculations (8 tests)
+- [x] Test automatic billing cycle
+- [x] Test past_due access restrictions
+- [x] Test billing status updates
+- [x] All 8 tests passed successfully

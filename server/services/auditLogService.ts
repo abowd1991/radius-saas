@@ -32,7 +32,12 @@ export type AuditAction =
   | 'system_rollback'
   | 'backup_create'
   | 'backup_restore'
-  | 'service_manage';
+  | 'service_manage'
+  // Billing actions
+  | 'billing_processed'
+  | 'billing_failed_insufficient_balance'
+  | 'billing_error'
+  | 'billing_activated';
 
 export type AuditResult = 'success' | 'failure' | 'partial';
 

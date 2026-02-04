@@ -13,6 +13,7 @@ import { startAlertMonitor } from "../services/alertMonitor";
 import { startSubscriptionEnforcer } from "../services/subscriptionEnforcer";
 import { startProvisioningMonitor } from "../services/provisioningService";
 import { startCentralAccounting } from "../services/centralAccountingService";
+import { startBillingCron } from "../services/billingCronJob";
 import multer from "multer";
 import { storagePut } from "../storage";
 import { sdk } from "./sdk";
@@ -151,6 +152,10 @@ async function startServer() {
     // Start central accounting service (check every minute for time/validity)
     startCentralAccounting(60000);
     console.log('[CentralAccounting] Started - syncing usage from radacct every 60 seconds');
+    
+    // Start billing cron job (check every hour for due users)
+    startBillingCron();
+    console.log('[BillingCron] Started - checking for due users every hour');
   });
 }
 
