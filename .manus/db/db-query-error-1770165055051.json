@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO system_settings (`key`, `value`, `description`, `category`, `data_type`, `is_public`) \nVALUES ('nas_daily_rate', '0.33', 'Daily billing rate per active NAS device (in USD)', 'billing', 'number', 0)\nON DUPLICATE KEY UPDATE `value` = '0.33', `description` = 'Daily billing rate per active NAS device (in USD)';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute INSERT INTO system_settings (`key`, `value`, `description`, `category`, `data_type`, `is_public`) \nVALUES ('nas_daily_rate', '0.33', 'Daily billing rate per active NAS device (in USD)', 'billing', 'number', 0)\nON DUPLICATE KEY UPDATE `value` = '0.33', `description` = 'Daily billing rate per active NAS device (in USD)';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'category' in 'field list'"
+  ]
+}

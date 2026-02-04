@@ -1,0 +1,22 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME LIKE '%billing%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME LIKE '%billing%';",
+  "rows": [
+    {
+      "COLUMN_NAME": "billingStartAt"
+    },
+    {
+      "COLUMN_NAME": "lastBillingAt"
+    },
+    {
+      "COLUMN_NAME": "nextBillingAt"
+    },
+    {
+      "COLUMN_NAME": "billingStatus"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nbillingStartAt\nlastBillingAt\nnextBillingAt\nbillingStatus\n",
+  "stderr": "",
+  "execution_time_ms": 358
+}

@@ -2278,3 +2278,43 @@
 - [x] Test past_due access restrictions
 - [x] Test billing status updates
 - [x] All 8 tests passed successfully
+
+## Daily Billing System Update (From 1st of Month)
+
+### Phase 1: Database Schema
+- [x] Add last_daily_billing_date to users table
+- [x] Add daily_billing_enabled boolean to users table
+- [x] Update nas_daily_rate system setting (0.33 per day)
+- [x] Add low_balance_notified_at to users table
+- [x] Push database schema changes
+
+### Phase 2: Billing Service Update
+- [x] Update calculateDailyCost() - $0.33 per active NAS
+- [x] Create processDailyBilling() - deduct daily cost
+- [x] Update billing to start from 1st of month
+- [x] Add checkLowBalance() - check if balance <= $2
+- [x] Rewrite billingService.ts for daily billing
+- [ ] Update billing router endpoints (backward compatible)
+
+### Phase 3: Billing Cron Job Update
+- [x] Change cron job to run daily (24 hours interval)
+- [x] Check all users with active NAS daily
+- [x] Process daily billing for users
+- [x] Check low balance and send notifications
+
+### Phase 4: Low Balance Notifications
+- [x] Integrate with notifyOwner service
+- [x] Send notification when balance <= $2
+- [x] Track last notification time (prevent spam - 24h)
+- [x] Allow repeated notifications (daily check)
+
+### Phase 5: UI Updates
+- [x] Update BillingInfo to show daily cost
+- [x] Show "Daily billing: $0.33 per NAS"
+- [x] Update billing description
+- [x] Add low balance alert banne### Phase 6: Testing
+- [x] Write vitest for daily billing (8 tests)
+- [x] Test daily cost calculation
+- [x] Test low balance notifications
+- [x] Test billing status updates
+- [x] All 8 tests passed successfully month

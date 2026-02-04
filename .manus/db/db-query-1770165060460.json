@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO system_settings (`key`, `value`, `description`) \nVALUES ('nas_daily_rate', '0.33', 'Daily billing rate per active NAS device (in USD)')\nON DUPLICATE KEY UPDATE `value` = '0.33';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute INSERT INTO system_settings (`key`, `value`, `description`) \nVALUES ('nas_daily_rate', '0.33', 'Daily billing rate per active NAS device (in USD)')\nON DUPLICATE KEY UPDATE `value` = '0.33';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 377
+}

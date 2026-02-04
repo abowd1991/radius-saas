@@ -1,52 +1,45 @@
 import { getDb } from "../db";
 import { users, nasDevices, systemSettings, walletLedger, wallets } from "../../drizzle/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, lte, isNull, or, sql } from "drizzle-orm";
 import { logAudit } from "./auditLogService";
 
 /**
- * SaaS Billing Service
+ * SaaS Daily Billing Service
  * 
  * Billing Model:
- * - $10/month per active NAS
- * - Billing cycle: every 30 days from activation date
- * - Deduct from wallet_ledger
+ * - $0.33/day per active NAS
+ * - Billing starts from 1st of month
+ * - Daily deduction when NAS is active
  * - Set billing_status = 'past_due' if insufficient balance
+ * - Low balance notification when balance ≤ $2
  */
-
-interface BillingResult {
-  success: boolean;
-  userId: number;
-  activeNasCount: number;
-  monthlyCost: number;
-  balanceBefore: number;
-  balanceAfter?: number;
-  error?: string;
-  billingDate: Date;
-}
 
 /**
- * Get NAS billing rate from system settings
+ * Get daily billing rate from system settings
  */
-export async function getNasBillingRate(): Promise<number> {
+export async function getDailyBillingRate(): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const [setting] = await db
     .select()
     .from(systemSettings)
-    .where(eq(systemSettings.key, "nas_billing_rate"));
+    .where(eq(systemSettings.key, "nas_daily_rate"));
 
-  return setting ? parseFloat(setting.value || "10") : 10;
+  return setting ? parseFloat(setting.value) : 0.33; // Default: $0.33/day
 }
 
 /**
- * Calculate monthly cost for a user based on active NAS count
+ * Calculate daily cost for a user based on active NAS count
  */
-export async function calculateMonthlyCost(userId: number): Promise<{ activeNasCount: number; monthlyCost: number }> {
+export async function calculateDailyCost(userId: number): Promise<{
+  activeNasCount: number;
+  dailyCost: number;
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Count active NAS devices owned by this user
+  // Count active NAS devices for this user
   const result = await db
     .select({ count: sql<number>`count(*)` })
     .from(nasDevices)
@@ -58,111 +51,75 @@ export async function calculateMonthlyCost(userId: number): Promise<{ activeNasC
     );
 
   const activeNasCount = Number(result[0]?.count || 0);
-  const nasBillingRate = await getNasBillingRate();
-  const monthlyCost = activeNasCount * nasBillingRate;
+  const dailyRate = await getDailyBillingRate();
+  const dailyCost = activeNasCount * dailyRate;
 
-  return { activeNasCount, monthlyCost };
+  return {
+    activeNasCount,
+    dailyCost,
+  };
 }
 
 /**
- * Get next billing date (30 days from last billing or activation)
+ * Process daily billing for a user
  */
-export function getNextBillingDate(lastBillingDate: Date): Date {
-  const nextDate = new Date(lastBillingDate);
-  nextDate.setDate(nextDate.getDate() + 30);
-  return nextDate;
-}
-
-/**
- * Check if user billing is due
- */
-export async function isBillingDue(userId: number): Promise<boolean> {
+export async function processDailyBilling(
+  userId: number,
+  actorId?: number
+): Promise<{
+  success: boolean;
+  activeNasCount?: number;
+  dailyCost?: number;
+  balanceBefore?: number;
+  balanceAfter?: number;
+  error?: string;
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-
-  const [user] = await db.select().from(users).where(eq(users.id, userId));
-  if (!user) return false;
-
-  // If no billing start date, not activated yet
-  if (!user.billingStartAt) return false;
-
-  // If never billed, check if 30 days passed since activation
-  if (!user.lastBillingAt) {
-    const daysSinceActivation = Math.floor(
-      (Date.now() - new Date(user.billingStartAt).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return daysSinceActivation >= 30;
-  }
-
-  // Check if 30 days passed since last billing
-  const daysSinceLastBilling = Math.floor(
-    (Date.now() - new Date(user.lastBillingAt).getTime()) / (1000 * 60 * 60 * 24)
-  );
-  return daysSinceLastBilling >= 30;
-}
-
-/**
- * Process billing for a user
- * - Calculate cost based on active NAS
- * - Deduct from wallet
- * - Update billing dates
- * - Set billing_status if insufficient balance
- */
-export async function processUserBilling(userId: number, actorId?: number): Promise<BillingResult> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const billingDate = new Date();
 
   try {
     // Get user
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     if (!user) {
-      return {
-        success: false,
-        userId,
-        activeNasCount: 0,
-        monthlyCost: 0,
-        balanceBefore: 0,
-        error: "User not found",
-        billingDate,
-      };
+      return { success: false, error: "User not found" };
     }
 
-    // Calculate cost
-    const { activeNasCount, monthlyCost } = await calculateMonthlyCost(userId);
+    // Check if daily billing is enabled
+    if (!user.dailyBillingEnabled) {
+      return { success: false, error: "Daily billing not enabled" };
+    }
 
-    // If no active NAS, skip billing
-    if (activeNasCount === 0) {
+    // Calculate daily cost
+    const { activeNasCount, dailyCost } = await calculateDailyCost(userId);
+
+    // Skip if no active NAS
+    if (activeNasCount === 0 || dailyCost === 0) {
+      // Update last billing date even if no charge
+      await db
+        .update(users)
+        .set({ 
+          lastDailyBillingDate: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+
       return {
         success: true,
-        userId,
         activeNasCount: 0,
-        monthlyCost: 0,
-        balanceBefore: 0,
-        balanceAfter: 0,
-        billingDate,
+        dailyCost: 0,
       };
     }
 
     // Get wallet balance
     const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId));
     if (!wallet) {
-      return {
-        success: false,
-        userId,
-        activeNasCount,
-        monthlyCost,
-        balanceBefore: 0,
-        error: "Wallet not found",
-        billingDate,
-      };
+      return { success: false, error: "Wallet not found" };
     }
 
     const balanceBefore = parseFloat(wallet.balance);
 
     // Check if sufficient balance
-    if (balanceBefore < monthlyCost) {
+    if (balanceBefore < dailyCost) {
       // Insufficient balance - set past_due status
       await db
         .update(users)
@@ -172,7 +129,6 @@ export async function processUserBilling(userId: number, actorId?: number): Prom
         })
         .where(eq(users.id, userId));
 
-      // Log audit
       await logAudit({
         userId: actorId || userId,
         userRole: "system",
@@ -183,24 +139,22 @@ export async function processUserBilling(userId: number, actorId?: number): Prom
         errorMessage: "Insufficient balance",
         details: {
           activeNasCount,
-          monthlyCost,
+          dailyCost,
           balanceBefore,
         },
       });
 
       return {
         success: false,
-        userId,
-        activeNasCount,
-        monthlyCost,
-        balanceBefore,
         error: "Insufficient balance",
-        billingDate,
+        activeNasCount,
+        dailyCost,
+        balanceBefore,
       };
     }
 
     // Deduct from wallet
-    const balanceAfter = balanceBefore - monthlyCost;
+    const balanceAfter = balanceBefore - dailyCost;
     await db
       .update(wallets)
       .set({
@@ -213,36 +167,33 @@ export async function processUserBilling(userId: number, actorId?: number): Prom
     await db.insert(walletLedger).values({
       userId,
       type: "debit",
-      amount: monthlyCost.toFixed(2),
+      amount: dailyCost.toFixed(2),
       balanceBefore: balanceBefore.toFixed(2),
       balanceAfter: balanceAfter.toFixed(2),
-      reason: `Monthly billing: ${activeNasCount} active NAS × $${await getNasBillingRate()}`,
-      reasonAr: `فوترة شهرية: ${activeNasCount} NAS نشط × $${await getNasBillingRate()}`,
+      reason: `Daily billing: ${activeNasCount} active NAS × $${(await getDailyBillingRate()).toFixed(2)}`,
+      reasonAr: `فوترة يومية: ${activeNasCount} NAS نشط × $${(await getDailyBillingRate()).toFixed(2)}`,
       entityType: "billing",
       entityId: userId,
       actorId: actorId || userId,
       actorRole: "system",
       metadata: JSON.stringify({
         activeNasCount,
-        nasBillingRate: await getNasBillingRate(),
-        billingPeriod: "30_days",
+        dailyRate: await getDailyBillingRate(),
+        billingPeriod: "daily",
       }),
-      createdAt: billingDate,
+      createdAt: new Date(),
     });
 
-    // Update user billing dates
-    const nextBillingAt = getNextBillingDate(billingDate);
+    // Update last billing date and status
     await db
       .update(users)
       .set({
-        lastBillingAt: billingDate,
-        nextBillingAt,
+        lastDailyBillingDate: new Date(),
         billingStatus: "active",
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId));
 
-    // Log audit
     await logAudit({
       userId: actorId || userId,
       userRole: "system",
@@ -252,52 +203,35 @@ export async function processUserBilling(userId: number, actorId?: number): Prom
       result: "success",
       details: {
         activeNasCount,
-        monthlyCost,
+        dailyCost,
         balanceBefore,
         balanceAfter,
-        nextBillingAt,
       },
     });
 
     return {
       success: true,
-      userId,
       activeNasCount,
-      monthlyCost,
+      dailyCost,
       balanceBefore,
       balanceAfter,
-      billingDate,
     };
   } catch (error: any) {
-    console.error("[BillingService] Error processing billing:", error);
-    
-    // Log error
-    await logAudit({
-      userId: actorId || userId,
-      userRole: "system",
-      action: "billing_error",
-      targetType: "user",
-      targetId: userId.toString(),
-      result: "failure",
-      errorMessage: error.message,
-    });
-
+    console.error("[BillingService] Error processing daily billing:", error);
     return {
       success: false,
-      userId,
-      activeNasCount: 0,
-      monthlyCost: 0,
-      balanceBefore: 0,
-      error: error.message,
-      billingDate,
+      error: error.message || "Unknown error",
     };
   }
 }
 
 /**
- * Activate billing for a user (set billing_start_at)
+ * Activate daily billing for a user (set billing_start_at to 1st of current month)
  */
-export async function activateUserBilling(userId: number, actorId: number): Promise<{ success: boolean; error?: string }> {
+export async function activateDailyBilling(
+  userId: number,
+  actorId: number
+): Promise<{ success: boolean; error?: string }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -311,14 +245,15 @@ export async function activateUserBilling(userId: number, actorId: number): Prom
       return { success: false, error: "Billing already activated" };
     }
 
+    // Set billing start to 1st of current month
     const now = new Date();
-    const nextBillingAt = getNextBillingDate(now);
+    const billingStartAt = new Date(now.getFullYear(), now.getMonth(), 1);
 
     await db
       .update(users)
       .set({
-        billingStartAt: now,
-        nextBillingAt,
+        billingStartAt,
+        dailyBillingEnabled: true,
         billingStatus: "active",
         updatedAt: new Date(),
       })
@@ -332,8 +267,7 @@ export async function activateUserBilling(userId: number, actorId: number): Prom
       targetId: userId.toString(),
       result: "success",
       details: {
-        billingStartAt: now,
-        nextBillingAt,
+        billingStartAt,
       },
     });
 
@@ -345,27 +279,27 @@ export async function activateUserBilling(userId: number, actorId: number): Prom
 }
 
 /**
- * Get all users due for billing
+ * Get users that need daily billing (haven't been billed today)
  */
-export async function getUsersDueForBilling(): Promise<number[]> {
+export async function getUsersDueForDailyBilling(): Promise<number[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  // Get users where:
-  // 1. billing_start_at is set (activated)
-  // 2. last_billing_at is null OR > 30 days ago
-  // 3. role = 'client' (only clients are billed)
   const dueUsers = await db
     .select({ id: users.id })
     .from(users)
     .where(
       and(
+        eq(users.role, "client"),
+        eq(users.dailyBillingEnabled, true),
         sql`${users.billingStartAt} IS NOT NULL`,
-        sql`${users.role} = 'client'`,
-        sql`(${users.lastBillingAt} IS NULL OR ${users.lastBillingAt} <= ${thirtyDaysAgo})`
+        or(
+          isNull(users.lastDailyBillingDate),
+          sql`DATE(${users.lastDailyBillingDate}) < DATE(${today})`
+        )
       )
     );
 
@@ -373,16 +307,15 @@ export async function getUsersDueForBilling(): Promise<number[]> {
 }
 
 /**
- * Get billing summary for a user
+ * Get user billing summary
  */
 export async function getUserBillingSummary(userId: number): Promise<{
   activeNasCount: number;
-  monthlyCost: number;
+  dailyCost: number;
   billingStatus: string;
   billingStartAt: Date | null;
-  lastBillingAt: Date | null;
-  nextBillingAt: Date | null;
-  daysUntilNextBilling: number | null;
+  lastDailyBillingDate: Date | null;
+  dailyBillingEnabled: boolean;
   currentBalance: number;
 } | null> {
   const db = await getDb();
@@ -391,26 +324,77 @@ export async function getUserBillingSummary(userId: number): Promise<{
   const [user] = await db.select().from(users).where(eq(users.id, userId));
   if (!user) return null;
 
+  const { activeNasCount, dailyCost } = await calculateDailyCost(userId);
+
+  // Get current balance
   const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId));
   const currentBalance = wallet ? parseFloat(wallet.balance) : 0;
 
-  const { activeNasCount, monthlyCost } = await calculateMonthlyCost(userId);
-
-  let daysUntilNextBilling: number | null = null;
-  if (user.nextBillingAt) {
-    const now = new Date();
-    const next = new Date(user.nextBillingAt);
-    daysUntilNextBilling = Math.ceil((next.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  }
-
   return {
     activeNasCount,
-    monthlyCost,
+    dailyCost,
     billingStatus: user.billingStatus,
     billingStartAt: user.billingStartAt,
-    lastBillingAt: user.lastBillingAt,
-    nextBillingAt: user.nextBillingAt,
-    daysUntilNextBilling,
+    lastDailyBillingDate: user.lastDailyBillingDate,
+    dailyBillingEnabled: user.dailyBillingEnabled,
     currentBalance,
   };
 }
+
+/**
+ * Check if user has low balance (≤ $2)
+ */
+export async function checkLowBalance(userId: number): Promise<{
+  isLow: boolean;
+  balance: number;
+  shouldNotify: boolean;
+}> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get current balance
+  const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId));
+  const balance = wallet ? parseFloat(wallet.balance) : 0;
+
+  const isLow = balance <= 2;
+
+  if (!isLow) {
+    return { isLow: false, balance, shouldNotify: false };
+  }
+
+  // Check if we should notify (last notification was more than 24 hours ago)
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
+  if (!user) {
+    return { isLow, balance, shouldNotify: false };
+  }
+
+  const shouldNotify =
+    !user.lowBalanceNotifiedAt ||
+    new Date().getTime() - new Date(user.lowBalanceNotifiedAt).getTime() >
+      24 * 60 * 60 * 1000; // 24 hours
+
+  return { isLow, balance, shouldNotify };
+}
+
+/**
+ * Mark user as notified for low balance
+ */
+export async function markLowBalanceNotified(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({ 
+      lowBalanceNotifiedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
+
+// Backward compatibility exports (for old monthly system)
+export const getNasBillingRate = getDailyBillingRate;
+export const calculateMonthlyCost = calculateDailyCost;
+export const processUserBilling = processDailyBilling;
+export const activateUserBilling = activateDailyBilling;
+export const getUsersDueForBilling = getUsersDueForDailyBilling;

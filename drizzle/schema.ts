@@ -24,11 +24,12 @@ export const users = mysqlTable("users", {
   subscriptionPlanId: int("subscriptionPlanId"), // Reference to saasPlans
   subscriptionStartDate: timestamp("subscriptionStartDate"),
   subscriptionEndDate: timestamp("subscriptionEndDate"),
-  // SaaS Billing (Per NAS - $10/month)
-  billingStartAt: timestamp("billingStartAt"), // When billing cycle starts
-  lastBillingAt: timestamp("lastBillingAt"), // Last billing date
-  nextBillingAt: timestamp("nextBillingAt"), // Next billing date (calculated)
+  // SaaS Billing (Daily - $0.33 per NAS per day)
+  billingStartAt: timestamp("billingStartAt"), // When billing cycle starts (1st of month)
+  lastDailyBillingDate: timestamp("lastDailyBillingDate"), // Last daily billing date
+  dailyBillingEnabled: boolean("dailyBillingEnabled").default(true).notNull(),
   billingStatus: mysqlEnum("billingStatus", ["active", "past_due", "suspended"]).default("active").notNull(),
+  lowBalanceNotifiedAt: timestamp("lowBalanceNotifiedAt"), // Last low balance notification time
   language: mysqlEnum("language", ["ar", "en"]).default("ar").notNull(),
   avatarUrl: text("avatarUrl"),
   emailVerified: boolean("emailVerified").default(false),
