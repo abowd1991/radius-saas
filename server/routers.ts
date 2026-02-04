@@ -604,37 +604,47 @@ const usersRouter = router({
       if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
       
       // Delete user's data in order (foreign key constraints)
-      // 1. Delete radcheck entries for user's cards
-      await drizzleDb.execute(
-        sql`DELETE FROM radcheck WHERE username IN (SELECT username FROM radius_cards WHERE owner_id = ${input.userId})`
+      // 1. Get usernames first (TiDB doesn't support DELETE with subquery)
+      const userCards = await drizzleDb.execute(
+        sql`SELECT username FROM radius_cards WHERE owner_id = ${input.userId}`
       );
+      const usernames = (userCards as any[]).map((card: any) => card.username);
       
-      // 2. Delete radreply entries for user's cards
-      await drizzleDb.execute(
-        sql`DELETE FROM radreply WHERE username IN (SELECT username FROM radius_cards WHERE owner_id = ${input.userId})`
-      );
+      // 2. Delete radcheck entries for user's cards
+      if (usernames.length > 0) {
+        await drizzleDb.execute(
+          sql`DELETE FROM radcheck WHERE username IN (${sql.join(usernames.map(u => sql`${u}`), sql`, `)})`
+        );
+      }
       
-      // 3. Delete user's cards
+      // 3. Delete radreply entries for user's cards
+      if (usernames.length > 0) {
+        await drizzleDb.execute(
+          sql`DELETE FROM radreply WHERE username IN (${sql.join(usernames.map(u => sql`${u}`), sql`, `)})`
+        );
+      }
+      
+      // 4. Delete user's cards
       await drizzleDb.execute(
         sql`DELETE FROM radius_cards WHERE owner_id = ${input.userId}`
       );
       
-      // 4. Delete user's NAS devices
+      // 5. Delete user's NAS devices
       await drizzleDb.execute(
         sql`DELETE FROM nas WHERE owner_id = ${input.userId}`
       );
       
-      // 5. Delete user's plans
+      // 6. Delete user's plans
       await drizzleDb.execute(
         sql`DELETE FROM plans WHERE owner_id = ${input.userId}`
       );
       
-      // 6. Delete user's audit logs
+      // 7. Delete user's audit logs
       await drizzleDb.execute(
         sql`DELETE FROM audit_logs WHERE user_id = ${input.userId}`
       );
       
-      // 7. Finally delete the user
+      // 8. Finally delete the user
       await drizzleDb.delete(users).where(eq(users.id, input.userId));
       
       console.log(`[User Delete] Super admin ${ctx.user.id} deleted user ${input.userId}`);
