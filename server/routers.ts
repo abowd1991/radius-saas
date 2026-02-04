@@ -341,8 +341,12 @@ const usersRouter = router({
         sql`UPDATE nas SET is_active = 1 WHERE owner_id = ${input.userId}`
       );
       
-      console.log(`[Client Control] Activated user ${input.userId} for ${input.durationDays} days`);
-      return { success: true, message: 'Client activated successfully' };
+      // Activate daily billing
+      const { activateDailyBilling } = await import("./services/billingService");
+      await activateDailyBilling(input.userId, input.userId);
+      
+      console.log(`[Client Control] Activated user ${input.userId} for ${input.durationDays} days with daily billing`);
+      return { success: true, message: 'Client activated successfully with billing enabled' };
     }),
 
   // Suspend client account
