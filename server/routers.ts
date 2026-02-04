@@ -4664,6 +4664,26 @@ const billingRouter = router({
     const { getUsersDueForBilling } = await import("./services/billingService");
     return { userIds: await getUsersDueForBilling() };
   }),
+
+  // Get dashboard analytics (owner only)
+  getDashboardStats: superAdminProcedure.query(async () => {
+    const { getDashboardStats } = await import("./services/billingAnalyticsService");
+    return getDashboardStats();
+  }),
+
+  // Get revenue history chart data (owner only)
+  getRevenueHistory: superAdminProcedure
+    .input(z.object({ days: z.number().optional().default(30) }))
+    .query(async ({ input }) => {
+      const { getRevenueHistory } = await import("./services/billingAnalyticsService");
+      return getRevenueHistory(input.days);
+    }),
+
+  // Get low balance clients (owner only)
+  getLowBalanceClients: superAdminProcedure.query(async () => {
+    const { getLowBalanceClients } = await import("./services/billingAnalyticsService");
+    return getLowBalanceClients();
+  }),
 });
 
 // ============================================================================

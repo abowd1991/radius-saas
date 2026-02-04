@@ -184,6 +184,7 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       icon: Receipt,
       label: "الفواتير والمالية",
       items: [
+        { icon: LayoutDashboard, label: "لوحة التحكم المالية", path: "/owner-billing" },
         { icon: FileText, label: t("nav.invoices"), path: "/invoices" },
         { icon: Wallet, label: "سجل المحفظة", path: "/wallet-ledger" },
         { icon: CreditCard, label: "خطط SaaS", path: "/saas-plans" },
