@@ -5444,66 +5444,7 @@ const vpsManagementRouter = router({
       return result.data;
     }),
 
-  // Get available versions
-  getVersions: superAdminProcedure
-    .query(async () => {
-      const result = await vpsManagementService.getVersions();
-      if (!result.success) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to get versions' });
-      }
-      return result.data;
-    }),
 
-  // Update system to latest version
-  updateSystem: superAdminProcedure
-    .mutation(async ({ ctx }) => {
-      const result = await vpsManagementService.updateSystem();
-      
-      // Log the action
-      await logAudit({
-        userId: ctx.user.id,
-        userRole: ctx.user.role,
-        action: 'system_update',
-        targetType: 'system',
-        targetId: 'vps',
-        details: result.success 
-          ? { message: `Updated from ${result.data?.old_version} to ${result.data?.new_version}` }
-          : { message: `Update failed: ${result.error}` },
-        result: result.success ? 'success' : 'failure',
-        ipAddress: '',
-      });
-      
-      if (!result.success) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Update failed' });
-      }
-      return result.data;
-    }),
-
-  // Rollback to previous version
-  rollbackSystem: superAdminProcedure
-    .input(z.object({ version: z.string().optional() }))
-    .mutation(async ({ ctx, input }) => {
-      const result = await vpsManagementService.rollbackSystem(input.version);
-      
-      // Log the action
-      await logAudit({
-        userId: ctx.user.id,
-        userRole: ctx.user.role,
-        action: 'system_rollback',
-        targetType: 'system',
-        targetId: 'vps',
-        details: result.success 
-          ? { message: `Rolled back from ${result.data?.previous_version} to ${result.data?.current_version}` }
-          : { message: `Rollback failed: ${result.error}` },
-        result: result.success ? 'success' : 'failure',
-        ipAddress: '',
-      });
-      
-      if (!result.success) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Rollback failed' });
-      }
-      return result.data;
-    }),
 
   // Get backups list
   getBackups: superAdminProcedure

@@ -8,14 +8,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   RefreshCw, 
-  Download, 
   Upload, 
-  RotateCcw, 
   Server, 
   Database, 
   Shield, 
   Activity,
-  Clock,
   HardDrive,
   AlertTriangle,
   CheckCircle2,
@@ -33,7 +30,7 @@ export default function SystemAdmin() {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
   
-  const versionsQuery = trpc.vpsManagement.getVersions.useQuery();
+
   const backupsQuery = trpc.vpsManagement.getBackups.useQuery();
   const logsQuery = trpc.vpsManagement.getServiceLogs.useQuery(
     { serviceName: selectedService, lines: 100 },
@@ -41,27 +38,6 @@ export default function SystemAdmin() {
   );
   
   // Mutations
-  const updateMutation = trpc.vpsManagement.updateSystem.useMutation({
-    onSuccess: (data) => {
-      toast.success(`تم التحديث بنجاح من ${data?.old_version} إلى ${data?.new_version}`);
-      statusQuery.refetch();
-      versionsQuery.refetch();
-    },
-    onError: (error) => {
-      toast.error(`فشل التحديث: ${error.message}`);
-    },
-  });
-  
-  const rollbackMutation = trpc.vpsManagement.rollbackSystem.useMutation({
-    onSuccess: (data) => {
-      toast.success(`تم الرجوع من ${data?.previous_version} إلى ${data?.current_version}`);
-      statusQuery.refetch();
-      versionsQuery.refetch();
-    },
-    onError: (error) => {
-      toast.error(`فشل الرجوع: ${error.message}`);
-    },
-  });
   
   const backupMutation = trpc.vpsManagement.createBackup.useMutation({
     onSuccess: (data) => {
@@ -114,8 +90,7 @@ export default function SystemAdmin() {
     return new Date(dateStr).toLocaleString('ar-SA');
   };
 
-  const isLoading = updateMutation.isPending || rollbackMutation.isPending || 
-                    backupMutation.isPending || restoreMutation.isPending || 
+  const isLoading = backupMutation.isPending || restoreMutation.isPending || 
                     serviceActionMutation.isPending;
 
   return (
@@ -240,129 +215,14 @@ export default function SystemAdmin() {
         </Card>
       )}
 
-      <Tabs defaultValue="update" className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
-          <TabsTrigger value="update">التحديث</TabsTrigger>
+      <Tabs defaultValue="backup" className="space-y-4">
+        <TabsList className="grid grid-cols-3 w-full max-w-2xl">
           <TabsTrigger value="backup">النسخ الاحتياطي</TabsTrigger>
           <TabsTrigger value="services">الخدمات</TabsTrigger>
           <TabsTrigger value="logs">السجلات</TabsTrigger>
         </TabsList>
 
-        {/* Update Tab */}
-        <TabsContent value="update" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Download className="w-5 h-5" />
-                  تحديث النظام
-                </CardTitle>
-                <CardDescription>
-                  جلب آخر التحديثات من المستودع وتطبيقها
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    سيتم إنشاء نسخة احتياطية تلقائياً قبل التحديث
-                  </AlertDescription>
-                </Alert>
-                <Button 
-                  onClick={() => updateMutation.mutate()}
-                  disabled={isLoading}
-                  className="w-full"
-                >
-                  {updateMutation.isPending ? (
-                    <><Loader2 className="w-4 h-4 ml-2 animate-spin" /> جاري التحديث...</>
-                  ) : (
-                    <><Download className="w-4 h-4 ml-2" /> تحديث الآن</>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <RotateCcw className="w-5 h-5" />
-                  الرجوع للنسخة السابقة
-                </CardTitle>
-                <CardDescription>
-                  العودة إلى الإصدار السابق في حالة وجود مشاكل
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    تحذير: سيتم الرجوع للنسخة السابقة مباشرة
-                  </AlertDescription>
-                </Alert>
-                <Button 
-                  variant="destructive"
-                  onClick={() => rollbackMutation.mutate({})}
-                  disabled={isLoading}
-                  className="w-full"
-                >
-                  {rollbackMutation.isPending ? (
-                    <><Loader2 className="w-4 h-4 ml-2 animate-spin" /> جاري الرجوع...</>
-                  ) : (
-                    <><RotateCcw className="w-4 h-4 ml-2" /> رجوع للنسخة السابقة</>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Versions List */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                سجل الإصدارات
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[300px]">
-                <div className="space-y-2">
-                  {versionsQuery.data?.versions?.map((version, index) => (
-                    <div 
-                      key={version.hash}
-                      className={`flex items-center justify-between p-3 rounded-lg border ${
-                        version.hash === versionsQuery.data?.current 
-                          ? 'bg-primary/10 border-primary/30' 
-                          : 'bg-muted/30 border-border'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Badge variant={index === 0 ? "default" : "outline"}>
-                          {version.hash}
-                        </Badge>
-                        <span className="text-sm">{version.message}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {version.date}
-                        </span>
-                        {version.hash !== versionsQuery.data?.current && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => rollbackMutation.mutate({ version: version.hash })}
-                            disabled={isLoading}
-                          >
-                            رجوع
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Backup Tab */}
         <TabsContent value="backup" className="space-y-4">
@@ -428,7 +288,7 @@ export default function SystemAdmin() {
                         }}
                         disabled={isLoading}
                       >
-                        <RotateCcw className="w-4 h-4 ml-1" />
+                        <Upload className="w-4 h-4 ml-1" />
                         استعادة
                       </Button>
                     </div>
