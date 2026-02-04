@@ -59,15 +59,15 @@ const analyticsRouter = router({
 
       const result = await db.execute(sql.raw(`
         SELECT 
-          DATE_FORMAT(start_time, '%Y-%m-%d') as date,
+          DATE_FORMAT(acctstarttime, '%Y-%m-%d') as date,
           COUNT(DISTINCT username) as unique_users,
           COUNT(*) as total_sessions,
-          SUM(TIMESTAMPDIFF(SECOND, start_time, COALESCE(stop_time, NOW()))) / 3600 as total_hours
+          SUM(TIMESTAMPDIFF(SECOND, acctstarttime, COALESCE(acctstoptime, NOW()))) / 3600 as total_hours
         FROM radacct
-        WHERE start_time >= '${startDate.toISOString()}'
-          AND start_time <= '${endDate.toISOString()}'
+        WHERE acctstarttime >= '${startDate.toISOString()}'
+          AND acctstarttime <= '${endDate.toISOString()}'
           AND ${ownerCondition}
-        GROUP BY DATE_FORMAT(start_time, '%Y-%m-%d')
+        GROUP BY DATE_FORMAT(acctstarttime, '%Y-%m-%d')
         ORDER BY date ASC
       `));
 
@@ -99,7 +99,7 @@ const analyticsRouter = router({
         n.shortname,
         COUNT(r.username) as active_sessions
       FROM nas n
-      LEFT JOIN radacct r ON r.nasipaddress = n.nasname AND r.stop_time IS NULL
+      LEFT JOIN radacct r ON r.nasipaddress = n.nasname AND r.acctstoptime IS NULL
       WHERE ${ownerCondition}
       GROUP BY n.nasname, n.shortname
       ORDER BY active_sessions DESC
@@ -145,7 +145,7 @@ const analyticsRouter = router({
     const sessionsResult = await db.execute(sql.raw(`
       SELECT COUNT(*) as active_sessions
       FROM radacct
-      WHERE stop_time IS NULL
+      WHERE acctstoptime IS NULL
         AND ${ownerCondition}
     `));
 

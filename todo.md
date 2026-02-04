@@ -2606,3 +2606,9 @@
   - [ ] Send email on backup failure
   - [ ] Send email on successful backup (optional)
   - [ ] Configure notification recipients
+
+## Bug Fix - Analytics Queries (Jan 7, 2026)
+- [x] Fix NAS Health query error (acctstoptime column)
+- [x] Fix Sessions Trend query error (acctstarttime/acctstoptime columns)
+- [x] Fix dashboardStats query error (acctstoptime column)
+- [x] Verify all Dashboard analytics load without errors
