@@ -2084,7 +2084,7 @@ const walletRouter = router({
 // RADIUS CARDS ROUTER (Vouchers)
 // ============================================================================
 const vouchersRouter = router({
-  list: resellerProcedure
+  list: protectedProcedure
     .input(z.object({
       status: z.enum(['unused', 'active', 'used', 'expired', 'suspended', 'cancelled']).optional(),
       batchId: z.string().optional(),
@@ -2092,14 +2092,16 @@ const vouchersRouter = router({
       limit: z.number().default(20),
     }).optional())
     .query(async ({ ctx, input }) => {
+      // Super admin sees all cards
       if (ctx.user.role === 'super_admin') {
         return cardDb.getAllCards(input);
       }
+      // Clients and resellers see only their own cards
       return cardDb.getCardsByReseller(ctx.user.id, input);
     }),
 
   // Get card by ID - check ownership
-  getById: resellerProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       const card = await cardDb.getCardById(input.id);

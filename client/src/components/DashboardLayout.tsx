@@ -69,6 +69,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { NotificationBell } from "./NotificationBell";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -110,7 +111,7 @@ type MenuSection = {
 };
 
 // Menu items based on user role - REFACTORED WITH GLOBAL NAMING
-const getMenuSections = (role: string, t: (key: string) => string): MenuSection[] => {
+const getMenuSections = (role: string, t: (key: string) => string, permissions: any): MenuSection[] => {
   const superAdminSections: MenuSection[] = [
     // 1. Dashboard
     {
@@ -191,15 +192,15 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
       ],
     },
     // 8. Reports & Analytics (التقارير والتحليلات)
-    {
+    ...(permissions.canViewReports ? [{
       id: "reports",
       icon: PieChart,
-      label: "التقارير والتحليلات",
+      label: "التقارير",
       items: [
         { icon: BarChart3, label: "التقارير", path: "/reports" },
-        { icon: BarChart3, label: "تقارير الباندويث", path: "/bandwidth" },
+        { icon: Activity, label: "الباندويث", path: "/bandwidth" },
       ],
-    },
+    }] : []),
     // 9. System (النظام)
     {
       id: "system",
@@ -269,15 +270,15 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
         { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/dashboard" },
       ],
     },
-    {
+    ...(permissions.canViewSessions ? [{
       id: "monitoring",
       icon: Monitor,
       label: "المراقبة",
       items: [
         { icon: Wifi, label: "الجلسات النشطة", path: "/sessions" },
       ],
-    },
-    {
+    }] : []),
+    ...(permissions.canManageNas ? [{
       id: "network",
       icon: Globe,
       label: "الشبكة",
@@ -285,34 +286,34 @@ const getMenuSections = (role: string, t: (key: string) => string): MenuSection[
         { icon: Server, label: "أجهزة NAS الخاصة بي", path: "/nas" },
         { icon: Link2, label: "إعداد MikroTik", path: "/mikrotik-setup" },
       ],
-    },
-    {
+    }] : []),
+    ...(permissions.canManageSubscribers ? [{
       id: "users",
       icon: Users,
       label: "المشتركين",
       items: [
         { icon: UserCheck, label: "مشتركيني", path: "/subscribers" },
       ],
-    },
-    {
+    }] : []),
+    ...(permissions.canManageVouchers ? [{
       id: "cards",
       icon: CreditCard,
       label: "البطاقات",
       items: [
         { icon: CreditCard, label: "كروتي", path: "/vouchers" },
         { icon: Printer, label: "طباعة الكروت", path: "/print-cards" },
-        { icon: Package, label: "الخطط", path: "/plans" },
+        ...(permissions.canManagePlans ? [{ icon: Package, label: "الخطط", path: "/plans" }] : []),
       ],
-    },
-    {
+    }] : []),
+    ...(permissions.canViewBilling ? [{
       id: "billing",
       icon: Receipt,
       label: "الفوترة",
       items: [
-        { icon: FileText, label: "فواتيري", path: "/invoices" },
-        { icon: Wallet, label: "محفظتي", path: "/wallet" },
+        ...(permissions.canManageInvoices ? [{ icon: FileText, label: "فواتيري", path: "/invoices" }] : []),
+        ...(permissions.canViewWallet ? [{ icon: Wallet, label: "محفظتي", path: "/wallet" }] : []),
       ],
-    },
+    }] : []),
     {
       id: "reports",
       icon: PieChart,
@@ -508,8 +509,9 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { language, setLanguage, t, direction } = useLanguage();
+  const { permissions } = useFeatureAccess();
 
-  const menuSections = getMenuSections(user?.role || "client", t);
+  const menuSections = getMenuSections(user?.role || "client", t, permissions);
   const allMenuItems = flattenSections(menuSections);
   const activeMenuItem = allMenuItems.find((item) => item.path === location);
 

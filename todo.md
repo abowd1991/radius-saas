@@ -2487,3 +2487,33 @@
 - [x] إضافة قائمة "التحكم بالصلاحيات" في System menu
 - [x] كتابة tests (5 tests passed)
 - [ ] تطبيق middleware للتحكم بعرض القوائم ديناميكياً
+
+
+## تطبيق الخطوات المقترحة (Feb 4, 2026)
+
+### 1. Dynamic Menu Filtering
+- [x] إنشاء hook useFeatureAccess للحصول على صلاحيات المستخدم
+- [x] تعديل DashboardLayout لإخفاء القوائم حسب الصلاحيات
+- [x] تطبيق الفلترة على Client menu (Monitoring, Network, Users, Cards, Billing, Reports)
+- [ ] اختبار إخفاء/إظهار القوائم
+
+### 2. Data Isolation (عزل البيانات)
+- [x] تعديل vouchers.list لعرض بطاقات العميل فقط (تغيير من resellerProcedure إلى protectedProcedure)
+- [x] nas.list يستخدم عزل بيانات صحيح (getNasDevicesByOwner)
+- [x] sessions.list يستخدم عزل بيانات صحيح (getActiveSessionsByOwner)
+- [x] invoices.list يستخدم عزل بيانات صحيح (getInvoicesByUserId)
+- [x] plans.list يستخدم عزل بيانات صحيح (getPlansByOwner)
+- [x] كتابة tests للتأكد من عزل البيانات (10 tests passed)
+
+### 3. FilterBar Integration
+- [ ] تطبيق FilterBar في صفحة Vouchers
+- [ ] تطبيق FilterBar في صفحة NAS
+- [ ] تطبيق FilterBar في صفحة Sessions
+- [ ] تطبيق FilterBar في صفحة Users Management
+- [ ] توحيد تجربة البحث والفلترة
+
+### 4. Dashboard Analytics
+- [ ] إنشاء Dashboard widgets (Revenue, Active Sessions, NAS Health)
+- [ ] إضافة charts تفاعلية باستخدام Recharts
+- [ ] عرض real-time metrics
+- [ ] تحسين صفحة Dashboard الرئيسية
