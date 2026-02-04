@@ -2517,3 +2517,32 @@
 - [ ] إضافة charts تفاعلية باستخدام Recharts
 - [ ] عرض real-time metrics
 - [ ] تحسين صفحة Dashboard الرئيسية
+
+
+## تنفيذ المقترحات الثلاثة
+
+### 1. Dashboard Analytics المتقدم
+- [x] تثبيت recharts library
+- [x] إنشاء Revenue Trend Chart component
+- [x] إنشاء Active Sessions Graph component  
+- [x] إنشاء NAS Health Status widget
+- [x] إضافة API endpoints للإحصائيات (analytics router)
+- [x] تطبيق Charts في صفحة Dashboard الرئيسية
+- [ ] كتابة tests للـ analytics endpoints
+
+### 2. Bulk Operations
+- [ ] إنشاء BulkActions component
+- [ ] تطبيق checkbox selection في Vouchers table
+- [ ] تطبيق checkbox selection في Users table
+- [ ] تطبيق checkbox selection في NAS table
+- [ ] إضافة bulk activate/deactivate/delete endpoints
+- [ ] إضافة confirmation modals للعمليات الحرجة
+- [ ] كتابة tests للـ bulk operations
+
+### 3. Automated Backup Scheduling
+- [ ] إنشاء backup_schedules table في schema
+- [ ] إنشاء backupScheduler service
+- [ ] إضافة backup scheduling UI في System Admin
+- [ ] إضافة retention policy (auto-delete old backups)
+- [ ] إضافة notification للـ Owner عند فشل backup
+- [ ] كتابة tests للـ backup scheduler

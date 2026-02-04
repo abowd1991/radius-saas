@@ -23,6 +23,10 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { RevenueTrendChart } from "@/components/charts/RevenueTrendChart";
+import { SessionsTrendChart } from "@/components/charts/SessionsTrendChart";
+import { NasHealthWidget } from "@/components/charts/NasHealthWidget";
+import { useState } from "react";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -31,6 +35,12 @@ export default function Dashboard() {
 
   // Fetch dashboard stats
   const { data: stats, isLoading, refetch } = trpc.dashboard.getStats.useQuery();
+  
+  // Analytics data
+  const [analyticsDays, setAnalyticsDays] = useState(30);
+  const { data: revenueData } = trpc.analytics.revenueTrend.useQuery({ days: analyticsDays });
+  const { data: sessionsData } = trpc.analytics.sessionsTrend.useQuery({ days: analyticsDays });
+  const { data: nasHealthData } = trpc.analytics.nasHealth.useQuery();
   
   // Fetch billing info for clients
   const { data: billingData, isLoading: isBillingLoading } = trpc.billing.getMySummary.useQuery(
@@ -228,6 +238,14 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Analytics Charts */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <RevenueTrendChart data={revenueData || []} isLoading={!revenueData} />
+          <SessionsTrendChart data={sessionsData || []} isLoading={!sessionsData} />
+        </div>
+
+        <NasHealthWidget data={nasHealthData || { statusCounts: [], topNas: [] }} isLoading={!nasHealthData} />
       </div>
     );
   }

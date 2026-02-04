@@ -35,6 +35,7 @@ import * as tweetsmsService from "./services/tweetsmsService";
 import * as smsDb from "./db/sms";
 import * as twoPhaseProvisioning from "./services/twoPhaseProvisioningService";
 import { featureAccessRouter } from "./routers/featureAccess";
+import { analyticsRouter } from "./routers/analytics";
 
 // ============================================================================
 // AUTH ROUTER
@@ -5649,6 +5650,7 @@ export const appRouter = router({
   radius: radiusControlRouter,
   vpsManagement: vpsManagementRouter,
   featureAccess: featureAccessRouter,
+  analytics: analyticsRouter,
 });
 
 export type AppRouter = typeof appRouter;
