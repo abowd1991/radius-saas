@@ -2546,3 +2546,32 @@
 - [ ] إضافة retention policy (auto-delete old backups)
 - [ ] إضافة notification للـ Owner عند فشل backup
 - [ ] كتابة tests للـ backup scheduler
+
+
+## المقترحات الثلاثة المحدثة
+
+### 1. Bulk Operations
+- [x] إنشاء BulkActions component
+- [x] إضافة bulk API endpoints في vouchersRouter (bulkActivate, bulkDeactivate, bulkDelete)
+- [ ] تطبيق checkbox selection في Vouchers page
+- [ ] تطبيق checkbox selection في Users table  
+- [ ] تطبيق checkbox selection في NAS table
+- [ ] إضافة bulk endpoints لـ Users و NAS
+- [ ] كتابة tests
+
+### 2. Automated Backup + Download/Upload
+- [ ] إضافة Download Backup endpoint (Owner فقط)
+- [ ] إضافة Upload/Restore Backup endpoint (Owner فقط)
+- [ ] إنشاء backup scheduler service (يومي/أسبوعي)
+- [ ] إضافة backup configuration UI
+- [ ] إضافة retention policy
+- [ ] إضافة تنبيهات للـ Owner عند فشل backup
+- [ ] تحديث صفحة System Admin مع Download/Upload buttons
+- [ ] كتابة tests
+
+### 3. Advanced Analytics Filters
+- [ ] إنشاء DateRangePicker component
+- [ ] إضافة preset filters (7/30/90 days)
+- [ ] إضافة custom date range
+- [ ] تطبيق filters في Dashboard Analytics
+- [ ] حفظ filter preferences في localStorage

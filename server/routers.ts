@@ -2612,6 +2612,85 @@ const vouchersRouter = router({
       const csv = generateCardsCSV(cardData);
       return { csv };
     }),
+
+  // Bulk operations
+  bulkActivate: protectedProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      
+      // Get cards to verify ownership
+      const cards = await db.select().from(radiusCards).where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`).execute();
+      
+      // Verify ownership
+      if (ctx.user.role !== 'super_admin') {
+        const unauthorized = cards.some((card: any) => card.createdBy !== ctx.user.id);
+        if (unauthorized) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      
+      // Update status
+      await db.update(radiusCards)
+        .set({ status: 'active', updatedAt: new Date() })
+        .where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`)
+        .execute();
+      
+      return { success: true, count: input.ids.length };
+    }),
+
+  bulkDeactivate: protectedProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      
+      // Get cards to verify ownership
+      const cards = await db.select().from(radiusCards).where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`).execute();
+      
+      // Verify ownership
+      if (ctx.user.role !== 'super_admin') {
+        const unauthorized = cards.some((card: any) => card.createdBy !== ctx.user.id);
+        if (unauthorized) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      
+      // Update status
+      await db.update(radiusCards)
+        .set({ status: 'suspended', updatedAt: new Date() })
+        .where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`)
+        .execute();
+      
+      return { success: true, count: input.ids.length };
+    }),
+
+  bulkDelete: protectedProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      
+      // Get cards to verify ownership
+      const cards = await db.select().from(radiusCards).where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`).execute();
+      
+      // Verify ownership
+      if (ctx.user.role !== 'super_admin') {
+        const unauthorized = cards.some((card: any) => card.createdBy !== ctx.user.id);
+        if (unauthorized) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      
+      // Get usernames for RADIUS cleanup
+      const usernames = cards.map((card: any) => card.username);
+      
+      // Delete from RADIUS tables
+      if (usernames.length > 0) {
+        await db.execute(sql`DELETE FROM radcheck WHERE username IN (${sql.join(usernames.map((u: string) => sql`${u}`), sql`, `)})`);  
+        await db.execute(sql`DELETE FROM radreply WHERE username IN (${sql.join(usernames.map((u: string) => sql`${u}`), sql`, `)})`);
+        await db.execute(sql`DELETE FROM radacct WHERE username IN (${sql.join(usernames.map((u: string) => sql`${u}`), sql`, `)})`);
+      }
+      
+      // Delete cards
+      await db.delete(radiusCards)
+        .where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`)
+        .execute();
+      
+      return { success: true, count: input.ids.length };
+    }),
 });
 
 // ============================================================================
