@@ -40,6 +40,7 @@ import SmsManagement from "./pages/SmsManagement";
 import RadiusControlPanel from "./pages/RadiusControlPanel";
 import SystemAdmin from "./pages/SystemAdmin";
 import FeatureAccessControl from "./pages/FeatureAccessControl";
+import BackupManagement from "./pages/BackupManagement";
 import WalletLedger from "./pages/WalletLedger";
 import OwnerBillingDashboard from "./pages/OwnerBillingDashboard";
 import { Redirect } from "wouter";
@@ -188,6 +189,11 @@ function Router() {
       <Route path="/backups">
         <DashboardLayout>
           <Backups />
+        </DashboardLayout>
+      </Route>
+      <Route path="/backup-management">
+        <DashboardLayout>
+          <BackupManagement />
         </DashboardLayout>
       </Route>
       <Route path="/tenant-subscriptions">

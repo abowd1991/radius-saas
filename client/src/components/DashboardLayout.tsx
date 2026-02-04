@@ -209,6 +209,7 @@ const getMenuSections = (role: string, t: (key: string) => string, permissions: 
       items: [
         { icon: Settings, label: "الإعدادات", path: "/settings" },
         { icon: History, label: "سجل العمليات", path: "/audit-log" },
+        { icon: Database, label: "النسخ الاحتياطي", path: "/backup-management" },
         { icon: Settings, label: "إدارة النظام", path: "/system-admin" },
         { icon: Shield, label: "التحكم بالصلاحيات", path: "/feature-access" },
         { icon: Smartphone, label: "إدارة SMS", path: "/sms" },

@@ -36,6 +36,7 @@ import * as smsDb from "./db/sms";
 import * as twoPhaseProvisioning from "./services/twoPhaseProvisioningService";
 import { featureAccessRouter } from "./routers/featureAccess";
 import { analyticsRouter } from "./routers/analytics";
+import { backupRouter } from "./routers/backup";
 
 // ============================================================================
 // AUTH ROUTER
@@ -5730,6 +5731,7 @@ export const appRouter = router({
   vpsManagement: vpsManagementRouter,
   featureAccess: featureAccessRouter,
   analytics: analyticsRouter,
+  backup: backupRouter,
 });
 
 export type AppRouter = typeof appRouter;
