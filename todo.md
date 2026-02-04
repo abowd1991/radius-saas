@@ -2394,3 +2394,10 @@
 - [x] Fixed Settings.tsx - added owner role to RADIUS tab
 - [x] Test all CRUD operations for owner role
 - [ ] Save checkpoint after fixes
+
+## VPN Endpoints Permission Errors
+
+- [x] Fix VPN logs endpoint - added owner role support
+- [x] Fix VPN connections endpoint - added owner role support
+- [ ] Test /nas-health page with owner role
+- [ ] Save checkpoint

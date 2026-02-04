@@ -4698,8 +4698,8 @@ import * as vpnConnectionService from "./services/vpnConnectionService";
 const vpnRouter = router({
   // List all VPN connections with status (from SoftEther)
   list: protectedProcedure.query(async ({ ctx }) => {
-    // Only super_admin can see VPN connections
-    if (ctx.user.role !== 'super_admin') {
+    // Only owner/super_admin can see VPN connections
+    if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'Only administrators can view VPN connections' });
     }
     
@@ -4853,8 +4853,8 @@ const vpnRouter = router({
       limit: z.number().min(1).max(500).optional(),
     }))
     .query(async ({ input, ctx }) => {
-      // Only super_admin can see VPN logs
-      if (ctx.user.role !== 'super_admin') {
+      // Only owner/super_admin can see VPN logs
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Only administrators can view VPN logs' });
       }
       
