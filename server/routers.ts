@@ -606,7 +606,7 @@ const usersRouter = router({
       // Delete user's data in order (foreign key constraints)
       // 1. Get usernames first (TiDB doesn't support DELETE with subquery)
       const userCards = await drizzleDb.execute(
-        sql`SELECT username FROM radius_cards WHERE owner_id = ${input.userId}`
+        sql`SELECT username FROM radius_cards WHERE createdBy = ${input.userId}`
       );
       const usernames = (userCards as any[]).map((card: any) => card.username);
       
@@ -626,7 +626,7 @@ const usersRouter = router({
       
       // 4. Delete user's cards
       await drizzleDb.execute(
-        sql`DELETE FROM radius_cards WHERE owner_id = ${input.userId}`
+        sql`DELETE FROM radius_cards WHERE createdBy = ${input.userId}`
       );
       
       // 5. Delete user's NAS devices
