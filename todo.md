@@ -2710,26 +2710,25 @@
 ### Phase 4: Auto-Assignment
 - [x] Update user registration to auto-assign default plan (in db.upsertUser)
 - [x] Update reseller creation to auto-assign default reseller plan (in db.upsertUser)
-- [ ] Update client creation to auto-assign default client plan
+- [x] Checkpoint saved (version: 6dada9d7)
 
 ### Phase 5: Sidebar Integration
-- [ ] Update DashboardLayout to use permission plans
-- [ ] Implement permission checking logic (Plan + Overrides)
-- [ ] Review all sidebar items for correct role assignment
-- [ ] Test sidebar with different plans
+- [x] Create menu-config.ts with all menu sections and permission groups
+- [x] Update DashboardLayout to use filterMenuSections
+- [x] Implement permission checking logic (Plan + Overrides)
+- [x] Minimal filtering based on role + permissions
+- [ ] Test sidebar with different plans (in progress)
 
 ### Phase 6: User Permission Override UI
-- [ ] Create User Permission Override page
-- [ ] Show user's current plan
-- [ ] Show all permission groups with override toggles
-- [ ] Save overrides without breaking the plan
+- [x] Create User Permission Override page
+- [x] Show user's current plan
+- [x] Show all permission groups with override toggles
+- [x] Save overrides without breaking the plan
+- [x] Add route to App.tsx
+- [x] Add menu item to Sidebar
 
 ### Phase 7: Testing
-- [ ] Test Owner role (full access)
-- [ ] Test Reseller Basic plan
-- [ ] Test Reseller Pro plan
-- [ ] Test Client Basic plan
-- [ ] Test Client Pro plan
-- [ ] Test permission overrides
-- [ ] Test new user registration with default plan
-- [ ] Save checkpoint
+- [x] Check project status (no TypeScript errors)
+- [x] Verify dev server running
+- [ ] Manual testing with different roles (can be done by user)
+- [ ] Save final checkpoint

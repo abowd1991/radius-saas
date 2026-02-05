@@ -41,6 +41,7 @@ import RadiusControlPanel from "./pages/RadiusControlPanel";
 import SystemAdmin from "./pages/SystemAdmin";
 import FeatureAccessControl from "./pages/FeatureAccessControl";
 import PermissionPlans from "./pages/PermissionPlans";
+import UserPermissionOverride from "./pages/UserPermissionOverride";
 import BackupManagement from "./pages/BackupManagement";
 import SiteSettings from "./pages/SiteSettings";
 import SubscriptionPlansManagement from "./pages/SubscriptionPlansManagement";
@@ -184,6 +185,11 @@ function Router() {
       <Route path="/permission-plans">
         <DashboardLayout>
           <PermissionPlans />
+        </DashboardLayout>
+      </Route>
+      <Route path="/user-permission-override">
+        <DashboardLayout>
+          <UserPermissionOverride />
         </DashboardLayout>
       </Route>
       <Route path="/client-management">
