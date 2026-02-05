@@ -36,8 +36,10 @@ import {
 export default function Landing() {
   const [, setLocation] = useLocation();
   
-  // Fetch plans from database
-  const { data: dbPlans, isLoading: plansLoading } = trpc.saasPlans.getAll.useQuery();
+  // Fetch site settings and subscription plans from database
+  const { data: siteSettings } = trpc.site.getSiteSettings.useQuery();
+  const { data: subscriptionPlans, isLoading: plansLoading } = trpc.site.listSubscriptionPlans.useQuery();
+  const { data: dbPlans } = trpc.saasPlans.getAll.useQuery();
 
   const features = [
     {
@@ -160,28 +162,40 @@ export default function Landing() {
     },
   ];
 
-  // Convert DB plans to display format
-  const plans = dbPlans && dbPlans.length > 0 ? dbPlans.map((plan: any, index: number) => {
-    const features = [];
-    if (plan.maxCards !== null) features.push(`حتى ${plan.maxCards} كرت نشط`);
-    else features.push("كروت غير محدودة");
-    if (plan.maxNas !== null) features.push(`حتى ${plan.maxNas} جهاز NAS`);
-    else features.push("أجهزة NAS غير محدودة");
-    if (plan.maxSubscribers !== null) features.push(`حتى ${plan.maxSubscribers} مشترك`);
-    else features.push("مشتركين غير محدودين");
-    if (plan.hasApi) features.push("API للتكامل");
-    if (plan.hasCoa) features.push("دعم CoA/Disconnect");
-    if (plan.hasVpn) features.push("دعم VPN");
-    if (plan.hasAdvancedReports) features.push("تقارير متقدمة");
-    
-    return {
-      name: plan.name,
-      price: plan.priceMonthly?.toString() || "0",
-      period: "شهرياً",
-      description: plan.description || "",
-      features,
-      popular: index === 1, // Middle plan is popular
-    };
+  // Use subscription_plans from database, fallback to old dbPlans
+  const plans = subscriptionPlans && subscriptionPlans.length > 0 
+    ? subscriptionPlans
+        .filter((p: any) => p.isActive)
+        .sort((a: any, b: any) => a.displayOrder - b.displayOrder)
+        .map((plan: any) => ({
+          name: plan.nameAr || plan.name,
+          price: plan.price.toString(),
+          period: plan.billingPeriod === 'monthly' ? 'شهرياً' : 'سنوياً',
+          description: plan.descriptionAr || plan.description,
+          features: Array.isArray(plan.featuresAr) ? plan.featuresAr : [],
+          popular: plan.isPopular,
+        }))
+    : dbPlans && dbPlans.length > 0 ? dbPlans.map((plan: any, index: number) => {
+        const features = [];
+        if (plan.maxCards !== null) features.push(`حتى ${plan.maxCards} كرت نشط`);
+        else features.push("كروت غير محدودة");
+        if (plan.maxNas !== null) features.push(`حتى ${plan.maxNas} جهاز NAS`);
+        else features.push("أجهزة NAS غير محدودة");
+        if (plan.maxSubscribers !== null) features.push(`حتى ${plan.maxSubscribers} مشترك`);
+        else features.push("مشتركين غير محدودين");
+        if (plan.hasApi) features.push("API للتكامل");
+        if (plan.hasCoa) features.push("دعم CoA/Disconnect");
+        if (plan.hasVpn) features.push("دعم VPN");
+        if (plan.hasAdvancedReports) features.push("تقارير متقدمة");
+        
+        return {
+          name: plan.name,
+          price: plan.priceMonthly?.toString() || "0",
+          period: "شهرياً",
+          description: plan.description || "",
+          features,
+          popular: index === 1, // Middle plan is popular
+        };
   }) : staticPlans;
 
   const faqs = [
@@ -253,17 +267,15 @@ export default function Landing() {
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
             <span className="bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
-              منصة RADIUS احترافية
+              {siteSettings?.heroTitleAr || "منصة RADIUS احترافية"}
             </span>
             <br />
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              لإدارة الإنترنت والكروت
+              {siteSettings?.heroSubtitleAr || "لإدارة الإنترنت والكروت"}
             </span>
           </h1>
           <p className="text-xl text-slate-400 mb-8 max-w-2xl mx-auto">
-            نظام SaaS متكامل لإدارة شبكات الإنترنت مع MikroTik
-            <br />
-            سريع • آمن • قابل للتوسع
+            {siteSettings?.heroDescriptionAr || "نظام SaaS متكامل لإدارة شبكات الإنترنت مع MikroTik"}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button 

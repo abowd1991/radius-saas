@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `subscription_plans` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `name` varchar(100) NOT NULL,\n  `nameAr` varchar(100) NOT NULL,\n  `description` text,\n  `descriptionAr` text,\n  `price` decimal(10, 2) NOT NULL,\n  `currency` varchar(3) DEFAULT 'USD' NOT NULL,\n  `billingPeriod` enum('monthly', 'yearly') DEFAULT 'monthly' NOT NULL,\n  `features` json NOT NULL,\n  `featuresAr` json NOT NULL,\n  `maxCards` int,\n  `maxNasDevices` int,\n  `maxResellers` int,\n  `isPopular` boolean DEFAULT false NOT NULL,\n  `displayOrder` int DEFAULT 0 NOT NULL,\n  `isActive` boolean DEFAULT true NOT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute CREATE TABLE IF NOT EXISTS `subscription_plans` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `name` varchar(100) NOT NULL,\n  `nameAr` varchar(100) NOT NULL,\n  `description` text,\n  `descriptionAr` text,\n  `price` decimal(10, 2) NOT NULL,\n  `currency` varchar(3) DEFAULT 'USD' NOT NULL,\n  `billingPeriod` enum('monthly', 'yearly') DEFAULT 'monthly' NOT NULL,\n  `features` json NOT NULL,\n  `featuresAr` json NOT NULL,\n  `maxCards` int,\n  `maxNasDevices` int,\n  `maxResellers` int,\n  `isPopular` boolean DEFAULT false NOT NULL,\n  `displayOrder` int DEFAULT 0 NOT NULL,\n  `isActive` boolean DEFAULT true NOT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 497
+}

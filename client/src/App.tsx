@@ -41,6 +41,8 @@ import RadiusControlPanel from "./pages/RadiusControlPanel";
 import SystemAdmin from "./pages/SystemAdmin";
 import FeatureAccessControl from "./pages/FeatureAccessControl";
 import BackupManagement from "./pages/BackupManagement";
+import SiteSettings from "./pages/SiteSettings";
+import SubscriptionPlansManagement from "./pages/SubscriptionPlansManagement";
 import WalletLedger from "./pages/WalletLedger";
 import OwnerBillingDashboard from "./pages/OwnerBillingDashboard";
 import { Redirect } from "wouter";
@@ -194,6 +196,16 @@ function Router() {
       <Route path="/backup-management">
         <DashboardLayout>
           <BackupManagement />
+        </DashboardLayout>
+      </Route>
+      <Route path="/site-settings">
+        <DashboardLayout>
+          <SiteSettings />
+        </DashboardLayout>
+      </Route>
+      <Route path="/subscription-plans">
+        <DashboardLayout>
+          <SubscriptionPlansManagement />
         </DashboardLayout>
       </Route>
       <Route path="/tenant-subscriptions">

@@ -2630,3 +2630,14 @@
 - [x] Fix React key warning in NasHealthWidget (all maps have unique keys)
 - [x] Fix NaN value error in NasHealthWidget (added isNaN checks)
 - [x] Test with Owner account to verify errors are gone (Console clean!)
+
+## Site Settings & Subscription Plans Management (Jan 7, 2026)
+- [x] Create site_settings table in database schema
+- [x] Create subscription_plans table in database schema
+- [x] Push database migrations (via SQL)
+- [x] Create backend API for site settings (get/update)
+- [x] Create backend API for subscription plans (CRUD)
+- [x] Build Site Settings UI page (branding, content, contact info)
+- [x] Build Subscription Plans Management UI page
+- [x] Update landing page to use dynamic settings from database
+- [x] Test all customization features (Site Settings, Subscription Plans, Landing Page)

@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO `site_settings` (\n  `heroDescription`,\n  `heroDescriptionAr`\n) VALUES (\n  'Complete SaaS system for managing Internet networks with MikroTik\\nFast • Secure • Scalable',\n  'نظام SaaS متكامل لإدارة شبكات الإنترنت مع MikroTik\\nسريع • آمن • قابل للتوسع'\n) ON DUPLICATE KEY UPDATE id=id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute INSERT INTO `site_settings` (\n  `heroDescription`,\n  `heroDescriptionAr`\n) VALUES (\n  'Complete SaaS system for managing Internet networks with MikroTik\\nFast • Secure • Scalable',\n  'نظام SaaS متكامل لإدارة شبكات الإنترنت مع MikroTik\\nسريع • آمن • قابل للتوسع'\n) ON DUPLICATE KEY UPDATE id=id;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 382
+}

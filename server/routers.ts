@@ -37,6 +37,7 @@ import * as twoPhaseProvisioning from "./services/twoPhaseProvisioningService";
 import { featureAccessRouter } from "./routers/featureAccess";
 import { analyticsRouter } from "./routers/analytics";
 import { backupRouter } from "./routers/backup";
+import { siteRouter } from "./routers/settings";
 
 // ============================================================================
 // AUTH ROUTER
@@ -5732,6 +5733,7 @@ export const appRouter = router({
   featureAccess: featureAccessRouter,
   analytics: analyticsRouter,
   backup: backupRouter,
+  site: siteRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1219,3 +1219,90 @@ export const featureAccessControl = mysqlTable("feature_access_control", {
 
 export type FeatureAccessControl = typeof featureAccessControl.$inferSelect;
 export type InsertFeatureAccessControl = typeof featureAccessControl.$inferInsert;
+
+// ============================================================================
+// SITE SETTINGS (Owner customization for landing page & branding)
+// ============================================================================
+
+export const siteSettings = mysqlTable("site_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  // Branding
+  siteName: varchar("siteName", { length: 100 }).default("Radius Pro").notNull(),
+  siteNameAr: varchar("siteNameAr", { length: 100 }).default("راديوس برو"),
+  tagline: varchar("tagline", { length: 500 }).default("Professional RADIUS Management Platform"),
+  taglineAr: varchar("taglineAr", { length: 500 }).default("منصة RADIUS احترافية لإدارة الإنترنت والكروت"),
+  logoUrl: text("logoUrl"),
+  faviconUrl: text("faviconUrl"),
+  // Hero Section
+  heroTitle: varchar("heroTitle", { length: 255 }).default("Complete SaaS System"),
+  heroTitleAr: varchar("heroTitleAr", { length: 255 }).default("نظام SaaS متكامل"),
+  heroSubtitle: varchar("heroSubtitle", { length: 500 }).default("Professional RADIUS platform for Internet and card management"),
+  heroSubtitleAr: varchar("heroSubtitleAr", { length: 500 }).default("منصة RADIUS احترافية لإدارة الإنترنت والكروت"),
+  heroDescription: text("heroDescription"),
+  heroDescriptionAr: text("heroDescriptionAr"),
+  // Stats
+  uptimePercent: varchar("uptimePercent", { length: 10 }).default("99.9%"),
+  activeClients: varchar("activeClients", { length: 20 }).default("+1000"),
+  managedCards: varchar("managedCards", { length: 20 }).default("+50K"),
+  supportHours: varchar("supportHours", { length: 20 }).default("24/7"),
+  // Contact Info
+  supportEmail: varchar("supportEmail", { length: 320 }).default("support@radius-pro.com"),
+  supportPhone: varchar("supportPhone", { length: 50 }).default("+970 59 XXX XXXX"),
+  supportHoursText: varchar("supportHoursText", { length: 255 }).default("Saturday - Thursday: 9 AM - 6 PM"),
+  supportHoursTextAr: varchar("supportHoursTextAr", { length: 255 }).default("السبت - الخميس: 9 صباحاً - 6 مساءً"),
+  // Footer
+  companyName: varchar("companyName", { length: 255 }).default("RadiusPro"),
+  companyNameAr: varchar("companyNameAr", { length: 255 }).default("راديوس برو"),
+  copyrightText: varchar("copyrightText", { length: 255 }).default("© 2026 RadiusPro. All rights reserved."),
+  copyrightTextAr: varchar("copyrightTextAr", { length: 255 }).default("جميع الحقوق محفوظة. RadiusPro 2026 ©"),
+  // Social Media
+  facebookUrl: text("facebookUrl"),
+  twitterUrl: text("twitterUrl"),
+  linkedinUrl: text("linkedinUrl"),
+  instagramUrl: text("instagramUrl"),
+  // SEO
+  metaTitle: varchar("metaTitle", { length: 255 }).default("Radius Pro - Professional RADIUS Management"),
+  metaTitleAr: varchar("metaTitleAr", { length: 255 }).default("راديوس برو - إدارة RADIUS احترافية"),
+  metaDescription: text("metaDescription"),
+  metaDescriptionAr: text("metaDescriptionAr"),
+  metaKeywords: text("metaKeywords"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SiteSettings = typeof siteSettings.$inferSelect;
+export type InsertSiteSettings = typeof siteSettings.$inferInsert;
+
+// ============================================================================
+// SUBSCRIPTION PLANS (For landing page pricing section)
+// ============================================================================
+
+export const subscriptionPlans = mysqlTable("subscription_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  // Plan Info
+  name: varchar("name", { length: 100 }).notNull(),
+  nameAr: varchar("nameAr", { length: 100 }).notNull(),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  // Pricing
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+  billingPeriod: mysqlEnum("billingPeriod", ["monthly", "yearly"]).default("monthly").notNull(),
+  // Features (JSON array of strings)
+  features: json("features").notNull(), // ["Feature 1", "Feature 2", ...]
+  featuresAr: json("featuresAr").notNull(),
+  // Limits
+  maxCards: int("maxCards"), // null = unlimited
+  maxNasDevices: int("maxNasDevices"), // null = unlimited
+  maxResellers: int("maxResellers"), // null = unlimited
+  // Display
+  isPopular: boolean("isPopular").default(false).notNull(),
+  displayOrder: int("displayOrder").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  // Metadata
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
