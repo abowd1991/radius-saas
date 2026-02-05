@@ -37,7 +37,9 @@ async function createBackup(): Promise<{ filename: string; path: string; size: n
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Invalid DATABASE_URL format" });
   }
 
-  const [, user, password, host, port, database] = match;
+  const [, user, password, host, port, databaseWithParams] = match;
+  // Remove query parameters from database name
+  const database = databaseWithParams.split('?')[0];
 
   // Create backup using mysqldump
   try {
@@ -77,7 +79,9 @@ async function restoreBackup(backupPath: string): Promise<void> {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Invalid DATABASE_URL format" });
   }
 
-  const [, user, password, host, port, database] = match;
+  const [, user, password, host, port, databaseWithParams] = match;
+  // Remove query parameters from database name
+  const database = databaseWithParams.split('?')[0];
 
   try {
     await execAsync(

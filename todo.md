@@ -2646,3 +2646,9 @@
 - [x] Fix Site Settings API validation error (optional fields now accept null)
 - [x] Fix React key warning in NasHealthWidget component (fixed after restart)
 - [x] Test both fixes and verify no errors (Console clean!)
+
+## Bug Fix - API & Backup Errors (Feb 5, 2026)
+- [x] Fix backup mysqldump command (DATABASE_URL parsing - remove query params)
+- [x] Fix API returning HTML instead of JSON error (added content-type check)
+- [x] Fix React key warning in NasHealthWidget (fixed after server restart)
+- [x] Test all fixes and verify no errors (Console clean!)

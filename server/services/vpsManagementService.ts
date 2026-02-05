@@ -105,6 +105,16 @@ async function callMgmtApi<T>(
       body: body ? JSON.stringify(body) : undefined,
     });
 
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.warn(`[VPSManagement] MGMT API returned non-JSON response (${contentType})`);
+      return {
+        success: false,
+        error: "Management API unavailable or returned invalid response",
+      };
+    }
+    
     const data = await response.json();
     console.log(`[VPSManagement] MGMT Response:`, JSON.stringify(data).substring(0, 200));
     
