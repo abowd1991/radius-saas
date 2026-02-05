@@ -2665,4 +2665,12 @@
 - [x] Replace 'راديوس' with 'Radius Pro' in DashboardLayout sidebar (LanguageContext.tsx)
 - [x] Replace 'راديوس' with 'Radius Pro' in all other components (completed)
 - [x] Test changes across multiple pages (verified in Landing page header)
+- [x] Save checkpoint (version: a90013de)
+
+## Update Landing Page with Radius Pro Branding (Feb 5, 2026)
+- [x] Find Landing page file (client/src/pages/Landing.tsx)
+- [x] Update site_settings database to replace all "راديوس" with "Radius Pro"
+- [x] Update fallback values in Landing.tsx Hero section
+- [x] Update Footer text in Landing.tsx
+- [x] Test Landing page to verify changes (verified - "Radius Pro" now appears)
 - [ ] Save checkpoint

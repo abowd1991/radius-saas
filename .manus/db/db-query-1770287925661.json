@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE site_settings \nSET \n  siteNameAr = 'Radius Pro',\n  taglineAr = 'منصة Radius Pro احترافية لإدارة الإنترنت والكروت',\n  heroTitleAr = 'نظام SaaS متكامل',\n  heroSubtitleAr = 'منصة Radius Pro احترافية لإدارة الإنترنت والكروت',\n  heroDescriptionAr = 'نظام SaaS متكامل لإدارة شبكات الإنترنت مع MikroTik\\nسريع • آمن • قابل للتوسع',\n  companyNameAr = 'Radius Pro',\n  metaTitleAr = 'Radius Pro - إدارة RADIUS احترافية'\nWHERE id = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute UPDATE site_settings \nSET \n  siteNameAr = 'Radius Pro',\n  taglineAr = 'منصة Radius Pro احترافية لإدارة الإنترنت والكروت',\n  heroTitleAr = 'نظام SaaS متكامل',\n  heroSubtitleAr = 'منصة Radius Pro احترافية لإدارة الإنترنت والكروت',\n  heroDescriptionAr = 'نظام SaaS متكامل لإدارة شبكات الإنترنت مع MikroTik\\nسريع • آمن • قابل للتوسع',\n  companyNameAr = 'Radius Pro',\n  metaTitleAr = 'Radius Pro - إدارة RADIUS احترافية'\nWHERE id = 1;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 400
+}

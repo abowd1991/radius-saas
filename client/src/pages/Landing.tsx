@@ -267,11 +267,11 @@ export default function Landing() {
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
             <span className="bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
-              {siteSettings?.heroTitleAr || "منصة RADIUS احترافية"}
+              {siteSettings?.heroTitleAr || "منصة Radius Pro احترافية"}
             </span>
             <br />
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              {siteSettings?.heroSubtitleAr || "لإدارة الإنترنت والكروت"}
+              {siteSettings?.heroSubtitleAr || "لإدارة الإنترنت والكروت مع MikroTik"}
             </span>
           </h1>
           <p className="text-xl text-slate-400 mb-8 max-w-2xl mx-auto">
@@ -588,7 +588,7 @@ export default function Landing() {
                 <span className="text-xl font-bold text-white">Radius Pro</span>
               </div>
               <p className="text-slate-400 text-sm">
-                منصة RADIUS احترافية لإدارة الإنترنت والكروت والاشتراكات
+                منصة Radius Pro احترافية لإدارة الإنترنت والكروت والاشتراكات
               </p>
             </div>
             
