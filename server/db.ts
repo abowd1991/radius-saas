@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2/promise";
 import { InsertUser, users } from "../drizzle/schema";
+import * as permissionDb from "./db-permission-plans";
 import { ENV } from './_core/env';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,6 +77,19 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       // Admin/Super Admin can only be created manually by Owner
       values.role = 'client';
       // Don't update role on duplicate - preserve existing role
+    }
+
+    // Auto-assign default permission plan for new users
+    if (values.role === 'client' || values.role === 'reseller') {
+      try {
+        const defaultPlan = await permissionDb.getDefaultPlanForRole(values.role as 'client' | 'reseller');
+        if (defaultPlan) {
+          values.permissionPlanId = defaultPlan.id;
+          // Only set on insert, not on update
+        }
+      } catch (error) {
+        console.warn(`[Database] Failed to get default plan for role ${values.role}:`, error);
+      }
     }
 
     if (!values.lastSignedIn) {

@@ -40,6 +40,7 @@ import SmsManagement from "./pages/SmsManagement";
 import RadiusControlPanel from "./pages/RadiusControlPanel";
 import SystemAdmin from "./pages/SystemAdmin";
 import FeatureAccessControl from "./pages/FeatureAccessControl";
+import PermissionPlans from "./pages/PermissionPlans";
 import BackupManagement from "./pages/BackupManagement";
 import SiteSettings from "./pages/SiteSettings";
 import SubscriptionPlansManagement from "./pages/SubscriptionPlansManagement";
@@ -178,6 +179,11 @@ function Router() {
       <Route path="/feature-access">
         <DashboardLayout>
           <FeatureAccessControl />
+        </DashboardLayout>
+      </Route>
+      <Route path="/permission-plans">
+        <DashboardLayout>
+          <PermissionPlans />
         </DashboardLayout>
       </Route>
       <Route path="/client-management">

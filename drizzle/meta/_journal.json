@@ -120,6 +120,13 @@
       "when": 1770285480591,
       "tag": "0016_pink_silvermane",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1770289009185,
+      "tag": "0017_abandoned_ghost_rider",
+      "breakpoints": true
     }
   ]
 }

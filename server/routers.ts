@@ -38,6 +38,12 @@ import { featureAccessRouter } from "./routers/featureAccess";
 import { analyticsRouter } from "./routers/analytics";
 import { backupRouter } from "./routers/backup";
 import { siteRouter } from "./routers/settings";
+import { 
+  permissionGroupsRouter, 
+  permissionPlansRouter, 
+  userPermissionOverridesRouter,
+  userEffectivePermissionsRouter 
+} from "./routers-permission-plans";
 
 // ============================================================================
 // AUTH ROUTER
@@ -5734,6 +5740,10 @@ export const appRouter = router({
   analytics: analyticsRouter,
   backup: backupRouter,
   site: siteRouter,
+  permissionGroups: permissionGroupsRouter,
+  permissionPlans: permissionPlansRouter,
+  userPermissionOverrides: userPermissionOverridesRouter,
+  userEffectivePermissions: userEffectivePermissionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

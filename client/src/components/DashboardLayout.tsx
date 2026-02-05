@@ -213,6 +213,7 @@ const getMenuSections = (role: string, t: (key: string) => string, permissions: 
         { icon: CreditCard, label: "خطط الاشتراك", path: "/subscription-plans" },
         { icon: Settings, label: "إدارة النظام", path: "/system-admin" },
         { icon: Shield, label: "التحكم بالصلاحيات", path: "/feature-access" },
+        { icon: Shield, label: "خطط الصلاحيات", path: "/permission-plans" },
         { icon: Smartphone, label: "إدارة SMS", path: "/sms" },
         { icon: MessageSquare, label: "الدعم الفني", path: "/support" },
       ],

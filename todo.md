@@ -2680,4 +2680,56 @@
 - [x] Locate "خطط SaaS" menu item in sidebar (line 191)
 - [x] Remove duplicate menu item from Billing section
 - [x] Test sidebar navigation (verified - "خطط SaaS" removed successfully)
+- [x] Save checkpoint (version: 78ef513c)
+
+## Permission Plans System (Global Plans like SaaS Platforms) - Feb 5, 2026
+
+### Phase 1: Database Schema
+- [x] Create `permission_plans` table (id, name, description, role, isDefault, createdAt, updatedAt)
+- [x] Create `permission_groups` table (id, name, description, menuItems)
+- [x] Create `permission_plan_groups` table (planId, groupId) - many-to-many
+- [x] Create `user_permission_overrides` table (userId, groupId, isGranted)
+- [x] Add `permissionPlanId` to users table
+- [x] Run database migration
+
+### Phase 2: Backend API
+- [x] Create permissionPlans router with CRUD endpoints
+- [x] Create endpoint to list all permission groups
+- [x] Create endpoint to assign plan to user
+- [x] Create endpoint to set default plan
+- [x] Create endpoint to manage user overrides
+- [x] Create endpoint to get user effective permissions
+
+#### Phase 3: Permission Plans Management UI
+- [x] Create Permission Plans page for Owner
+- [x] List all plans with edit/delete
+- [x] Create/Edit plan dialog with group selection
+- [x] Add route to App.tsx
+- [x] Add menu item to Sidebarfault plans (Basic Client, Pro Client, Reseller Basic, Reseller Pro)
+
+### Phase 4: Auto-Assignment
+- [x] Update user registration to auto-assign default plan (in db.upsertUser)
+- [x] Update reseller creation to auto-assign default reseller plan (in db.upsertUser)
+- [ ] Update client creation to auto-assign default client plan
+
+### Phase 5: Sidebar Integration
+- [ ] Update DashboardLayout to use permission plans
+- [ ] Implement permission checking logic (Plan + Overrides)
+- [ ] Review all sidebar items for correct role assignment
+- [ ] Test sidebar with different plans
+
+### Phase 6: User Permission Override UI
+- [ ] Create User Permission Override page
+- [ ] Show user's current plan
+- [ ] Show all permission groups with override toggles
+- [ ] Save overrides without breaking the plan
+
+### Phase 7: Testing
+- [ ] Test Owner role (full access)
+- [ ] Test Reseller Basic plan
+- [ ] Test Reseller Pro plan
+- [ ] Test Client Basic plan
+- [ ] Test Client Pro plan
+- [ ] Test permission overrides
+- [ ] Test new user registration with default plan
 - [ ] Save checkpoint
