@@ -41,7 +41,7 @@ export function NasHealthWidget({ data, isLoading }: NasHealthWidgetProps) {
     value: Number(item.count),
   }));
 
-  const totalNas = chartData.reduce((sum, item) => sum + item.value, 0);
+  const totalNas = chartData.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
 
   return (
     <Card className="p-6">
@@ -57,7 +57,7 @@ export function NasHealthWidget({ data, isLoading }: NasHealthWidgetProps) {
           </p>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-bold">{totalNas}</div>
+          <div className="text-2xl font-bold">{isNaN(totalNas) ? 0 : totalNas}</div>
           <p className="text-sm text-muted-foreground">Total NAS</p>
         </div>
       </div>
@@ -96,7 +96,7 @@ export function NasHealthWidget({ data, isLoading }: NasHealthWidgetProps) {
                   <Icon className="h-4 w-4" style={{ color: STATUS_COLORS[item.status as keyof typeof STATUS_COLORS] }} />
                   <span className="font-medium capitalize">{item.status}</span>
                 </div>
-                <span className="font-bold">{item.count}</span>
+                <span className="font-bold">{isNaN(Number(item.count)) ? 0 : Number(item.count)}</span>
               </div>
             );
           })}
