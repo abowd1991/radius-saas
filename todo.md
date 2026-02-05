@@ -2673,4 +2673,11 @@
 - [x] Update fallback values in Landing.tsx Hero section
 - [x] Update Footer text in Landing.tsx
 - [x] Test Landing page to verify changes (verified - "Radius Pro" now appears)
+- [x] Save checkpoint (version: 6fc427f5)
+
+## Remove Duplicate "خطط SaaS" Menu Item (Feb 5, 2026)
+- [x] Find DashboardLayout component
+- [x] Locate "خطط SaaS" menu item in sidebar (line 191)
+- [x] Remove duplicate menu item from Billing section
+- [x] Test sidebar navigation (verified - "خطط SaaS" removed successfully)
 - [ ] Save checkpoint

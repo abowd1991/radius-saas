@@ -188,7 +188,6 @@ const getMenuSections = (role: string, t: (key: string) => string, permissions: 
         { icon: Wallet, label: "المحفظة", path: "/wallet" },
         { icon: Wallet, label: "سجل المحفظة", path: "/wallet-ledger" },
         { icon: CreditCard, label: "الاشتراكات", path: "/tenant-subscriptions" },
-        { icon: Package, label: "خطط SaaS", path: "/saas-plans" },
       ],
     },
     // 8. Reports & Analytics (التقارير والتحليلات)
