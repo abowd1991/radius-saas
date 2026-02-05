@@ -2641,3 +2641,8 @@
 - [x] Build Subscription Plans Management UI page
 - [x] Update landing page to use dynamic settings from database
 - [x] Test all customization features (Site Settings, Subscription Plans, Landing Page)
+
+## Bug Fix - Site Settings & NasHealthWidget (Feb 5, 2026)
+- [x] Fix Site Settings API validation error (optional fields now accept null)
+- [x] Fix React key warning in NasHealthWidget component (fixed after restart)
+- [x] Test both fixes and verify no errors (Console clean!)
