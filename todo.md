@@ -2652,3 +2652,17 @@
 - [x] Fix API returning HTML instead of JSON error (added content-type check)
 - [x] Fix React key warning in NasHealthWidget (fixed after server restart)
 - [x] Test all fixes and verify no errors (Console clean!)
+
+## Test Backup System (Feb 5, 2026)
+- [x] Navigate to Backup Management page
+- [x] Create a test backup to verify mysqldump works correctly
+- [x] Verify backup file was created successfully (161.1 KB)
+- [x] Report test results to user (mysqldump working perfectly!)
+
+## Replace 'راديوس' with 'Radius Pro' (Feb 5, 2026)
+- [x] Find all files containing 'راديوس' text (2 files found)
+- [x] Replace 'راديوس' with 'Radius Pro' in login page (Auth.tsx)
+- [x] Replace 'راديوس' with 'Radius Pro' in DashboardLayout sidebar (LanguageContext.tsx)
+- [x] Replace 'راديوس' with 'Radius Pro' in all other components (completed)
+- [x] Test changes across multiple pages (verified in Landing page header)
+- [ ] Save checkpoint

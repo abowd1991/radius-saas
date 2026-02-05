@@ -13,7 +13,7 @@ interface Translations {
 // Translation strings
 export const translations: Translations = {
   // Common
-  "app.name": { ar: "راديوس", en: "RADIUS" },
+  "app.name": { ar: "Radius Pro", en: "Radius Pro" },
   "app.tagline": { ar: "منصة إدارة خدمات الإنترنت", en: "Internet Services Management Platform" },
   "common.loading": { ar: "جاري التحميل...", en: "Loading..." },
   "common.save": { ar: "حفظ", en: "Save" },

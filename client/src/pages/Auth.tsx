@@ -667,7 +667,7 @@ export default function Auth() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">راديوس</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Radius Pro</h1>
           <p className="text-slate-400">نظام إدارة RADIUS المتكامل</p>
         </div>
 
