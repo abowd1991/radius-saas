@@ -2798,3 +2798,52 @@
 - [x] Verified data isolation (20/20 tests passed)
 - [x] Verified permission system (feature-based)
 - [x] Documented new architecture
+
+
+## Post-Restructuring Enhancements
+
+### Phase 1: Comprehensive Testing
+- [ ] Create test client_owner account
+- [ ] Test sub-admin creation (client_admin + client_staff)
+- [ ] Verify tenant isolation (client A cannot see client B data)
+- [ ] Test permission system with different plans
+- [ ] Verify sidebar menu filtering for each role
+
+### Phase 2: Default Permission Plans
+- [ ] Create API to set default plan for client role
+- [ ] Create API to set default plan for reseller role
+- [ ] Add UI in Permission Plans page to configure defaults
+- [ ] Update signup flow to auto-assign default plan
+- [ ] Test new user registration with auto-plan assignment
+
+### Phase 3: Audit Log for Sensitive Operations
+- [ ] Add audit log for sub-admin creation
+- [ ] Add audit log for sub-admin updates
+- [ ] Add audit log for sub-admin deletion
+- [ ] Add audit log for permission plan changes
+- [ ] Add audit log for permission override changes
+- [ ] Create audit log viewer page
+- [ ] Test audit logging
+
+
+## Post-Restructuring Enhancements ✅ COMPLETED (Feb 10, 2026)
+
+### Enhancement 1: Comprehensive System Testing
+- [x] Created comprehensive test suite (14/14 tests passed)
+- [x] Tested user creation (client_owner, client_admin, client_staff)
+- [x] Tested tenant isolation (2+ tenants)
+- [x] Tested permission system
+- [x] Tested sub-admin hierarchy
+
+### Enhancement 2: Default Permission Plans
+- [x] Created default plans API (getDefaultPlan, setDefaultPlan, listDefaults)
+- [x] Updated signup flow to auto-assign default plan
+- [x] Added permissionPlans.isDefault field support
+- [x] Integrated with registration process
+
+### Enhancement 3: Audit Log for Sensitive Operations
+- [x] Added audit logging for sub-admin creation/update/deletion
+- [x] Added audit action types: sub_admin_create, sub_admin_update, sub_admin_delete
+- [x] Added permission audit types: permission_plan_change, permission_override_add, permission_override_remove
+- [x] Integrated logAudit into sub-admin router operations
+- [x] Audit log viewer page already exists (/audit-logs)

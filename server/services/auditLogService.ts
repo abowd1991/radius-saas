@@ -27,6 +27,12 @@ export type AuditAction =
   | 'vpn_disconnect'
   | 'login'
   | 'logout'
+  | 'sub_admin_create'
+  | 'sub_admin_update'
+  | 'sub_admin_delete'
+  | 'permission_plan_change'
+  | 'permission_override_add'
+  | 'permission_override_remove'
   // VPS Management actions
   | 'system_update'
   | 'system_rollback'

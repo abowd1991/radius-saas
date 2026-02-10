@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { eq, or, and, gt } from "drizzle-orm";
 import { getDb } from "../db";
-import { users } from "../../drizzle/schema";
+import { users, permissionPlans } from "../../drizzle/schema";
 import { createTenantSubscription } from "../_core/tenantSubscriptions";
 import { 
   generateVerificationCode, 
@@ -98,6 +98,18 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   const trialEndDate = new Date();
   trialEndDate.setDate(trialEndDate.getDate() + 7);
 
+  // Get default permission plan for client role
+  const [defaultPlan] = await db
+    .select()
+    .from(permissionPlans)
+    .where(
+      and(
+        eq(permissionPlans.role, "client"),
+        eq(permissionPlans.isDefault, true)
+      )
+    )
+    .limit(1);
+
   // Create user with trial status
   const [newUser] = await db
     .insert(users)
@@ -113,6 +125,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
       accountStatus: "trial", // Start with trial
       trialStartDate,
       trialEndDate,
+      permissionPlanId: defaultPlan?.id || null, // Auto-assign default plan
       emailVerified: false,
       emailVerificationCode: verificationCode,
       emailVerificationExpires: verificationExpires,

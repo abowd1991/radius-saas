@@ -29,6 +29,7 @@ import { eq, and, isNull, sql } from "drizzle-orm";
 import * as radiusSubscribers from "./db/radiusSubscribers";
 import { logAudit } from "./services/auditLogService";
 import { subAdminRouter } from "./routers-sub-admin";
+import { defaultPlansRouter } from "./routers-default-plans";
 import * as vpnIpPool from "./db/vpnIpPool";
 import { getTenantContext, getEffectiveOwnerId, canSeeAllData } from "./tenant-isolation";
 import * as freeradiusService from "./services/freeradiusService";
@@ -5723,6 +5724,7 @@ export const appRouter = router({
   auth: authRouter,
   users: usersRouter,
   subAdmin: subAdminRouter,
+  defaultPlans: defaultPlansRouter,
   plans: plansRouter,
   saasPlans: saasPlansRouter,
   nas: nasRouter,

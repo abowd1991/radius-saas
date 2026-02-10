@@ -5,6 +5,7 @@ import { getDb } from "./db";
 import { users } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { logAudit } from "./services/auditLogService";
 
 /**
  * Sub-Admin Router
@@ -62,6 +63,22 @@ export const subAdminRouter = router({
         role: input.role,
         tenantId: ctx.user.id, // Link to parent client
         status: "active",
+      });
+
+      // Log audit
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: "sub_admin_create",
+        targetType: "user",
+        targetId: newSubAdmin.insertId.toString(),
+        targetName: input.name,
+        method: "api",
+        result: "success",
+        details: {
+          email: input.email,
+          role: input.role,
+        },
       });
 
       return {
@@ -153,6 +170,19 @@ export const subAdminRouter = router({
       // Update sub-admin
       await db.update(users).set(updateData).where(eq(users.id, input.id));
 
+      // Log audit
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: "sub_admin_update",
+        targetType: "user",
+        targetId: input.id.toString(),
+        targetName: subAdmin.name || "",
+        method: "api",
+        result: "success",
+        details: updateData,
+      });
+
       return { success: true };
     }),
 
@@ -187,6 +217,22 @@ export const subAdminRouter = router({
 
       // Delete sub-admin
       await db.delete(users).where(eq(users.id, input.id));
+
+      // Log audit
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: "sub_admin_delete",
+        targetType: "user",
+        targetId: input.id.toString(),
+        targetName: subAdmin.name || "",
+        method: "api",
+        result: "success",
+        details: {
+          email: subAdmin.email,
+          role: subAdmin.role,
+        },
+      });
 
       return { success: true };
     }),
