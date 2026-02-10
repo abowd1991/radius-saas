@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Info,
   Loader2,
+  MessageSquare,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -47,6 +48,8 @@ const getNotificationIcon = (type: string) => {
       return <Server className="h-4 w-4 text-green-500" />;
     case "low_balance":
       return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+    case "support":
+      return <MessageSquare className="h-4 w-4 text-purple-500" />;
     default:
       return <Info className="h-4 w-4 text-blue-500" />;
   }

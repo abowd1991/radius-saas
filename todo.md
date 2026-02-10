@@ -3101,3 +3101,30 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Remove image button (X icon)
 - [x] Loading state during upload
 
+
+
+## Support Notifications System
+
+### Phase 1: Notification on New Ticket ✅ COMPLETED
+- [x] Add notification creation in createTicket mutation
+- [x] Notify super_admin when new ticket is created
+- [x] Include ticket number, subject, and priority in notification
+
+### Phase 2: Notification on New Message ✅ COMPLETED
+- [x] Add notification creation in addMessage mutation
+- [x] Notify ticket owner when admin replies
+- [x] Notify super_admin when client sends message
+- [x] Don't notify sender of their own message
+
+### Phase 3: Bell Icon in Header ✅ COMPLETED
+- [x] Bell icon already exists in DashboardLayout header
+- [x] Show unread notification count badge (working)
+- [x] Dropdown menu with recent notifications (working)
+- [x] Mark as read functionality (working)
+- [x] Auto-refresh every 30 seconds (working)
+- [x] Added support icon (MessageSquare, purple)
+
+### Phase 4: Real-time Updates (Optional)
+- [ ] Auto-refresh notifications every 30 seconds
+- [ ] Toast notification for new support messages
+- [ ] Sound notification (optional)

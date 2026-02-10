@@ -2892,10 +2892,29 @@ const ticketsRouter = router({
       category: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return ticketDb.createTicket({
+      const ticket = await ticketDb.createTicket({
         ...input,
         userId: ctx.user.id,
       });
+      
+      // Notify super_admin about new ticket
+      const db = await getDb();
+      if (db) {
+        const superAdmins = await db.select().from(users).where(eq(users.role, 'super_admin'));
+        for (const admin of superAdmins) {
+          await notificationDb.createNotification({
+            userId: admin.id,
+            type: 'support',
+            title: 'New Support Ticket',
+            titleAr: 'تذكرة دعم جديدة',
+            message: `New ticket #${ticket.ticketNumber}: ${input.subject}`,
+            messageAr: `تذكرة جديدة #${ticket.ticketNumber}: ${input.subject}`,
+            data: { ticketId: ticket.id, ticketNumber: ticket.ticketNumber },
+          });
+        }
+      }
+      
+      return ticket;
     }),
 
   addMessage: protectedProcedure
@@ -2905,10 +2924,47 @@ const ticketsRouter = router({
       attachmentUrl: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return ticketDb.addMessage({
+      const message = await ticketDb.addMessage({
         ...input,
         senderId: ctx.user.id,
       });
+      
+      // Get ticket details
+      const ticket = await ticketDb.getTicketById(input.ticketId);
+      if (!ticket) return message;
+      
+      const db = await getDb();
+      if (!db) return message;
+      
+      // If sender is super_admin, notify ticket owner
+      if (ctx.user.role === 'super_admin' && ticket.userId !== ctx.user.id) {
+        await notificationDb.createNotification({
+          userId: ticket.userId,
+          type: 'support',
+          title: 'New Reply to Your Ticket',
+          titleAr: 'رد جديد على تذكرتك',
+          message: `Admin replied to ticket #${ticket.ticketNumber}`,
+          messageAr: `المدير رد على التذكرة #${ticket.ticketNumber}`,
+          data: { ticketId: ticket.id, ticketNumber: ticket.ticketNumber },
+        });
+      }
+      // If sender is client, notify super_admin
+      else if (ctx.user.role !== 'super_admin') {
+        const superAdmins = await db.select().from(users).where(eq(users.role, 'super_admin'));
+        for (const admin of superAdmins) {
+          await notificationDb.createNotification({
+            userId: admin.id,
+            type: 'support',
+            title: 'New Message in Support Ticket',
+            titleAr: 'رسالة جديدة في تذكرة الدعم',
+            message: `Client sent a message in ticket #${ticket.ticketNumber}`,
+            messageAr: `العميل أرسل رسالة في التذكرة #${ticket.ticketNumber}`,
+            data: { ticketId: ticket.id, ticketNumber: ticket.ticketNumber },
+          });
+        }
+      }
+      
+      return message;
     }),
 
   getMessages: protectedProcedure
