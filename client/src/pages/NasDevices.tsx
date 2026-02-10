@@ -65,6 +65,11 @@ import {
   Zap,
 } from "lucide-react";
 import { useState, useRef } from "react";
+import { usePagination } from "@/hooks/usePagination";
+import { useSorting } from "@/hooks/useSorting";
+import { DataPagination } from "@/components/ui/data-pagination";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 
 // Connection type options
 const connectionTypes = [
@@ -385,6 +390,23 @@ export default function NasDevices() {
     (device.shortname || device.nasname).toLowerCase().includes(searchQuery.toLowerCase()) ||
     device.nasname.includes(searchQuery)
   );
+
+  // Sorting
+  const { sortedData: sortedDevices, sortColumn, sortDirection, handleSort } = useSorting(
+    filteredDevices,
+    "createdAt",
+    "desc"
+  );
+
+  // Pagination
+  const {
+    paginatedData: paginatedDevices,
+    currentPage,
+    totalPages,
+    totalItems,
+    itemsPerPage,
+    setCurrentPage,
+  } = usePagination(sortedDevices, 15);
 
   // Create Network Form Component
   const CreateNetworkForm = () => (
@@ -1038,18 +1060,56 @@ export default function NasDevices() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="font-semibold">{language === "ar" ? "الاسم" : "Name"}</TableHead>
-                  <TableHead className="font-semibold">IP</TableHead>
-                  <TableHead className="font-semibold">{language === "ar" ? "نوع الاتصال" : "Connection"}</TableHead>
-                  <TableHead className="font-semibold">{language === "ar" ? "النوع" : "Type"}</TableHead>
+                  <SortableTableHead
+                    column="shortname"
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                  >
+                    {language === "ar" ? "الاسم" : "Name"}
+                  </SortableTableHead>
+                  <SortableTableHead
+                    column="nasname"
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                  >
+                    IP
+                  </SortableTableHead>
+                  <SortableTableHead
+                    column="connectionType"
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                  >
+                    {language === "ar" ? "نوع الاتصال" : "Connection"}
+                  </SortableTableHead>
+                  <SortableTableHead
+                    column="type"
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                  >
+                    {language === "ar" ? "النوع" : "Type"}
+                  </SortableTableHead>
                   <TableHead className="font-semibold">{t("common.status")}</TableHead>
                   <TableHead className="font-semibold">{language === "ar" ? "حالة التهيئة" : "Provisioning"}</TableHead>
-                  <TableHead className="font-semibold">{language === "ar" ? "آخر اتصال" : "Last Seen"}</TableHead>
+                  <SortableTableHead
+                    column="lastSeen"
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                  >
+                    {language === "ar" ? "آخر اتصال" : "Last Seen"}
+                  </SortableTableHead>
                   <TableHead className="text-center font-semibold w-[100px]">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDevices.map((device: any) => (
+                {isLoading ? (
+                  <TableSkeleton rows={5} columns={8} />
+                ) : paginatedDevices && paginatedDevices.length > 0 ? (
+                  paginatedDevices.map((device: any) => (
                   <TableRow key={device.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="py-3">
                       <div className="flex items-center gap-2">
@@ -1112,9 +1172,26 @@ export default function NasDevices() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      {language === 'ar' ? 'لا توجد شبكات' : 'No networks found'}
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <DataPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">

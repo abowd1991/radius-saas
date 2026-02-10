@@ -63,6 +63,11 @@ import {
   Wifi,
 } from "lucide-react";
 import { useState } from "react";
+import { usePagination } from "@/hooks/usePagination";
+import { useSorting } from "@/hooks/useSorting";
+import { DataPagination } from "@/components/ui/data-pagination";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 
 export default function Vouchers() {
   const { user } = useAuth();
@@ -505,6 +510,23 @@ export default function Vouchers() {
       v.password?.toLowerCase().includes(query)
     );
   });
+
+  // Sorting
+  const { sortedData: sortedVouchers, sortColumn, sortDirection, handleSort } = useSorting(
+    filteredVouchers,
+    "createdAt",
+    "desc"
+  );
+
+  // Pagination
+  const {
+    paginatedData: paginatedVouchers,
+    currentPage,
+    totalPages,
+    totalItems,
+    itemsPerPage,
+    setCurrentPage,
+  } = usePagination(sortedVouchers, 20);
 
   const isAdmin = user?.role === 'super_admin' || user?.role === 'owner';
   // Allow owner, client, reseller, and admin to create cards
@@ -991,29 +1013,53 @@ export default function Vouchers() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="font-semibold">{language === 'ar' ? 'رقم الكرت' : 'Username'}</TableHead>
+                    <SortableTableHead
+                      column="username"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={handleSort}
+                    >
+                      {language === 'ar' ? 'رقم الكرت' : 'Username'}
+                    </SortableTableHead>
                     <TableHead className="font-semibold">{language === 'ar' ? 'كلمة السر' : 'Password'}</TableHead>
-                    <TableHead className="font-semibold">{language === 'ar' ? 'الرقم التسلسلي' : 'Serial'}</TableHead>
-                    <TableHead className="font-semibold">{language === 'ar' ? 'الحالة' : 'Status'}</TableHead>
-                    <TableHead className="font-semibold">{language === 'ar' ? 'تاريخ الإنشاء' : 'Created'}</TableHead>
+                    <SortableTableHead
+                      column="serialNumber"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={handleSort}
+                    >
+                      {language === 'ar' ? 'الرقم التسلسلي' : 'Serial'}
+                    </SortableTableHead>
+                    <SortableTableHead
+                      column="status"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={handleSort}
+                    >
+                      {language === 'ar' ? 'الحالة' : 'Status'}
+                    </SortableTableHead>
+                    <SortableTableHead
+                      column="createdAt"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={handleSort}
+                    >
+                      {language === 'ar' ? 'تاريخ الإنشاء' : 'Created'}
+                    </SortableTableHead>
                     <TableHead className="text-end font-semibold w-[80px]">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        {language === 'ar' ? 'جاري التحميل...' : 'Loading...'}
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredVouchers?.length === 0 ? (
+                    <TableSkeleton rows={5} columns={6} />
+                  ) : paginatedVouchers?.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         {language === 'ar' ? 'لا توجد كروت' : 'No cards found'}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredVouchers?.map((voucher: any) => (
+                    paginatedVouchers?.map((voucher: any) => (
                       <TableRow key={voucher.id} className="hover:bg-muted/30 transition-colors group">
                         <TableCell className="py-3 font-mono text-sm">
                           <div className="flex items-center gap-1.5">
@@ -1079,6 +1125,16 @@ export default function Vouchers() {
                 </TableBody>
               </Table>
               </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <DataPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

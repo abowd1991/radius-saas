@@ -3025,3 +3025,29 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - TypeScript with proper types
 - Responsive design
 - Accessibility (keyboard navigation, ARIA labels)
+
+
+## UI Refresh - Remaining Tasks (User Request: Complete Everything)
+
+### Phase 3: Apply Components to Existing Pages
+- [x] Vouchers page: Add Pagination + Sorting + Skeleton (cards tab)
+- [x] NAS Devices page: Add Pagination + Sorting + Skeleton
+- [x] Sessions/OnlineUsers page: Add Pagination + Sorting + Skeleton
+- [ ] Resellers page: Add Pagination + Sorting + Skeleton
+- [ ] Staff Management page: Add Pagination + Sorting + Skeleton
+
+### Phase 4: Improve Remaining Pages
+- [ ] Clients Management page: Modern design + Pagination + Sorting
+- [ ] Speed Plans page: Modern design + Better cards layout
+- [ ] Reports/Analytics pages: Modern charts + Better layout
+- [ ] Wallet/Billing page: Modern design + Transaction history
+- [ ] Settings pages: Organized sections + Better forms
+- [ ] Permission Plans page: Modern design + Better visualization
+
+### Phase 5: Visual Polish
+- [ ] Color palette: Unify primary/secondary/accent colors
+- [ ] Typography: Establish clear hierarchy (headings, body, captions)
+- [ ] Spacing: Ensure consistency across all pages
+- [ ] Animations: Add subtle micro-interactions (hover, transitions)
+- [ ] Shadows: Consistent elevation system
+- [ ] Borders: Unified border radius and colors

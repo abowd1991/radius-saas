@@ -1,4 +1,9 @@
 import { useState, useEffect } from "react";
+import { usePagination } from "@/hooks/usePagination";
+import { useSorting } from "@/hooks/useSorting";
+import { DataPagination } from "@/components/ui/data-pagination";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,6 +99,23 @@ export default function OnlineUsers() {
     session.nasIpAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     session.framedIpAddress?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
+
+  // Sorting
+  const { sortedData: sortedSessions, sortColumn, sortDirection, handleSort } = useSorting(
+    filteredSessions,
+    "username",
+    "asc"
+  );
+
+  // Pagination
+  const {
+    paginatedData: paginatedSessions,
+    currentPage,
+    totalPages,
+    totalItems,
+    itemsPerPage,
+    setCurrentPage,
+  } = usePagination(sortedSessions, 20);
 
   // Calculate stats
   const stats = {
@@ -198,31 +220,78 @@ export default function OnlineUsers() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : filteredSessions.length === 0 ? (
+            <TableSkeleton rows={5} columns={8} />
+          ) : paginatedSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <WifiOff className="h-12 w-12 mb-4" />
               <p>لا يوجد متصلين حالياً</p>
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="text-right font-semibold">المستخدم</TableHead>
-                    <TableHead className="text-right font-semibold">IP المستخدم</TableHead>
-                    <TableHead className="text-right font-semibold">الشبكة</TableHead>
-                    <TableHead className="text-right font-semibold">مدة الاتصال</TableHead>
-                    <TableHead className="text-right font-semibold">تحميل</TableHead>
-                    <TableHead className="text-right font-semibold">رفع</TableHead>
+                    <SortableTableHead
+                      column="username"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={handleSort}
+                      className="text-right"
+                    >
+                      المستخدم
+                    </SortableTableHead>
+                    <SortableTableHead
+                      column="framedIpAddress"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={handleSort}
+                      className="text-right"
+                    >
+                      IP المستخدم
+                    </SortableTableHead>
+                    <SortableTableHead
+                      column="nasName"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={handleSort}
+                      className="text-right"
+                    >
+                      الشبكة
+                    </SortableTableHead>
+                    <SortableTableHead
+                      column="sessionTime"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={handleSort}
+                      className="text-right"
+                    >
+                      مدة الاتصال
+                    </SortableTableHead>
+                    <SortableTableHead
+                      column="inputOctets"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={handleSort}
+                      className="text-right"
+                    >
+                      تحميل
+                    </SortableTableHead>
+                    <SortableTableHead
+                      column="outputOctets"
+                      sortColumn={sortColumn}
+                      sortDirection={sortDirection}
+                      onSort={handleSort}
+                      className="text-right"
+                    >
+                      رفع
+                    </SortableTableHead>
                     <TableHead className="text-right font-semibold">MAC</TableHead>
                     <TableHead className="text-center font-semibold w-[100px]">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSessions.map((session) => (
+                  {paginatedSessions.map((session) => (
                     <TableRow key={session.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="py-3">
                         <div className="flex items-center gap-2">
@@ -286,6 +355,17 @@ export default function OnlineUsers() {
                 </TableBody>
               </Table>
             </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <DataPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            )}
+            </>
           )}
         </CardContent>
       </Card>
