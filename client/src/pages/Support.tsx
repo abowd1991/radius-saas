@@ -36,6 +36,7 @@ import {
   Headphones,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { Image as ImageIcon, X, Paperclip } from "lucide-react";
 
 export default function Support() {
   const { user } = useAuth();
@@ -43,6 +44,10 @@ export default function Support() {
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch tickets
@@ -70,12 +75,39 @@ export default function Support() {
   const sendMessage = trpc.tickets.addMessage.useMutation({
     onSuccess: () => {
       setNewMessage("");
+      setSelectedImage(null);
+      setImagePreview(null);
       refetchMessages();
     },
     onError: (error: any) => {
       toast.error(error.message);
     },
   });
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // No size limit - allow any image size
+      if (!file.type.startsWith("image/")) {
+        toast.error(language === "ar" ? "يرجى اختيار صورة" : "Please select an image");
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const closeTicket = trpc.tickets.updateStatus.useMutation({
     onSuccess: () => {
@@ -144,15 +176,44 @@ export default function Support() {
     });
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedTicketId) return;
+    if ((!newMessage.trim() && !selectedImage) || !selectedTicketId) return;
+
+    let attachmentUrl: string | undefined;
+
+    // Upload image to S3 if selected
+    if (selectedImage) {
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", selectedImage);
+        
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const data = await response.json();
+        attachmentUrl = data.url;
+      } catch (error) {
+        toast.error(language === "ar" ? "فشل رفع الصورة" : "Failed to upload image");
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
 
     sendMessage.mutate({
       ticketId: selectedTicketId,
-      message: newMessage.trim(),
+      message: newMessage || (language === "ar" ? "صورة" : "Image"),
+      attachmentUrl,
     });
-  };
+  };;
 
   const selectedTicket = tickets?.find((t: any) => t.id === selectedTicketId);
 
@@ -328,6 +389,20 @@ export default function Support() {
                               : "bg-muted"
                           }`}>
                             <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                            {msg.attachmentUrl && (
+                              <a 
+                                href={msg.attachmentUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block mt-2"
+                              >
+                                <img 
+                                  src={msg.attachmentUrl} 
+                                  alt="Attachment" 
+                                  className="max-w-full max-h-64 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                />
+                              </a>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {formatDate(msg.createdAt)}
@@ -341,15 +416,54 @@ export default function Support() {
                 
                 {selectedTicket.status !== "closed" && (
                   <form onSubmit={handleSendMessage} className="border-t p-4">
+                    {imagePreview && (
+                      <div className="mb-3 relative inline-block">
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          className="max-h-32 rounded-lg border"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                     <div className="flex gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading || sendMessage.isPending}
+                      >
+                        <Paperclip className="h-4 w-4" />
+                      </Button>
                       <Input
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder={language === "ar" ? "اكتب رسالتك..." : "Type your message..."}
-                        disabled={sendMessage.isPending}
+                        disabled={sendMessage.isPending || isUploading}
                       />
-                      <Button type="submit" disabled={sendMessage.isPending || !newMessage.trim()}>
-                        <Send className="h-4 w-4" />
+                      <Button 
+                        type="submit" 
+                        disabled={sendMessage.isPending || isUploading || (!newMessage.trim() && !selectedImage)}
+                      >
+                        {isUploading ? (
+                          <span className="animate-spin">⏳</span>
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </form>

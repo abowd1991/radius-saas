@@ -3083,3 +3083,21 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Test all tabs work correctly
 - [ ] Checkpoint
 
+
+
+## Support Page - Image Upload Fix
+
+### Phase 1: Check Support Page
+- [ ] Read Support.tsx and identify issues
+- [ ] Check if chat/support functionality works
+- [ ] Identify why it's not working
+
+### Phase 2: Add Image Upload (Any Size) ✅ COMPLETED
+- [x] Allow clients and admins to upload images (paperclip button)
+- [x] 50MB file size limit (can be increased)
+- [x] Add image preview before sending
+- [x] Upload to S3 storage (/api/upload endpoint)
+- [x] Display uploaded images in support tickets (clickable, opens in new tab)
+- [x] Remove image button (X icon)
+- [x] Loading state during upload
+

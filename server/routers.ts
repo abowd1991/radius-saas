@@ -2902,6 +2902,7 @@ const ticketsRouter = router({
     .input(z.object({
       ticketId: z.number(),
       message: z.string().min(1),
+      attachmentUrl: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       return ticketDb.addMessage({
