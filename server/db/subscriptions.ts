@@ -1,6 +1,7 @@
-import { eq, desc, and, isNull } from "drizzle-orm";
+import { eq, desc, and, isNull, or } from "drizzle-orm";
 import { getDb } from "../db";
 import { radiusCards, radacct, onlineSessions, plans } from "../../drizzle/schema";
+import { TenantContext, canSeeAllData, getEffectiveOwnerId } from "../tenant-isolation";
 
 // Get all active cards (subscriptions)
 export async function getAllSubscriptions(options?: { status?: string; page?: number; limit?: number }) {
@@ -26,6 +27,38 @@ export async function getSubscriptionsByUserId(userId: number, options?: { statu
   if (!db) return [];
   
   const conditions = [eq(radiusCards.usedBy, userId)];
+  
+  if (options?.status) {
+    conditions.push(eq(radiusCards.status, options.status as any));
+  }
+  
+  return db.select()
+    .from(radiusCards)
+    .where(and(...conditions))
+    .orderBy(desc(radiusCards.createdAt))
+    .limit(options?.limit || 50);
+}
+
+// Get subscriptions with tenant isolation (supports sub-admins)
+export async function getSubscriptionsByTenant(tenantContext: TenantContext, options?: { status?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Owner/super_admin see all
+  if (canSeeAllData(tenantContext)) {
+    return getAllSubscriptions(options);
+  }
+  
+  // Others see only cards they own or created
+  const effectiveUserId = getEffectiveOwnerId(tenantContext);
+  
+  let conditions = [
+    or(
+      eq(radiusCards.createdBy, effectiveUserId),
+      eq(radiusCards.resellerId, effectiveUserId),
+      eq(radiusCards.usedBy, effectiveUserId)
+    )
+  ];
   
   if (options?.status) {
     conditions.push(eq(radiusCards.status, options.status as any));

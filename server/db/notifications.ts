@@ -1,6 +1,7 @@
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../db";
 import { notifications, InsertNotification } from "../../drizzle/schema";
+import { TenantContext, canSeeAllData, getEffectiveOwnerId } from "../tenant-isolation";
 
 // Valid notification types from schema
 type NotificationType = "invoice" | "payment" | "card" | "support" | "balance" | "subscription" | "system";
@@ -20,6 +21,16 @@ export async function getNotificationsByUserId(userId: number, options?: { unrea
     .where(and(...conditions))
     .orderBy(desc(notifications.createdAt))
     .limit(options?.limit || 50);
+}
+
+// Get notifications with tenant isolation (supports sub-admins)
+export async function getNotificationsByTenant(tenantContext: TenantContext, options?: { unreadOnly?: boolean; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Sub-admins see their parent client's notifications
+  const effectiveUserId = getEffectiveOwnerId(tenantContext);
+  return getNotificationsByUserId(effectiveUserId, options);
 }
 
 export async function getNotificationById(id: number) {

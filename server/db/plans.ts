@@ -1,6 +1,7 @@
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../db";
 import { plans, InsertPlan } from "../../drizzle/schema";
+import { TenantContext, buildTenantFilter } from "../tenant-isolation";
 
 // Get all plans (for super_admin)
 export async function getAllPlans() {
@@ -14,6 +15,23 @@ export async function getPlansByOwner(ownerId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(plans).where(eq(plans.ownerId, ownerId)).orderBy(desc(plans.createdAt));
+}
+
+// Get plans with tenant isolation (supports sub-admins)
+export async function getPlansByTenant(tenantContext: TenantContext) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const filter = buildTenantFilter(tenantContext, plans.ownerId);
+  
+  if (!filter) {
+    // No filtering needed (owner/super_admin)
+    return db.select().from(plans).orderBy(desc(plans.createdAt));
+  }
+  
+  return db.select().from(plans)
+    .where(filter)
+    .orderBy(desc(plans.createdAt));
 }
 
 // Get active plans by owner

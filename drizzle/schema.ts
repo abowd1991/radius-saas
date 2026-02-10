@@ -14,9 +14,10 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 20 }),
   address: text("address"),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["owner", "super_admin", "client_admin", "reseller", "client", "support"]).default("client").notNull(),
+  role: mysqlEnum("role", ["owner", "super_admin", "client_owner", "client_admin", "client_staff", "reseller", "client", "support"]).default("client").notNull(),
   ownerId: int("ownerId"), // Tenant/Client owner (null for Owner himself)
   resellerId: int("resellerId"), // For clients: their reseller ID
+  tenantId: int("tenantId"), // For sub-admins: their parent client_owner ID
   status: mysqlEnum("status", ["active", "suspended", "inactive"]).default("active").notNull(),
   accountStatus: mysqlEnum("accountStatus", ["trial", "active", "expired", "suspended"]).default("trial").notNull(),
   trialStartDate: timestamp("trialStartDate"),
@@ -1231,8 +1232,8 @@ export const siteSettings = mysqlTable("site_settings", {
   // Branding
   siteName: varchar("siteName", { length: 100 }).default("Radius Pro").notNull(),
   siteNameAr: varchar("siteNameAr", { length: 100 }).default("راديوس برو"),
-  tagline: varchar("tagline", { length: 500 }).default("Professional RADIUS Management Platform"),
-  taglineAr: varchar("taglineAr", { length: 500 }).default("منصة RADIUS احترافية لإدارة الإنترنت والكروت"),
+  tagline: text("tagline"),
+  taglineAr: text("taglineAr"),
   logoUrl: text("logoUrl"),
   faviconUrl: text("faviconUrl"),
   // Hero Section
@@ -1250,21 +1251,21 @@ export const siteSettings = mysqlTable("site_settings", {
   // Contact Info
   supportEmail: varchar("supportEmail", { length: 320 }).default("support@radius-pro.com"),
   supportPhone: varchar("supportPhone", { length: 50 }).default("+970 59 XXX XXXX"),
-  supportHoursText: varchar("supportHoursText", { length: 255 }).default("Saturday - Thursday: 9 AM - 6 PM"),
-  supportHoursTextAr: varchar("supportHoursTextAr", { length: 255 }).default("السبت - الخميس: 9 صباحاً - 6 مساءً"),
+  supportHoursText: text("supportHoursText"),
+  supportHoursTextAr: text("supportHoursTextAr"),
   // Footer
   companyName: varchar("companyName", { length: 255 }).default("RadiusPro"),
   companyNameAr: varchar("companyNameAr", { length: 255 }).default("راديوس برو"),
-  copyrightText: varchar("copyrightText", { length: 255 }).default("© 2026 RadiusPro. All rights reserved."),
-  copyrightTextAr: varchar("copyrightTextAr", { length: 255 }).default("جميع الحقوق محفوظة. RadiusPro 2026 ©"),
+  copyrightText: text("copyrightText"),
+  copyrightTextAr: text("copyrightTextAr"),
   // Social Media
   facebookUrl: text("facebookUrl"),
   twitterUrl: text("twitterUrl"),
   linkedinUrl: text("linkedinUrl"),
   instagramUrl: text("instagramUrl"),
   // SEO
-  metaTitle: varchar("metaTitle", { length: 255 }).default("Radius Pro - Professional RADIUS Management"),
-  metaTitleAr: varchar("metaTitleAr", { length: 255 }).default("راديوس برو - إدارة RADIUS احترافية"),
+  metaTitle: text("metaTitle"),
+  metaTitleAr: text("metaTitleAr"),
   metaDescription: text("metaDescription"),
   metaDescriptionAr: text("metaDescriptionAr"),
   metaKeywords: text("metaKeywords"),

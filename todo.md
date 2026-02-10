@@ -2748,3 +2748,55 @@
 - [x] Fixed filterMenuSections logic (was hiding menus incorrectly for non-owner users)
 - [x] Added console.log debugging in backend and frontend for permission tracking
 - [x] Verified permission system works end-to-end: registration → auto-assign plan → load effective permissions → filter sidebar
+
+## Platform Restructuring - Enterprise ISP/SaaS Model (Feb 10, 2026)
+
+### Phase 1: Database Schema Update
+- [x] Update users table role enum: owner, client_owner, client_admin, client_staff
+- [x] Add tenantId field to users table for client hierarchy
+- [ ] Update permission_groups to be feature-based (manage_cards, manage_nas, view_sessions, etc.)
+- [x] Run database migration
+
+### Phase 2: Client Isolation in Backend APIs ✅ COMPLETED
+- [x] Created tenant-isolation.ts helper with getTenantContext(), canSeeAllData(), getEffectiveOwnerId()
+- [x] Added tenantId filtering to 8 DB modules: NAS, Plans, Vouchers, Wallet, Invoices, Notifications, Tickets, Subscriptions
+- [x] Updated 8 routers to use tenant context: nasRouter, plansRouter, vouchersRouter, walletRouter, invoicesRouter, subscriptionsRouter, ticketsRouter, notificationsRouter
+- [x] Ensured client_owner/client_admin/client_staff can only see their own data
+- [x] Wrote and passed 20 tenant isolation tests (2 tenants + sub-admin scenarios)
+
+### Phase 3: Feature-Based Permission System
+- [ ] Update permission groups to use feature flags instead of page paths
+- [ ] Update filterMenuSections to build sidebar from feature flags
+- [ ] Update useFeatureAccess to return feature flags
+- [ ] Test permission system with new feature flags
+
+### Phase 4: Admin Master Control Page
+- [ ] Create unified admin page with tabs: Users, Permission Plans, Overrides, Resellers
+- [ ] Merge existing pages into single interface
+- [ ] Add search and filters
+- [ ] Owner-only access
+
+### Phase 5: Client Sub-Admin System
+- [ ] Create API for client_owner to create sub-admins (client_admin, client_staff)
+- [ ] Create page for client to manage staff accounts
+- [ ] Add middleware to verify sub-admin access scope
+- [ ] Test sub-admin isolation
+
+### Phase 6: Signup Flow Update
+- [ ] Update signup page to create client_owner only
+- [ ] Auto-assign default permission plan on signup
+- [ ] Remove owner/super_admin creation from UI
+- [ ] Test new signup flow
+
+### Phase 7: Client Dashboard
+- [ ] Create separate dashboard for clients showing only their data
+- [ ] Hide admin menus from client sidebar
+- [ ] Show: My NAS, My Cards, My Plans, My Balance, My Reports
+- [ ] Test client view isolation
+
+### Phase 8: Testing & Cleanup
+- [ ] Delete duplicate/unused pages
+- [ ] Test all roles: owner, client_owner, client_admin, client_staff
+- [ ] Verify data isolation
+- [ ] Verify permission system
+- [ ] Document new architecture

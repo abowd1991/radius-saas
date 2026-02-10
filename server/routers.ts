@@ -29,6 +29,7 @@ import { eq, and, isNull, sql } from "drizzle-orm";
 import * as radiusSubscribers from "./db/radiusSubscribers";
 import { logAudit } from "./services/auditLogService";
 import * as vpnIpPool from "./db/vpnIpPool";
+import { getTenantContext, getEffectiveOwnerId, canSeeAllData } from "./tenant-isolation";
 import * as freeradiusService from "./services/freeradiusService";
 import * as multiChannelNotification from "./services/multiChannelNotificationService";
 import * as tweetsmsService from "./services/tweetsmsService";
@@ -666,22 +667,24 @@ const usersRouter = router({
 // PLANS ROUTER
 // ============================================================================
 const plansRouter = router({
-  // List plans - super_admin sees all, others see only their own
+  // List plans - with tenant isolation
   list: protectedProcedure.query(async ({ ctx }) => {
-    if (ctx.user.role === 'super_admin') {
-      return planDb.getAllPlans();
-    }
-    return planDb.getPlansByOwner(ctx.user.id);
+    const tenantContext = getTenantContext(ctx.user);
+    return planDb.getPlansByTenant(tenantContext);
   }),
 
-  // Get plan by ID - check ownership for non-super_admin
+  // Get plan by ID - check ownership with tenant isolation
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       const plan = await planDb.getPlanById(input.id);
       if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "Plan not found" });
-      // Check ownership for non-super_admin
-      if (ctx.user.role !== 'super_admin' && plan.ownerId !== ctx.user.id) {
+      
+      // Check ownership with tenant isolation
+      const tenantContext = getTenantContext(ctx.user);
+      const effectiveOwnerId = getEffectiveOwnerId(tenantContext);
+      
+      if (!canSeeAllData(tenantContext) && plan.ownerId !== effectiveOwnerId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return plan;
@@ -714,7 +717,7 @@ const plansRouter = router({
       return planDb.createPlan({ ...input, ownerId: ctx.user.id });
     }),
 
-  // Update plan - check ownership
+  // Update plan - check ownership with tenant isolation
   update: activeSubscriptionProcedure
     .input(z.object({
       id: z.number(),
@@ -732,10 +735,14 @@ const plansRouter = router({
       status: z.enum(['active', 'inactive']).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Check ownership for non-super_admin
+      // Check ownership with tenant isolation
       const plan = await planDb.getPlanById(input.id);
       if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "Plan not found" });
-      if (ctx.user.role !== 'super_admin' && plan.ownerId !== ctx.user.id) {
+      
+      const tenantContext = getTenantContext(ctx.user);
+      const effectiveOwnerId = getEffectiveOwnerId(tenantContext);
+      
+      if (!canSeeAllData(tenantContext) && plan.ownerId !== effectiveOwnerId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return planDb.updatePlan(input.id, input);
@@ -759,22 +766,24 @@ const plansRouter = router({
 // NAS DEVICES ROUTER
 // ============================================================================
 const nasRouter = router({
-  // List NAS devices - super_admin sees all, others see only their own
+  // List NAS devices - with tenant isolation
   list: protectedProcedure.query(async ({ ctx }) => {
-    if (ctx.user.role === 'super_admin') {
-      return nasDb.getAllNasDevices();
-    }
-    return nasDb.getNasDevicesByOwner(ctx.user.id);
+    const tenantContext = getTenantContext(ctx.user);
+    return nasDb.getNasDevicesByTenant(tenantContext);
   }),
 
-  // Get NAS by ID - check ownership for non-super_admin
+  // Get NAS by ID - check ownership with tenant isolation
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       const nas = await nasDb.getNasById(input.id);
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
-      // Check ownership for non-super_admin
-      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+      
+      // Check ownership with tenant isolation
+      const tenantContext = getTenantContext(ctx.user);
+      const effectiveOwnerId = getEffectiveOwnerId(tenantContext);
+      
+      if (!canSeeAllData(tenantContext) && nas.ownerId !== effectiveOwnerId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return nas;
@@ -1977,7 +1986,10 @@ const nasRouter = router({
 // ============================================================================
 const walletRouter = router({
   getMyWallet: protectedProcedure.query(async ({ ctx }) => {
-    return walletDb.getWalletByUserId(ctx.user.id);
+    // Sub-admins see their parent client's wallet
+    const tenantContext = getTenantContext(ctx.user);
+    const effectiveUserId = getEffectiveOwnerId(tenantContext);
+    return walletDb.getWalletByUserId(effectiveUserId);
   }),
 
   getWalletByUserId: superAdminProcedure
@@ -1991,8 +2003,11 @@ const walletRouter = router({
       page: z.number().default(1),
       limit: z.number().default(20),
     }).optional())
-    .query(async ({ ctx }) => {
-      return walletDb.getTransactionsByUserId(ctx.user.id);
+    .query(async ({ ctx, input }) => {
+      // Sub-admins see their parent client's transactions
+      const tenantContext = getTenantContext(ctx.user);
+      const effectiveUserId = getEffectiveOwnerId(tenantContext);
+      return walletDb.getTransactionsByUserId(effectiveUserId, input?.limit || 20);
     }),
 
   deposit: superAdminProcedure
@@ -2712,10 +2727,8 @@ const invoicesRouter = router({
       limit: z.number().default(20),
     }).optional())
     .query(async ({ ctx, input }) => {
-      if (ctx.user.role === 'super_admin') {
-        return invoiceDb.getAllInvoices(input);
-      }
-      return invoiceDb.getInvoicesByUserId(ctx.user.id, input);
+      const tenantContext = getTenantContext(ctx.user);
+      return invoiceDb.getInvoicesByTenant(tenantContext, input);
     }),
 
   getById: protectedProcedure
@@ -2770,10 +2783,8 @@ const subscriptionsRouter = router({
       limit: z.number().default(20),
     }).optional())
     .query(async ({ ctx, input }) => {
-      if (ctx.user.role === 'super_admin') {
-        return subscriptionDb.getAllSubscriptions(input);
-      }
-      return subscriptionDb.getSubscriptionsByUserId(ctx.user.id, input);
+      const tenantContext = getTenantContext(ctx.user);
+      return subscriptionDb.getSubscriptionsByTenant(tenantContext, input);
     }),
 
   getById: protectedProcedure
@@ -2854,10 +2865,8 @@ const ticketsRouter = router({
       limit: z.number().default(20),
     }).optional())
     .query(async ({ ctx, input }) => {
-      if (ctx.user.role === 'super_admin') {
-        return ticketDb.getAllTickets(input);
-      }
-      return ticketDb.getTicketsByUserId(ctx.user.id, input);
+      const tenantContext = getTenantContext(ctx.user);
+      return ticketDb.getTicketsByTenant(tenantContext, input);
     }),
 
   getById: protectedProcedure
@@ -2933,7 +2942,8 @@ const notificationsRouter = router({
       limit: z.number().default(20),
     }).optional())
     .query(async ({ ctx, input }) => {
-      return notificationDb.getNotificationsByUserId(ctx.user.id, input);
+      const tenantContext = getTenantContext(ctx.user);
+      return notificationDb.getNotificationsByTenant(tenantContext, input);
     }),
 
   markAsRead: protectedProcedure

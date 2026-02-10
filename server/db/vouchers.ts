@@ -1,6 +1,7 @@
-import { eq, desc, and, or, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, or, sql, inArray } from "drizzle-orm";
 import { getDb } from "../db";
 import { radiusCards, cardBatches, radcheck, radreply, radusergroup, plans, InsertRadiusCard, InsertCardBatch } from "../../drizzle/schema";
+import { TenantContext, buildTenantFilter } from "../tenant-isolation";
 import { nanoid } from "nanoid";
 
 // Generate random username for RADIUS
@@ -160,8 +161,53 @@ export async function getCardsByReseller(userId: number, options?: { status?: st
   const db = await getDb();
   if (!db) return [];
   
+  let query = db.select().from(radiusCards)
+    .where(
+      or(
+        eq(radiusCards.resellerId, userId),
+        eq(radiusCards.createdBy, userId)
+      )
+    );
+  
+  if (options?.status) {
+    query = query.where(and(
+      or(
+        eq(radiusCards.resellerId, userId),
+        eq(radiusCards.createdBy, userId)
+      ),
+      eq(radiusCards.status, options.status as any)
+    ));
+  }
+  
+  if (options?.batchId) {
+    query = query.where(and(
+      or(
+        eq(radiusCards.resellerId, userId),
+        eq(radiusCards.createdBy, userId)
+      ),
+      eq(radiusCards.batchId, options.batchId)
+    ));
+  }
+  
+  return query.orderBy(desc(radiusCards.createdAt));
+}
+
+// Get cards with tenant isolation (supports sub-admins)
+export async function getCardsByTenant(tenantContext: TenantContext, options?: { status?: string; batchId?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const effectiveOwnerId = tenantContext.role === 'client_admin' || tenantContext.role === 'client_staff' 
+    ? tenantContext.tenantId! 
+    : tenantContext.userId;
+  
   // Filter by resellerId OR createdBy for multi-tenant isolation
-  let conditions = [or(eq(radiusCards.resellerId, userId), eq(radiusCards.createdBy, userId))];
+  let conditions = [
+    or(
+      eq(radiusCards.resellerId, effectiveOwnerId),
+      eq(radiusCards.createdBy, effectiveOwnerId)
+    )
+  ];
   
   if (options?.status) {
     conditions.push(eq(radiusCards.status, options.status as any));
@@ -170,9 +216,27 @@ export async function getCardsByReseller(userId: number, options?: { status?: st
     conditions.push(eq(radiusCards.batchId, options.batchId));
   }
   
-  return db.select()
-    .from(radiusCards)
-    .where(and(...conditions))
+  // Owner/super_admin see all
+  if (tenantContext.role === 'owner' || tenantContext.role === 'super_admin') {
+    conditions = [];
+    if (options?.status) {
+      conditions.push(eq(radiusCards.status, options.status as any));
+    }
+    if (options?.batchId) {
+      conditions.push(eq(radiusCards.batchId, options.batchId));
+    }
+  }
+  
+  const query = db.select().from(radiusCards);
+  
+  if (conditions.length > 0) {
+    return query
+      .where(and(...conditions))
+      .orderBy(desc(radiusCards.createdAt))
+      .limit(options?.limit || 50);
+  }
+  
+  return query
     .orderBy(desc(radiusCards.createdAt))
     .limit(options?.limit || 50);
 }
@@ -1144,11 +1208,59 @@ export async function getBatchesByResellerWithStats(userId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  // Get batches where user is either the reseller or the creator
   const batches = await db.select()
     .from(cardBatches)
-    .where(or(eq(cardBatches.resellerId, userId), eq(cardBatches.createdBy, userId)))
+    .where(
+      or(
+        eq(cardBatches.resellerId, userId),
+        eq(cardBatches.createdBy, userId)
+      )
+    )
     .orderBy(desc(cardBatches.createdAt));
+  
+  // Fetch stats for each batch
+  const batchesWithStats = await Promise.all(
+    batches.map(async (batch: any) => {
+      const stats = await getBatchStats(batch.batchId);
+      return {
+        ...batch,
+        stats,
+      };
+    })
+  );
+  
+  return batchesWithStats;
+}
+
+// Get batches with tenant isolation (supports sub-admins)
+export async function getBatchesByTenantWithStats(tenantContext: TenantContext) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const effectiveOwnerId = tenantContext.role === 'client_admin' || tenantContext.role === 'client_staff' 
+    ? tenantContext.tenantId! 
+    : tenantContext.userId;
+  
+  // Get batches where user is either the reseller or the creator
+  let batches;
+  
+  if (tenantContext.role === 'owner' || tenantContext.role === 'super_admin') {
+    // Owner/super_admin see all batches
+    batches = await db.select()
+      .from(cardBatches)
+      .orderBy(desc(cardBatches.createdAt));
+  } else {
+    // Others see only their batches
+    batches = await db.select()
+      .from(cardBatches)
+      .where(
+        or(
+          eq(cardBatches.resellerId, effectiveOwnerId),
+          eq(cardBatches.createdBy, effectiveOwnerId)
+        )
+      )
+      .orderBy(desc(cardBatches.createdAt));
+  }
   
   const batchesWithStats = await Promise.all(
     batches.map(async (batch: any) => {

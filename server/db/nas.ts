@@ -1,6 +1,7 @@
-import { eq, desc, and, ne } from "drizzle-orm";
+import { eq, desc, and, or, sql, ne } from "drizzle-orm";
 import { getDb } from "../db";
 import { nasDevices, InsertNasDevice, radcheck, radreply } from "../../drizzle/schema";
+import { TenantContext, buildTenantFilter } from "../tenant-isolation";
 
 // Get all NAS devices (for super_admin only)
 export async function getAllNasDevices() {
@@ -15,6 +16,23 @@ export async function getNasDevicesByOwner(ownerId: number) {
   if (!db) return [];
   return db.select().from(nasDevices)
     .where(eq(nasDevices.ownerId, ownerId))
+    .orderBy(desc(nasDevices.createdAt));
+}
+
+// Get NAS devices with tenant isolation (supports sub-admins)
+export async function getNasDevicesByTenant(tenantContext: TenantContext) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const filter = buildTenantFilter(tenantContext, nasDevices.ownerId);
+  
+  if (!filter) {
+    // No filtering needed (owner/super_admin)
+    return db.select().from(nasDevices).orderBy(desc(nasDevices.createdAt));
+  }
+  
+  return db.select().from(nasDevices)
+    .where(filter)
     .orderBy(desc(nasDevices.createdAt));
 }
 

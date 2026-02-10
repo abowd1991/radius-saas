@@ -1,6 +1,7 @@
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../db";
 import { invoices, InsertInvoice } from "../../drizzle/schema";
+import { TenantContext, buildTenantFilter, canSeeAllData, getEffectiveOwnerId } from "../tenant-isolation";
 import { nanoid } from "nanoid";
 
 function generateInvoiceNumber(): string {
@@ -44,6 +45,21 @@ export async function getInvoicesByUserId(userId: number, options?: { status?: s
     .where(and(...conditions))
     .orderBy(desc(invoices.createdAt))
     .limit(options?.limit || 50);
+}
+
+// Get invoices with tenant isolation (supports sub-admins)
+export async function getInvoicesByTenant(tenantContext: TenantContext, options?: { status?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Owner/super_admin see all
+  if (canSeeAllData(tenantContext)) {
+    return getAllInvoices(options);
+  }
+  
+  // Others see only their invoices
+  const effectiveUserId = getEffectiveOwnerId(tenantContext);
+  return getInvoicesByUserId(effectiveUserId, options);
 }
 
 export async function getInvoiceById(id: number) {

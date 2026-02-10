@@ -1,6 +1,7 @@
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../db";
 import { supportTickets, chatMessages, InsertSupportTicket, InsertChatMessage } from "../../drizzle/schema";
+import { TenantContext, canSeeAllData, getEffectiveOwnerId } from "../tenant-isolation";
 import { nanoid } from "nanoid";
 
 function generateTicketNumber(): string {
@@ -44,6 +45,21 @@ export async function getTicketsByUserId(userId: number, options?: { status?: st
     .where(and(...conditions))
     .orderBy(desc(supportTickets.createdAt))
     .limit(options?.limit || 50);
+}
+
+// Get tickets with tenant isolation (supports sub-admins)
+export async function getTicketsByTenant(tenantContext: TenantContext, options?: { status?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Owner/super_admin see all
+  if (canSeeAllData(tenantContext)) {
+    return getAllTickets(options);
+  }
+  
+  // Others see only their tickets
+  const effectiveUserId = getEffectiveOwnerId(tenantContext);
+  return getTicketsByUserId(effectiveUserId, options);
 }
 
 export async function getTicketById(id: number) {

@@ -127,6 +127,27 @@
       "when": 1770289009185,
       "tag": "0017_abandoned_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1770757094314,
+      "tag": "0018_many_meggan",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1770757145060,
+      "tag": "0019_bumpy_logan",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1770757205128,
+      "tag": "0020_aspiring_domino",
+      "breakpoints": true
     }
   ]
 }
