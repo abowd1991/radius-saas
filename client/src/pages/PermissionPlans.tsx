@@ -60,15 +60,35 @@ export default function PermissionPlans() {
     }
   });
 
+  const setDefaultPlan = trpc.defaultPlans.setDefaultPlan.useMutation({
+    onSuccess: () => {
+      toast.success(language === "ar" ? "تم تعيين الخطة الافتراضية بنجاح" : "Default plan set successfully");
+      utils.permissionPlans.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(language === "ar" ? "فشل تعيين الخطة الافتراضية: " + error.message : "Failed to set default plan: " + error.message);
+    }
+  });
+
   const handleEdit = async (plan: any) => {
     const fullPlan = await utils.permissionPlans.getById.fetch({ id: plan.id });
     setSelectedPlan(fullPlan);
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (planId: number) => {
+  const handleDelete = (planId: number, isDefault: boolean) => {
+    if (isDefault) {
+      toast.error(language === "ar" ? "لا يمكن حذف الخطة الافتراضية. يرجى تعيين خطة افتراضية أخرى أولاً." : "Cannot delete default plan. Please set another default plan first.");
+      return;
+    }
     if (confirm(language === "ar" ? "هل أنت متأكد من حذف هذه الخطة؟" : "Are you sure you want to delete this plan?")) {
       deletePlan.mutate({ id: planId });
+    }
+  };
+
+  const handleSetDefault = (planId: number, role: string) => {
+    if (confirm(language === "ar" ? "هل تريد تعيين هذه الخطة كافتراضية؟ سيتم إلغاء الخطة الافتراضية السابقة." : "Set this plan as default? This will unset the previous default plan.")) {
+      setDefaultPlan.mutate({ planId, role: role as "reseller" | "client" });
     }
   };
 
@@ -135,19 +155,33 @@ export default function PermissionPlans() {
                   </Badge>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEdit(plan)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    {language === "ar" ? "تعديل" : "Edit"}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleDelete(plan.id)}
-                    disabled={plan.isDefault}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEdit(plan)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      {language === "ar" ? "تعديل" : "Edit"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleDelete(plan.id, plan.isDefault)}
+                      disabled={plan.isDefault}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {!plan.isDefault && (
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => handleSetDefault(plan.id, plan.role)}
+                      disabled={setDefaultPlan.isPending}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      {language === "ar" ? "تعيين كافتراضي" : "Set as Default"}
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>

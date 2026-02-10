@@ -60,6 +60,142 @@ export default function Dashboard() {
     return new Intl.NumberFormat(language === "ar" ? "ar-EG" : "en-US").format(num);
   };
 
+  // Client Owner Dashboard (with widgets)
+  if (user?.role === "client_owner") {
+    return (
+      <div className="space-y-6">
+        {/* Account Status Banner */}
+        <AccountStatusBanner />
+        
+        {/* Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {t("dashboard.welcome")}، {user.name}
+            </h1>
+            <p className="text-muted-foreground">
+              {language === "ar" ? "لوحة تحكم مالك العميل" : "Client Owner Dashboard"}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+            {language === "ar" ? "تحديث" : "Refresh"}
+          </Button>
+        </div>
+
+        {/* Stats Grid - Client Owner Widgets */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/staff-management")}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                {language === "ar" ? "إجمالي الموظفين" : "Total Staff"}
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatNumber((stats as any)?.totalStaff || 0)}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {language === "ar" ? "مديرين وموظفين" : "Admins and staff"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/nas")}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                {language === "ar" ? "أجهزة NAS النشطة" : "Active NAS Devices"}
+              </CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatNumber((stats as any)?.activeNasCount || 0)}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {language === "ar" ? "أجهزة متصلة" : "Connected devices"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/vouchers")}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                {language === "ar" ? "الكروت المستخدمة" : "Cards Used"}
+              </CardTitle>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatNumber((stats as any)?.usedCards || 0)}</div>
+              <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                <div>
+                  <Clock className="h-3 w-3 inline mr-1" />
+                  {language === "ar" ? "اليوم:" : "Today:"} {formatNumber((stats as any)?.cardsUsedToday || 0)}
+                </div>
+                <div>
+                  <TrendingUp className="h-3 w-3 inline mr-1" />
+                  {language === "ar" ? "هذا الأسبوع:" : "This week:"} {formatNumber((stats as any)?.cardsUsedThisWeek || 0)}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Secondary Stats */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/wallet")}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">{t("dashboard.wallet_balance")}</CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(stats?.walletBalance || "0")}</div>
+              <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setLocation("/wallet")}>
+                {language === "ar" ? "إضافة رصيد" : "Add funds"}
+                <ArrowUpRight className="h-3 w-3 ml-1" />
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/vouchers")}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                {language === "ar" ? "إجمالي الكروت" : "Total Cards"}
+              </CardTitle>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatNumber((stats as any)?.totalCards || 0)}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {formatNumber((stats as any)?.usedCards || 0)} {language === "ar" ? "مستخدم" : "used"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{language === "ar" ? "إجراءات سريعة" : "Quick Actions"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Button variant="outline" className="h-auto py-4 flex flex-col gap-2" onClick={() => setLocation("/staff-management")}>
+                <Users className="h-5 w-5" />
+                <span>{language === "ar" ? "إدارة الموظفين" : "Manage Staff"}</span>
+              </Button>
+              <Button variant="outline" className="h-auto py-4 flex flex-col gap-2" onClick={() => setLocation("/vouchers")}>
+                <CreditCard className="h-5 w-5" />
+                <span>{language === "ar" ? "إنشاء كروت" : "Generate Cards"}</span>
+              </Button>
+              <Button variant="outline" className="h-auto py-4 flex flex-col gap-2" onClick={() => setLocation("/support")}>
+                <MessageSquare className="h-5 w-5" />
+                <span>{language === "ar" ? "الدعم الفني" : "Support"}</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Owner/Super Admin Dashboard
   if (user?.role === "owner" || user?.role === "super_admin") {
     return (

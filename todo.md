@@ -2847,3 +2847,27 @@
 - [x] Added permission audit types: permission_plan_change, permission_override_add, permission_override_remove
 - [x] Integrated logAudit into sub-admin router operations
 - [x] Audit log viewer page already exists (/audit-logs)
+
+
+## UI/UX Enhancements (Feb 10, 2026)
+
+### (A) Default Plan UI - High Priority ✅ COMPLETED
+- [x] Add "Set as Default" button in Permission Plans page
+- [x] Ensure only one default plan at a time (auto-unset others via API)
+- [x] Prevent deletion of default plan with clear error message
+- [x] Show visual indicator for default plan (badge with CheckCircle2 icon)
+
+### (B) Staff Management Improvements - Medium Priority ✅ COMPLETED
+- [x] Add role filter (client_owner / admin / staff)
+- [x] Add quick search functionality (name + email)
+- [x] Add sorting by name/email/role/created date (with toggle asc/desc)
+- [x] Add CSV export for staff list with Arabic support
+
+### (C) Client Owner Dashboard Widgets - Medium Priority ✅ COMPLETED
+- [x] Add widget: Total staff count (with link to staff management)
+- [x] Add widget: Active NAS count (with link to NAS page)
+- [x] Add widget: Cards used today/this week (with breakdown)
+- [x] Design clean, readable widget layout (3-column grid)
+- [x] Add backend API support for client_owner stats
+- [x] Add secondary stats (wallet, total cards)
+- [x] Add quick actions section

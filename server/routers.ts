@@ -3150,7 +3150,8 @@ const notificationsRouter = router({
 // ============================================================================
 const dashboardRouter = router({
   getStats: protectedProcedure.query(async ({ ctx }) => {
-    if (ctx.user.role === 'super_admin') {
+    // Owner/Super Admin Dashboard
+    if (ctx.user.role === 'owner' || ctx.user.role === 'super_admin') {
       // Super admin sees all stats
       const activeSessionsCount = await subscriptionDb.getActiveSessionsCount();
       const allNasDevices = await nasDb.getAllNasDevices();
@@ -3171,9 +3172,77 @@ const dashboardRouter = router({
         totalCards,
         usedCards,
       };
-    } else {
-      // Client/Reseller sees only their own stats
-      const ownerNasDevices = await nasDb.getNasDevicesByOwner(ctx.user.id);
+    }
+    
+    // Client Owner Dashboard (with sub-admins)
+    else if (ctx.user.role === 'client_owner') {
+      const tenantContext = getTenantContext(ctx.user);
+      const effectiveOwnerId = getEffectiveOwnerId(tenantContext);
+      
+      // Get staff count (sub-admins)
+      const database = await getDb();
+      const staffMembers = await database
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.tenantId, effectiveOwnerId),
+            sql`${users.role} IN ('client_admin', 'client_staff')`
+          )
+        );
+      
+      // Get NAS devices count
+      const nasDevices = await nasDb.getNasDevicesByTenant(tenantContext);
+      
+      // Get cards stats
+      const batches = await cardDb.getBatchesByTenantWithStats(tenantContext);
+      const totalCards = batches.reduce((sum, b) => sum + (b.stats?.total || 0), 0);
+      const usedCards = batches.reduce((sum, b) => sum + (b.stats?.used || 0), 0);
+      
+      // Get cards used today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const cardsUsedToday = await database
+        .select({ count: sql<number>`count(*)` })
+        .from(radiusCards)
+        .where(
+          and(
+            eq(radiusCards.createdBy, effectiveOwnerId),
+            sql`${radiusCards.firstUseAt} IS NOT NULL AND ${radiusCards.firstUseAt} >= ${today.toISOString()}`
+          )
+        );
+      
+      // Get cards used this week
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      weekAgo.setHours(0, 0, 0, 0);
+      const cardsUsedThisWeek = await database
+        .select({ count: sql<number>`count(*)` })
+        .from(radiusCards)
+        .where(
+          and(
+            eq(radiusCards.createdBy, effectiveOwnerId),
+            sql`${radiusCards.firstUseAt} IS NOT NULL AND ${radiusCards.firstUseAt} >= ${weekAgo.toISOString()}`
+          )
+        );
+      
+      return {
+        totalStaff: staffMembers.length,
+        activeNasCount: nasDevices.length,
+        totalCards,
+        usedCards,
+        cardsUsedToday: cardsUsedToday[0]?.count || 0,
+        cardsUsedThisWeek: cardsUsedThisWeek[0]?.count || 0,
+        walletBalance: "0.00",
+        pendingInvoices: 0,
+      };
+    }
+    
+    // Client/Reseller/Staff sees only their own stats
+    else {
+      const tenantContext = getTenantContext(ctx.user);
+      const effectiveOwnerId = getEffectiveOwnerId(tenantContext);
+      const ownerNasDevices = await nasDb.getNasDevicesByTenant(tenantContext);
       const ownerNasIps = ownerNasDevices.map((n: any) => n.nasname);
       
       // Get active sessions for owner's NAS devices
@@ -3183,7 +3252,7 @@ const dashboardRouter = router({
       );
       
       // Get owner's batches and cards
-      const ownerBatches = await cardDb.getBatchesByResellerWithStats(ctx.user.id);
+      const ownerBatches = await cardDb.getBatchesByTenantWithStats(tenantContext);
       const totalCards = ownerBatches.reduce((sum, b) => sum + (b.stats?.total || 0), 0);
       const usedCards = ownerBatches.reduce((sum, b) => sum + (b.stats?.used || 0), 0);
       
