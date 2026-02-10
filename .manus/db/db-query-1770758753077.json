@@ -1,0 +1,70 @@
+{
+  "query": "SELECT id, name, nameAr, description FROM permission_groups ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, name, nameAr, description FROM permission_groups ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "client_management",
+      "nameAr": "إدارة العملاء",
+      "description": "Manage clients and users"
+    },
+    {
+      "id": "2",
+      "name": "cards_vouchers",
+      "nameAr": "البطاقات والكروت",
+      "description": "Manage cards, vouchers, and batches"
+    },
+    {
+      "id": "3",
+      "name": "reports_analytics",
+      "nameAr": "التقارير والتحليلات",
+      "description": "View reports and analytics"
+    },
+    {
+      "id": "4",
+      "name": "billing_finance",
+      "nameAr": "المالية والفوترة",
+      "description": "Manage billing, invoices, and wallet"
+    },
+    {
+      "id": "5",
+      "name": "infrastructure_nas",
+      "nameAr": "البنية التحتية (NAS)",
+      "description": "Manage NAS devices and network infrastructure"
+    },
+    {
+      "id": "6",
+      "name": "vpn_management",
+      "nameAr": "إدارة VPN",
+      "description": "Manage VPN connections and IP pools"
+    },
+    {
+      "id": "7",
+      "name": "network_management",
+      "nameAr": "إدارة الشبكات",
+      "description": "Manage internet plans, subscribers, and sessions"
+    },
+    {
+      "id": "8",
+      "name": "support_tickets",
+      "nameAr": "الدعم الفني",
+      "description": "Manage support tickets"
+    },
+    {
+      "id": "9",
+      "name": "system_settings",
+      "nameAr": "إعدادات النظام",
+      "description": "System settings and configurations"
+    },
+    {
+      "id": "10",
+      "name": "advanced_features",
+      "nameAr": "الميزات المتقدمة",
+      "description": "Advanced features like RADIUS control, logs, backups"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tnameAr\tdescription\n1\tclient_management\tإدارة العملاء\tManage clients and users\n2\tcards_vouchers\tالبطاقات والكروت\tManage cards, vouchers, and batches\n3\treports_analytics\tالتقارير والتحليلات\tView reports and analytics\n4\tbilling_finance\tالمالية والفوترة\tManage billing, invoices, and wallet\n5\tinfrastructure_nas\tالبنية التحتية (NAS)\tManage NAS devices and network infrastructure\n6\tvpn_management\tإدارة VPN\tManage VPN connections and IP pools\n7\tnetwork_management\tإدارة الشبكات\tManage internet plans, subscribers, and sessions\n8\tsupport_tickets\tالدعم الفني\tManage support tickets\n9\tsystem_settings\tإعدادات النظام\tSystem settings and configurations\n10\tadvanced_features\tالميزات المتقدمة\tAdvanced features like RADIUS control, logs, backups\n",
+  "stderr": "",
+  "execution_time_ms": 396
+}

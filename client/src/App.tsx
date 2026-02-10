@@ -43,6 +43,8 @@ import FeatureAccessControl from "./pages/FeatureAccessControl";
 import PermissionPlans from "./pages/PermissionPlans";
 import UserPermissionOverride from "./pages/UserPermissionOverride";
 import BackupManagement from "./pages/BackupManagement";
+import AdminControl from "./pages/AdminControl";
+import StaffManagement from "./pages/StaffManagement";
 import SiteSettings from "./pages/SiteSettings";
 import SubscriptionPlansManagement from "./pages/SubscriptionPlansManagement";
 import WalletLedger from "./pages/WalletLedger";
@@ -104,6 +106,16 @@ function Router() {
         </DashboardLayout>
       </Route>
       <Route path="/users-management" component={UsersManagement} />
+      <Route path="/admin-control">
+        <DashboardLayout>
+          <AdminControl />
+        </DashboardLayout>
+      </Route>
+      <Route path="/staff-management">
+        <DashboardLayout>
+          <StaffManagement />
+        </DashboardLayout>
+      </Route>
       <Route path="/resellers">
         <DashboardLayout>
           <Resellers />
