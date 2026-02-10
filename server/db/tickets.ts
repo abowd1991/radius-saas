@@ -124,6 +124,7 @@ export async function addMessage(data: {
     senderId: data.senderId,
     message: data.message,
     attachmentUrl: data.attachmentUrl,
+    isRead: false, // New messages are unread by default
   });
   
   // Update ticket last message time
@@ -144,6 +145,7 @@ export async function getMessagesByTicketId(ticketId: number) {
     senderId: chatMessages.senderId,
     message: chatMessages.message,
     attachmentUrl: chatMessages.attachmentUrl,
+    isRead: chatMessages.isRead,
     createdAt: chatMessages.createdAt,
     senderName: users.name,
     senderEmail: users.email,

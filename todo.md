@@ -3152,3 +3152,60 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Changed sort order: orderBy(desc(chatMessages.createdAt))
 - [x] Newest messages now appear at top
 - [x] Oldest messages at bottom
+
+
+## Support Enhancements - isRead + Status Colors
+
+### Phase 1: Add isRead Field
+- [ ] Add isRead boolean field to chatMessages table in schema.ts
+- [ ] Set default value to false
+- [ ] Run db:push migration
+
+### Phase 2: Update addMessage Logic
+- [ ] Mark message as isRead=false when created
+- [ ] Add markAsRead mutation for admin/ticket owner
+- [ ] Auto-mark as read when ticket owner views message
+
+### Phase 3: Visual Indicator for Read Messages
+- [ ] Add opacity difference (read=60%, unread=100%)
+- [ ] Add checkmark icon for read messages
+- [ ] Make it obvious which messages are new
+
+### Phase 4: Ticket Status Colors
+- [ ] open = blue badge
+- [ ] in_progress = yellow badge
+- [ ] resolved = green badge
+- [ ] closed = gray badge
+- [ ] Apply colors in tickets list
+
+
+## Support Enhancements - isRead + Status Colors (Feb 10, 2026)
+
+### Phase 1: Add isRead Field
+- [x] Add isRead boolean field to chatMessages table in schema.ts (already existed)
+- [x] Set default value to false
+- [x] No migration needed - field already in schema
+
+### Phase 2: Update addMessage Logic
+- [x] Mark message as isRead=false when created
+- [x] Include isRead in getMessagesByTicketId
+- [ ] Add markAsRead mutation for admin/ticket owner (future enhancement)
+- [ ] Auto-mark as read when ticket owner views message (future enhancement)
+
+### Phase 3: Visual Indicator for Read Messages
+- [x] Add opacity difference (read=60%, unread=100%)
+- [x] Add checkmark icon for read messages (green CheckCircle2)
+- [x] Make it obvious which messages are new
+
+### Phase 4: Ticket Status Colors
+- [x] open = blue badge
+- [x] in_progress = yellow badge
+- [x] resolved = green badge
+- [x] closed = gray badge
+- [x] waiting = purple badge
+- [x] Apply colors in tickets list
+- [x] Priority colors (low=green, medium=yellow, high=orange, urgent=red)
+
+### Phase 5: Testing
+- [x] Created support-isread.test.ts
+- [x] All 3 tests passed

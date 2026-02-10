@@ -128,13 +128,15 @@ export default function Support() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "open":
-        return <Badge variant="default" className="bg-blue-500">{t("support.open")}</Badge>;
+        return <Badge className="bg-blue-500 hover:bg-blue-600 text-white">{t("support.open")}</Badge>;
       case "in_progress":
-        return <Badge variant="default" className="bg-yellow-500">{t("support.in_progress")}</Badge>;
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white">{t("support.in_progress")}</Badge>;
       case "resolved":
-        return <Badge variant="default" className="bg-green-500">{t("support.resolved")}</Badge>;
+        return <Badge className="bg-green-500 hover:bg-green-600 text-white">{t("support.resolved")}</Badge>;
       case "closed":
-        return <Badge variant="secondary">{t("support.closed")}</Badge>;
+        return <Badge className="bg-gray-400 hover:bg-gray-500 text-white">{t("support.closed")}</Badge>;
+      case "waiting":
+        return <Badge className="bg-purple-500 hover:bg-purple-600 text-white">{t("support.waiting")}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -143,13 +145,13 @@ export default function Support() {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case "low":
-        return <Badge variant="outline">{t("support.low")}</Badge>;
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-green-300">{t("support.low")}</Badge>;
       case "medium":
-        return <Badge variant="secondary">{t("support.medium")}</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-300">{t("support.medium")}</Badge>;
       case "high":
-        return <Badge variant="default" className="bg-orange-500">{t("support.high")}</Badge>;
+        return <Badge className="bg-orange-500 hover:bg-orange-600 text-white">{t("support.high")}</Badge>;
       case "urgent":
-        return <Badge variant="destructive">{t("support.urgent")}</Badge>;
+        return <Badge className="bg-red-500 hover:bg-red-600 text-white">{t("support.urgent")}</Badge>;
       default:
         return <Badge variant="outline">{priority}</Badge>;
     }
@@ -369,7 +371,7 @@ export default function Support() {
                         key={msg.id}
                         className={`flex gap-3 ${
                           msg.senderId === user?.id ? "flex-row-reverse" : ""
-                        }`}
+                        } ${msg.isRead ? "opacity-60" : ""}`}
                       >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                           msg.senderId === user?.id ? "bg-primary" : "bg-muted"
@@ -384,11 +386,16 @@ export default function Support() {
                           msg.senderId === user?.id ? "text-end" : ""
                         }`}>
                           {/* Sender name */}
-                          <p className={`text-xs font-semibold mb-1 ${
-                            msg.senderId === user?.id ? "text-end" : ""
+                          <div className={`flex items-center gap-1 mb-1 ${
+                            msg.senderId === user?.id ? "flex-row-reverse" : ""
                           }`}>
-                            {msg.senderId === user?.id ? "أنت" : (msg.senderName || "المدير")}
-                          </p>
+                            <p className="text-xs font-semibold">
+                              {msg.senderId === user?.id ? "أنت" : (msg.senderName || "المدير")}
+                            </p>
+                            {msg.isRead && (
+                              <CheckCircle2 className="h-3 w-3 text-green-500" />
+                            )}
+                          </div>
                           <div className={`inline-block p-3 rounded-lg ${
                             msg.senderId === user?.id
                               ? "bg-primary text-primary-foreground"
