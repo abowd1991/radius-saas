@@ -2,29 +2,13 @@ import {
   LayoutDashboard,
   Users,
   CreditCard,
-  FileText,
   Wallet,
-  MessageSquare,
   Settings,
   Server,
-  Package,
   Activity,
-  Globe,
-  Building2,
   Shield,
-  Receipt,
   PieChart,
-  Cog,
-  Monitor,
-  Wifi,
-  Link2,
-  History,
-  Network,
-  UserCheck,
-  Printer,
-  BarChart3,
-  Database,
-  Smartphone,
+  UserCog,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,10 +30,9 @@ export type MenuSection = {
 };
 
 /**
- * All menu sections in the system
- * Each section and item can have:
- * - requiredPermissionGroup: Permission group key required to view
- * - requiredRole: Specific roles required (bypasses permission check)
+ * Simplified menu structure for SaaS-style navigation
+ * Owner/Super_Admin: Full access with Admin Console
+ * Client: Simplified sidebar (Dashboard, NAS, Cards, Sessions, Staff, Billing)
  */
 export const ALL_MENU_SECTIONS: MenuSection[] = [
   // 1. Dashboard (Always visible)
@@ -63,76 +46,37 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     ],
   },
 
-  // 2. Monitoring (Network Management)
+  // 2. Admin Console (Owner/Super_Admin only) - Unified management
   {
-    id: "monitoring",
-    icon: Monitor,
-    label: "Monitoring",
-    labelAr: "المراقبة",
-    requiredPermissionGroup: "network_management",
+    id: "admin",
+    icon: Shield,
+    label: "Admin Console",
+    labelAr: "لوحة الإدارة",
+    requiredRole: ["super_admin", "owner"],
     items: [
-      { icon: Wifi, label: "Active Sessions", labelAr: "الجلسات النشطة", path: "/sessions" },
-      { icon: FileText, label: "RADIUS Logs", labelAr: "سجلات RADIUS", path: "/radius-logs" },
-      { icon: Activity, label: "NAS Health", labelAr: "مراقبة NAS", path: "/nas-health" },
-      { icon: Network, label: "IP Pool Status", labelAr: "حالة IP Pool", path: "/ip-pool" },
+      { 
+        icon: Shield, 
+        label: "Admin Console", 
+        labelAr: "لوحة الإدارة", 
+        path: "/admin",
+        requiredRole: ["super_admin", "owner"]
+      },
     ],
   },
 
-  // 3. Infrastructure (NAS Management)
+  // 3. NAS Devices (Infrastructure)
   {
     id: "infrastructure",
-    icon: Globe,
-    label: "Infrastructure",
-    labelAr: "البنية التحتية",
+    icon: Server,
+    label: "NAS Devices",
+    labelAr: "أجهزة NAS",
     requiredPermissionGroup: "infrastructure_nas",
     items: [
       { icon: Server, label: "NAS Devices", labelAr: "أجهزة NAS", path: "/nas" },
-      { icon: Link2, label: "MikroTik Setup", labelAr: "إعداد MikroTik", path: "/mikrotik-setup" },
     ],
   },
 
-  // 4. VPN Management
-  {
-    id: "vpn",
-    icon: Globe,
-    label: "VPN",
-    labelAr: "VPN",
-    requiredPermissionGroup: "vpn_management",
-    items: [
-      { icon: Globe, label: "VPN Connections", labelAr: "اتصالات VPN", path: "/vpn" },
-      { icon: History, label: "VPN Logs", labelAr: "سجلات VPN", path: "/vpn-logs" },
-    ],
-  },
-
-  // 5. Users & Clients (Client Management)
-  {
-    id: "users",
-    icon: Users,
-    label: "Users & Clients",
-    labelAr: "المستخدمين والعملاء",
-    requiredPermissionGroup: "client_management",
-    items: [
-      { icon: UserCheck, label: "Subscribers", labelAr: "المشتركين", path: "/subscribers" },
-      { icon: Users, label: "Clients", labelAr: "العملاء", path: "/users-management" },
-      { icon: Building2, label: "Resellers", labelAr: "الموزعين", path: "/resellers" },
-      { icon: Users, label: "Staff Management", labelAr: "إدارة الموظفين", path: "/staff-management", requiredRole: ["client_owner"] },
-    ],
-  },
-
-  // 6. Access Control (Cards & Vouchers)
-  {
-    id: "access",
-    icon: Shield,
-    label: "Access Control",
-    labelAr: "التحكم بالوصول",
-    requiredPermissionGroup: "cards_vouchers",
-    items: [
-      { icon: Package, label: "Plans", labelAr: "الخطط", path: "/plans" },
-      { icon: Server, label: "RADIUS Control", labelAr: "لوحة تحكم RADIUS", path: "/radius-control" },
-    ],
-  },
-
-  // 7. Cards & Vouchers
+  // 4. Cards & Vouchers
   {
     id: "cards",
     icon: CreditCard,
@@ -141,33 +85,53 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     requiredPermissionGroup: "cards_vouchers",
     items: [
       { icon: CreditCard, label: "Vouchers", labelAr: "الكروت", path: "/vouchers" },
-      { icon: Printer, label: "Print Cards", labelAr: "طباعة الكروت", path: "/print-cards" },
     ],
   },
 
-  // 8. Billing (Billing & Finance)
+  // 5. Sessions (Monitoring)
+  {
+    id: "sessions",
+    icon: Activity,
+    label: "Sessions",
+    labelAr: "الجلسات",
+    requiredPermissionGroup: "network_management",
+    items: [
+      { icon: Activity, label: "Active Sessions", labelAr: "الجلسات النشطة", path: "/sessions" },
+    ],
+  },
+
+  // 6. Staff Management (Client Owner only - for managing their staff)
+  {
+    id: "staff",
+    icon: UserCog,
+    label: "Staff",
+    labelAr: "الموظفين",
+    requiredRole: ["client_owner"],
+    items: [
+      { 
+        icon: UserCog, 
+        label: "Staff Management", 
+        labelAr: "إدارة الموظفين", 
+        path: "/staff-management",
+        requiredRole: ["client_owner"]
+      },
+    ],
+  },
+
+  // 7. Billing (Client's subscription)
   {
     id: "billing",
-    icon: Receipt,
+    icon: Wallet,
     label: "Billing",
     labelAr: "الفوترة",
     requiredPermissionGroup: "billing_finance",
     items: [
-      { 
-        icon: LayoutDashboard, 
-        label: "Billing Dashboard", 
-        labelAr: "لوحة الفوترة", 
-        path: "/owner-billing",
-        requiredRole: ["super_admin", "owner"]
-      },
-      { icon: FileText, label: "Invoices", labelAr: "الفواتير", path: "/invoices" },
       { icon: Wallet, label: "Wallet", labelAr: "المحفظة", path: "/wallet" },
-      { icon: Wallet, label: "Wallet Ledger", labelAr: "سجل المحفظة", path: "/wallet-ledger" },
-      { icon: CreditCard, label: "Subscriptions", labelAr: "الاشتراكات", path: "/tenant-subscriptions" },
+      { icon: Wallet, label: "Subscriptions", labelAr: "الاشتراكات", path: "/tenant-subscriptions" },
     ],
   },
 
-  // 9. Reports & Analytics
+  // 8. Reports & Analytics (Owner/Super_Admin)
   {
     id: "reports",
     icon: PieChart,
@@ -175,40 +139,25 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     labelAr: "التقارير",
     requiredPermissionGroup: "reports_analytics",
     items: [
-      { icon: BarChart3, label: "Reports", labelAr: "التقارير", path: "/reports" },
-      { icon: Activity, label: "Bandwidth", labelAr: "الباندويث", path: "/bandwidth" },
+      { icon: PieChart, label: "Reports", labelAr: "التقارير", path: "/reports" },
     ],
   },
 
-  // 10. Support
+  // 9. Settings (Owner/Super_Admin only)
   {
-    id: "support",
-    icon: MessageSquare,
-    label: "Support",
-    labelAr: "الدعم الفني",
-    requiredPermissionGroup: "support_tickets",
-    items: [
-      { icon: MessageSquare, label: "Support", labelAr: "الدعم الفني", path: "/support" },
-    ],
-  },
-
-  // 11. System Settings (Owner/Super Admin only)
-  {
-    id: "system",
-    icon: Cog,
-    label: "System",
-    labelAr: "النظام",
+    id: "settings",
+    icon: Settings,
+    label: "Settings",
+    labelAr: "الإعدادات",
     requiredRole: ["super_admin", "owner"],
     items: [
-      { icon: Settings, label: "Settings", labelAr: "الإعدادات", path: "/settings" },
-      { icon: History, label: "Audit Log", labelAr: "سجل العمليات", path: "/audit-log" },
-      { icon: Database, label: "Backups", labelAr: "النسخ الاحتياطي", path: "/backup-management" },
-      { icon: Settings, label: "Site Settings", labelAr: "إعدادات الموقع", path: "/site-settings" },
-      { icon: CreditCard, label: "Subscription Plans", labelAr: "خطط الاشتراك", path: "/subscription-plans" },
-      { icon: Shield, label: "Admin Control", labelAr: "لوحة التحكم الرئيسية", path: "/admin-control" },
-      { icon: Settings, label: "System Admin", labelAr: "إدارة النظام", path: "/system-admin" },
-      { icon: Shield, label: "Feature Access", labelAr: "التحكم بالصلاحيات", path: "/feature-access" },
-      { icon: Smartphone, label: "SMS Management", labelAr: "إدارة SMS", path: "/sms" },
+      { 
+        icon: Settings, 
+        label: "Settings", 
+        labelAr: "الإعدادات", 
+        path: "/settings",
+        requiredRole: ["super_admin", "owner"]
+      },
     ],
   },
 ];

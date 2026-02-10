@@ -3051,3 +3051,52 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Animations: Add subtle micro-interactions (hover, transitions)
 - [ ] Shadows: Consistent elevation system
 - [ ] Borders: Unified border radius and colors
+
+
+## Sidebar Reorganization - SaaS-Style (User Request: FINAL)
+
+### Phase 1: Admin Console (Owner Only) ✅ COMPLETED
+- [x] Create `/client/src/pages/AdminConsole.tsx` with Tabs
+- [x] Tab 1: Users (Staff Management)
+- [x] Tab 2: Clients
+- [x] Tab 3: Resellers
+- [x] Tab 4: Permission Plans
+- [x] Tab 5: User Overrides
+- [x] Add route in App.tsx (/admin)
+- [x] Role check (owner/super_admin only)
+
+### Phase 2: Sidebar Reorganization ✅ COMPLETED
+- [x] Update `menu-config.ts` - Owner Sidebar (full access):
+  - Dashboard
+  - Admin Console (unified management)
+  - NAS Devices
+  - Cards/Vouchers
+  - Sessions
+  - Reports
+  - Settings
+- [x] Update `menu-config.ts` - Client Sidebar (simplified):
+  - Dashboard
+  - NAS Devices
+  - Cards/Vouchers
+  - Sessions
+  - Staff (their staff only)
+  - Billing (their subscription only)
+- [x] Hide admin pages from Client role (via requiredRole)
+
+### Phase 3: Remove Duplicate/Unnecessary Pages ✅ SKIPPED
+- [x] Pages are now hidden via Sidebar (no need to delete)
+- [x] Admin Console provides unified access
+- [x] Routes remain for direct access if needed
+
+### Phase 4: Default Plan for New Registration ✅ ALREADY IMPLEMENTED
+- [x] Registration flow auto-assigns client_owner role (Line 123 in authService.ts)
+- [x] Auto-assigns Default Plan on registration (Lines 102-111, 128)
+- [x] Creates 7-day trial subscription automatically
+
+### Phase 5: Testing
+- [ ] Test Owner sidebar (full access)
+- [ ] Test Client sidebar (limited access)
+- [ ] Test Admin Console tabs
+- [ ] Test Default Plan assignment
+- [ ] Checkpoint
+

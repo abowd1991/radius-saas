@@ -45,6 +45,7 @@ import UserPermissionOverride from "./pages/UserPermissionOverride";
 import BackupManagement from "./pages/BackupManagement";
 import AdminControl from "./pages/AdminControl";
 import StaffManagement from "./pages/StaffManagement";
+import AdminConsole from "./pages/AdminConsole";
 import SiteSettings from "./pages/SiteSettings";
 import SubscriptionPlansManagement from "./pages/SubscriptionPlansManagement";
 import WalletLedger from "./pages/WalletLedger";
@@ -63,6 +64,11 @@ function Router() {
       <Route path="/dashboard">
         <DashboardLayout>
           <Dashboard />
+        </DashboardLayout>
+      </Route>
+      <Route path="/admin">
+        <DashboardLayout>
+          <AdminConsole />
         </DashboardLayout>
       </Route>
       <Route path="/plans">
