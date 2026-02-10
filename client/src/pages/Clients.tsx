@@ -46,6 +46,11 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useState } from "react";
+import { usePagination } from "@/hooks/usePagination";
+import { useSorting } from "@/hooks/useSorting";
+import { DataPagination } from "@/components/ui/data-pagination";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 
 export default function Clients() {
   const { user } = useAuth();
@@ -59,6 +64,23 @@ export default function Clients() {
     role: "client",
     search: searchQuery || undefined,
   });
+
+  // Sorting
+  const { sortedData: sortedClients, sortColumn, sortDirection, handleSort } = useSorting(
+    clients,
+    "createdAt",
+    "desc"
+  );
+
+  // Pagination
+  const {
+    paginatedData: paginatedClients,
+    currentPage,
+    totalPages,
+    totalItems,
+    itemsPerPage,
+    setCurrentPage,
+  } = usePagination(sortedClients, 15);
 
   // Mutations
   // Note: Client creation would be handled through registration or admin panel
@@ -214,31 +236,62 @@ export default function Clients() {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>{t("common.name")}</TableHead>
-                <TableHead>{t("common.email")}</TableHead>
-                <TableHead>{t("common.phone")}</TableHead>
-                <TableHead>{t("wallet.balance")}</TableHead>
-                <TableHead>{t("common.status")}</TableHead>
-                <TableHead>{t("common.created_at")}</TableHead>
-                <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
+              <TableRow className="bg-muted/50">
+                <SortableTableHead
+                  column="name"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {t("common.name")}
+                </SortableTableHead>
+                <SortableTableHead
+                  column="email"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {t("common.email")}
+                </SortableTableHead>
+                <TableHead className="font-semibold">{t("common.phone")}</TableHead>
+                <SortableTableHead
+                  column="walletBalance"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {t("wallet.balance")}
+                </SortableTableHead>
+                <SortableTableHead
+                  column="status"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {t("common.status")}
+                </SortableTableHead>
+                <SortableTableHead
+                  column="createdAt"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {t("common.created_at")}
+                </SortableTableHead>
+                <TableHead className="w-[70px] font-semibold">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    {t("common.loading")}
-                  </TableCell>
-                </TableRow>
-              ) : clients?.length === 0 ? (
+                <TableSkeleton rows={5} columns={7} />
+              ) : paginatedClients?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     {language === "ar" ? "لا يوجد عملاء" : "No clients found"}
                   </TableCell>
                 </TableRow>
               ) : (
-                clients?.map((client: any) => (
+                paginatedClients?.map((client: any) => (
                   <TableRow key={client.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -311,6 +364,16 @@ export default function Clients() {
               )}
             </TableBody>
           </Table>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <DataPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </CardContent>
       </Card>
 

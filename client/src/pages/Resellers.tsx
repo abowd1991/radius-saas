@@ -45,6 +45,11 @@ import {
   Building2,
 } from "lucide-react";
 import { useState } from "react";
+import { usePagination } from "@/hooks/usePagination";
+import { useSorting } from "@/hooks/useSorting";
+import { DataPagination } from "@/components/ui/data-pagination";
+import { SortableTableHead } from "@/components/ui/sortable-table-head";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 
 export default function Resellers() {
   const { user } = useAuth();
@@ -58,6 +63,23 @@ export default function Resellers() {
     role: "reseller",
     search: searchQuery || undefined,
   });
+
+  // Sorting
+  const { sortedData: sortedResellers, sortColumn, sortDirection, handleSort } = useSorting(
+    resellers,
+    "createdAt",
+    "desc"
+  );
+
+  // Pagination
+  const {
+    paginatedData: paginatedResellers,
+    currentPage,
+    totalPages,
+    totalItems,
+    itemsPerPage,
+    setCurrentPage,
+  } = usePagination(sortedResellers, 15);
 
   // Mutations
   const toggleStatus = trpc.users.updateStatus.useMutation({
@@ -185,31 +207,69 @@ export default function Resellers() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="font-semibold">{t("common.name")}</TableHead>
-                <TableHead className="font-semibold">{t("common.email")}</TableHead>
+                <SortableTableHead
+                  column="name"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {t("common.name")}
+                </SortableTableHead>
+                <SortableTableHead
+                  column="email"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {t("common.email")}
+                </SortableTableHead>
                 <TableHead className="font-semibold">{t("common.phone")}</TableHead>
-                <TableHead className="font-semibold">{language === "ar" ? "عدد العملاء" : "Clients"}</TableHead>
-                <TableHead className="font-semibold">{t("wallet.balance")}</TableHead>
-                <TableHead className="font-semibold">{t("common.status")}</TableHead>
-                <TableHead className="font-semibold">{t("common.created_at")}</TableHead>
+                <SortableTableHead
+                  column="clientCount"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {language === "ar" ? "عدد العملاء" : "Clients"}
+                </SortableTableHead>
+                <SortableTableHead
+                  column="walletBalance"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {t("wallet.balance")}
+                </SortableTableHead>
+                <SortableTableHead
+                  column="status"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {t("common.status")}
+                </SortableTableHead>
+                <SortableTableHead
+                  column="createdAt"
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                >
+                  {t("common.created_at")}
+                </SortableTableHead>
                 <TableHead className="w-[70px] font-semibold">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    {t("common.loading")}
-                  </TableCell>
-                </TableRow>
-              ) : resellers?.length === 0 ? (
+                <TableSkeleton rows={5} columns={8} />
+              ) : paginatedResellers?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {language === "ar" ? "لا يوجد موزعين" : "No resellers found"}
                   </TableCell>
                 </TableRow>
               ) : (
-                resellers?.map((reseller: any) => (
+                paginatedResellers?.map((reseller: any) => (
                   <TableRow key={reseller.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="py-3">
                       <div className="flex items-center gap-2">
@@ -289,6 +349,16 @@ export default function Resellers() {
             </TableBody>
           </Table>
           </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <DataPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </CardContent>
       </Card>
 

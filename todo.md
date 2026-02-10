@@ -3033,11 +3033,11 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Vouchers page: Add Pagination + Sorting + Skeleton (cards tab)
 - [x] NAS Devices page: Add Pagination + Sorting + Skeleton
 - [x] Sessions/OnlineUsers page: Add Pagination + Sorting + Skeleton
-- [ ] Resellers page: Add Pagination + Sorting + Skeleton
-- [ ] Staff Management page: Add Pagination + Sorting + Skeleton
+- [x] Resellers page: Add Pagination + Sorting + Skeleton
+- [x] Staff Management page: Add Pagination + Sorting + Skeleton (already done earlier)
 
 ### Phase 4: Improve Remaining Pages
-- [ ] Clients Management page: Modern design + Pagination + Sorting
+- [x] Clients Management page: Modern design + Pagination + Sorting
 - [ ] Speed Plans page: Modern design + Better cards layout
 - [ ] Reports/Analytics pages: Modern charts + Better layout
 - [ ] Wallet/Billing page: Modern design + Transaction history
