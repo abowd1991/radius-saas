@@ -84,54 +84,60 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Grid - Client Owner Widgets */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/staff-management")}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <Card className="cursor-pointer hover:shadow-lg hover:border-primary/20 transition-all duration-200 border" onClick={() => setLocation("/staff-management")}>
+            <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {language === "ar" ? "إجمالي الموظفين" : "Total Staff"}
               </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatNumber((stats as any)?.totalStaff || 0)}</div>
+            <CardContent className="pt-0">
+              <div className="text-stat">{formatNumber((stats as any)?.totalStaff || 0)}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 {language === "ar" ? "مديرين وموظفين" : "Admins and staff"}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/nas")}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                {language === "ar" ? "أجهزة NAS النشطة" : "Active NAS Devices"}
+          <Card className="cursor-pointer hover:shadow-lg hover:border-primary/20 transition-all duration-200 border" onClick={() => setLocation("/nas")}>
+            <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {language === "ar" ? "أجهزة NAS النشطة" : "Active NAS"}
               </CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                <Activity className="h-4 w-4 text-green-600" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatNumber((stats as any)?.activeNasCount || 0)}</div>
+            <CardContent className="pt-0">
+              <div className="text-stat">{formatNumber((stats as any)?.activeNasCount || 0)}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 {language === "ar" ? "أجهزة متصلة" : "Connected devices"}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/vouchers")}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
+          <Card className="cursor-pointer hover:shadow-lg hover:border-primary/20 transition-all duration-200 border" onClick={() => setLocation("/vouchers")}>
+            <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {language === "ar" ? "الكروت المستخدمة" : "Cards Used"}
               </CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                <CreditCard className="h-4 w-4 text-orange-600" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatNumber((stats as any)?.usedCards || 0)}</div>
-              <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                <div>
-                  <Clock className="h-3 w-3 inline mr-1" />
-                  {language === "ar" ? "اليوم:" : "Today:"} {formatNumber((stats as any)?.cardsUsedToday || 0)}
+            <CardContent className="pt-0">
+              <div className="text-stat">{formatNumber((stats as any)?.usedCards || 0)}</div>
+              <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{language === "ar" ? "اليوم" : "Today"}: {formatNumber((stats as any)?.cardsUsedToday || 0)}</span>
                 </div>
-                <div>
-                  <TrendingUp className="h-3 w-3 inline mr-1" />
-                  {language === "ar" ? "هذا الأسبوع:" : "This week:"} {formatNumber((stats as any)?.cardsUsedThisWeek || 0)}
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  <span>{language === "ar" ? "هذا الأسبوع" : "Week"}: {formatNumber((stats as any)?.cardsUsedThisWeek || 0)}</span>
                 </div>
               </div>
             </CardContent>
@@ -139,30 +145,34 @@ export default function Dashboard() {
         </div>
 
         {/* Secondary Stats */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/wallet")}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">{t("dashboard.wallet_balance")}</CardTitle>
-              <Wallet className="h-4 w-4 text-muted-foreground" />
+        <div className="grid gap-3 md:grid-cols-2">
+          <Card className="cursor-pointer hover:shadow-lg hover:border-primary/20 transition-all duration-200 border" onClick={() => setLocation("/wallet")}>
+            <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("dashboard.wallet_balance")}</CardTitle>
+              <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-blue-600" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats?.walletBalance || "0")}</div>
-              <Button variant="link" className="p-0 h-auto mt-2" onClick={() => setLocation("/wallet")}>
+            <CardContent className="pt-0">
+              <div className="text-stat">{formatCurrency(stats?.walletBalance || "0")}</div>
+              <Button variant="link" className="p-0 h-auto mt-2 text-xs" onClick={() => setLocation("/wallet")}>
                 {language === "ar" ? "إضافة رصيد" : "Add funds"}
                 <ArrowUpRight className="h-3 w-3 ml-1" />
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/vouchers")}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
+          <Card className="cursor-pointer hover:shadow-lg hover:border-primary/20 transition-all duration-200 border" onClick={() => setLocation("/vouchers")}>
+            <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {language === "ar" ? "إجمالي الكروت" : "Total Cards"}
               </CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <CreditCard className="h-4 w-4 text-purple-600" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatNumber((stats as any)?.totalCards || 0)}</div>
+            <CardContent className="pt-0">
+              <div className="text-stat">{formatNumber((stats as any)?.totalCards || 0)}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 {formatNumber((stats as any)?.usedCards || 0)} {language === "ar" ? "مستخدم" : "used"}
               </p>
@@ -171,23 +181,23 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{language === "ar" ? "إجراءات سريعة" : "Quick Actions"}</CardTitle>
+        <Card className="border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{language === "ar" ? "إجراءات سريعة" : "Quick Actions"}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Button variant="outline" className="h-auto py-4 flex flex-col gap-2" onClick={() => setLocation("/staff-management")}>
-                <Users className="h-5 w-5" />
-                <span>{language === "ar" ? "إدارة الموظفين" : "Manage Staff"}</span>
+            <div className="grid gap-2 md:grid-cols-3">
+              <Button variant="outline" className="h-auto py-3 flex flex-col gap-1.5 hover:bg-primary/5 hover:border-primary/30 transition-all" onClick={() => setLocation("/staff-management")}>
+                <Users className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium">{language === "ar" ? "إدارة الموظفين" : "Manage Staff"}</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex flex-col gap-2" onClick={() => setLocation("/vouchers")}>
-                <CreditCard className="h-5 w-5" />
-                <span>{language === "ar" ? "إنشاء كروت" : "Generate Cards"}</span>
+              <Button variant="outline" className="h-auto py-3 flex flex-col gap-1.5 hover:bg-primary/5 hover:border-primary/30 transition-all" onClick={() => setLocation("/vouchers")}>
+                <CreditCard className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium">{language === "ar" ? "إنشاء كروت" : "Generate Cards"}</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex flex-col gap-2" onClick={() => setLocation("/support")}>
-                <MessageSquare className="h-5 w-5" />
-                <span>{language === "ar" ? "الدعم الفني" : "Support"}</span>
+              <Button variant="outline" className="h-auto py-3 flex flex-col gap-1.5 hover:bg-primary/5 hover:border-primary/30 transition-all" onClick={() => setLocation("/support")}>
+                <MessageSquare className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium">{language === "ar" ? "الدعم الفني" : "Support"}</span>
               </Button>
             </div>
           </CardContent>

@@ -2871,3 +2871,92 @@
 - [x] Add backend API support for client_owner stats
 - [x] Add secondary stats (wallet, total cards)
 - [x] Add quick actions section
+
+
+## UI Refresh - Enterprise SaaS Design (Feb 10, 2026)
+
+### Goal
+Transform the platform from "functional" to "world-class SaaS product" (Stripe/Cloudflare/Google Admin level)
+
+### Phase 1: Modern Dashboard Layout
+- [ ] Redesign Header (fixed, compact, professional)
+- [ ] Redesign Sidebar (clean, organized, modern icons)
+- [x] Optimize Cards (smaller, smarter, no bloat)
+- [x] Improve spacing and layout consistency (gap-3, compact padding)
+- [x] Add subtle shadows and borders (hover:shadow-lg, border)
+- [x] Add colored icon backgrounds
+- [x] Typography system (text-stat, uppercase labels)
+- [x] Quick Actions compact design
+
+### Phase 2: Modern Data Tables
+- [ ] Add proper Pagination component
+- [ ] Improve Sorting UI (clear indicators)
+- [ ] Enhance Filters (dropdown + chips)
+- [x] Better Search bar (prominent, with icon)
+- [ ] Add Loading states (skeletons)
+- [x] Row hover effects (hover:bg-muted/30)
+- [x] Quick actions menu per row (DropdownMenu)
+- [x] Compact table cells (py-3)
+- [x] Header row styling (bg-muted/50, font-semibold)
+- [x] Resellers page table modernized
+
+### Phase 3: TOP PRIORITY PAGES (User Request)
+
+#### 3.1: NAS Devices Page (Most Important Operational) ✅ COMPLETED
+- [x] Modern table layout (compact, organized)
+- [x] Clear Actions: Edit / Disable / Test / Provisioning Status (via DropdownMenu)
+- [x] Status indicators (online/offline with colors)
+- [x] Icon backgrounds (rounded, colored)
+- [x] Compact cells (py-3)
+- [x] Header row styling (bg-muted/50)
+- [x] Responsive design (overflow-x-auto)
+
+#### 3.2: Vouchers/Cards Page (Most Important Commercial) ✅ COMPLETED
+- [x] Professional table design (compact, modern)
+- [x] Enhanced Search + Filters (already present)
+- [x] Modern card list view with hover effects
+- [x] Copy buttons on hover (group-hover:opacity-100)
+- [x] Compact cells (py-3)
+- [x] Header row styling (bg-muted/50)
+- [x] Responsive design (overflow-x-auto)
+
+#### 3.3: Sessions/Online Users Page (Most Used Daily) ✅ COMPLETED
+- [x] Fast loading (already optimized with auto-refresh)
+- [x] Clear layout (username, IP, NAS, time, traffic)
+- [x] Quick Actions: Disconnect button (prominent)
+- [x] Auto-refresh option (already present - 30s)
+- [x] Search and filter (already present)
+- [x] Compact, scannable design (py-3, smaller badges)
+- [x] Online indicator (green pulsing dot)
+- [x] Modern badges for traffic (blue/purple)
+
+### Phase 4: Unified Admin Console
+- [ ] Create Admin Console page with Tabs
+- [ ] Tab 1: Users Management
+- [ ] Tab 2: Resellers Management
+- [ ] Tab 3: System Settings
+- [ ] Tab 4: Reports & Analytics
+- [ ] Internal navigation (no page reload)
+- [ ] Google Admin style layout
+
+### Phase 5: Visual Polish
+- [ ] Typography system (headings, body, labels)
+- [ ] Color palette refinement (primary, secondary, accent)
+- [ ] Spacing consistency (4px/8px/16px/24px/32px grid)
+- [ ] Micro-interactions (hover, focus, active states)
+- [ ] Icon consistency
+- [ ] Button styles standardization
+- [ ] Form inputs polish
+
+### Phase 6: Testing & Delivery
+- [ ] Test all pages on desktop
+- [ ] Test responsive design
+- [ ] Cross-browser testing
+- [ ] Screenshot all major pages
+- [ ] Create before/after comparison
+- [ ] Save checkpoint
+
+### RED LINE ⚠️
+- ❌ NO modifications to FreeRADIUS configuration
+- ❌ NO changes to RADIUS server settings
+- ✅ ONLY UI/Frontend/Backend API changes allowed

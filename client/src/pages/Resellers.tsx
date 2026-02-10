@@ -110,10 +110,10 @@ export default function Resellers() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("nav.resellers")}</h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {language === "ar" ? "إدارة الموزعين والوكلاء" : "Manage resellers and agents"}
           </p>
         </div>
@@ -168,34 +168,31 @@ export default function Resellers() {
       </div>
 
       {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative">
-            <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${direction === "rtl" ? "right-3" : "left-3"}`} />
-            <Input
-              placeholder={language === "ar" ? "بحث بالاسم أو البريد..." : "Search by name or email..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={direction === "rtl" ? "pr-9" : "pl-9"}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="relative">
+        <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${direction === "rtl" ? "right-3" : "left-3"}`} />
+        <Input
+          placeholder={language === "ar" ? "بحث بالاسم أو البريد..." : "Search by name or email..."}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className={`${direction === "rtl" ? "pr-9" : "pl-9"} h-10`}
+        />
+      </div>
 
       {/* Resellers Table */}
-      <Card>
+      <Card className="border">
         <CardContent className="p-0">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>{t("common.name")}</TableHead>
-                <TableHead>{t("common.email")}</TableHead>
-                <TableHead>{t("common.phone")}</TableHead>
-                <TableHead>{language === "ar" ? "عدد العملاء" : "Clients"}</TableHead>
-                <TableHead>{t("wallet.balance")}</TableHead>
-                <TableHead>{t("common.status")}</TableHead>
-                <TableHead>{t("common.created_at")}</TableHead>
-                <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
+              <TableRow className="bg-muted/50">
+                <TableHead className="font-semibold">{t("common.name")}</TableHead>
+                <TableHead className="font-semibold">{t("common.email")}</TableHead>
+                <TableHead className="font-semibold">{t("common.phone")}</TableHead>
+                <TableHead className="font-semibold">{language === "ar" ? "عدد العملاء" : "Clients"}</TableHead>
+                <TableHead className="font-semibold">{t("wallet.balance")}</TableHead>
+                <TableHead className="font-semibold">{t("common.status")}</TableHead>
+                <TableHead className="font-semibold">{t("common.created_at")}</TableHead>
+                <TableHead className="w-[70px] font-semibold">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -213,43 +210,43 @@ export default function Resellers() {
                 </TableRow>
               ) : (
                 resellers?.map((reseller: any) => (
-                  <TableRow key={reseller.id}>
-                    <TableCell>
+                  <TableRow key={reseller.id} className="hover:bg-muted/30 transition-colors">
+                    <TableCell className="py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Building2 className="h-4 w-4 text-primary" />
+                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Building2 className="h-3.5 w-3.5 text-primary" />
                         </div>
-                        <span className="font-medium">{reseller.name}</span>
+                        <span className="font-medium text-sm">{reseller.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        {reseller.email}
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Mail className="h-3 w-3" />
+                        <span>{reseller.email}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3">
                       {reseller.phone ? (
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-3 w-3 text-muted-foreground" />
-                          {reseller.phone}
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <Phone className="h-3 w-3" />
+                          <span>{reseller.phone}</span>
                         </div>
-                      ) : "-"}
+                      ) : <span className="text-muted-foreground">-</span>}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1.5">
                         <Users className="h-3 w-3 text-muted-foreground" />
-                        {reseller.clientCount || 0}
+                        <span className="text-sm font-medium">{reseller.clientCount || 0}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1.5">
                         <Wallet className="h-3 w-3 text-muted-foreground" />
-                        {formatCurrency(reseller.walletBalance || "0")}
+                        <span className="text-sm font-medium">{formatCurrency(reseller.walletBalance || "0")}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{getStatusBadge(reseller.status)}</TableCell>
-                    <TableCell>{formatDate(reseller.createdAt)}</TableCell>
+                    <TableCell className="py-3">{getStatusBadge(reseller.status)}</TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground">{formatDate(reseller.createdAt)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -291,6 +288,7 @@ export default function Resellers() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

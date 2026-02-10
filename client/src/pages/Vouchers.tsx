@@ -985,17 +985,18 @@ export default function Vouchers() {
           </div>
 
           {/* Cards Table */}
-          <Card>
+          <Card className="border">
             <CardContent className="p-0">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>{language === 'ar' ? 'رقم الكرت (Username)' : 'Card Number (Username)'}</TableHead>
-                    <TableHead>{language === 'ar' ? 'كلمة السر' : 'Password'}</TableHead>
-                    <TableHead>{language === 'ar' ? 'الرقم التسلسلي' : 'Serial'}</TableHead>
-                    <TableHead>{language === 'ar' ? 'الحالة' : 'Status'}</TableHead>
-                    <TableHead>{language === 'ar' ? 'تاريخ الإنشاء' : 'Created'}</TableHead>
-                    <TableHead className="text-end">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold">{language === 'ar' ? 'رقم الكرت' : 'Username'}</TableHead>
+                    <TableHead className="font-semibold">{language === 'ar' ? 'كلمة السر' : 'Password'}</TableHead>
+                    <TableHead className="font-semibold">{language === 'ar' ? 'الرقم التسلسلي' : 'Serial'}</TableHead>
+                    <TableHead className="font-semibold">{language === 'ar' ? 'الحالة' : 'Status'}</TableHead>
+                    <TableHead className="font-semibold">{language === 'ar' ? 'تاريخ الإنشاء' : 'Created'}</TableHead>
+                    <TableHead className="text-end font-semibold w-[80px]">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1013,36 +1014,36 @@ export default function Vouchers() {
                     </TableRow>
                   ) : (
                     filteredVouchers?.map((voucher: any) => (
-                      <TableRow key={voucher.id}>
-                        <TableCell className="font-mono">
-                          <div className="flex items-center gap-2">
-                            {voucher.username}
+                      <TableRow key={voucher.id} className="hover:bg-muted/30 transition-colors group">
+                        <TableCell className="py-3 font-mono text-sm">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">{voucher.username}</span>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={() => copyToClipboard(voucher.username)}
                             >
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono">
-                          <div className="flex items-center gap-2">
-                            {voucher.password}
+                        <TableCell className="py-3 font-mono text-sm">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">{voucher.password}</span>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={() => copyToClipboard(voucher.password)}
                             >
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{voucher.serialNumber}</TableCell>
-                        <TableCell>{getStatusBadge(voucher.status)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="py-3 font-mono text-xs text-muted-foreground">{voucher.serialNumber}</TableCell>
+                        <TableCell className="py-3">{getStatusBadge(voucher.status)}</TableCell>
+                        <TableCell className="py-3 text-sm text-muted-foreground">
                           {voucher.createdAt ? new Date(voucher.createdAt).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '-'}
                         </TableCell>
                         <TableCell className="text-end">
@@ -1077,6 +1078,7 @@ export default function Vouchers() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1084,6 +1086,7 @@ export default function Vouchers() {
         <TabsContent value="batches" className="space-y-4">
           <Card>
             <CardContent className="p-0">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1222,6 +1225,7 @@ export default function Vouchers() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

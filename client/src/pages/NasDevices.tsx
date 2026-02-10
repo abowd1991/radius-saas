@@ -1034,38 +1034,41 @@ export default function NasDevices() {
               <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : filteredDevices && filteredDevices.length > 0 ? (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{language === "ar" ? "الاسم" : "Name"}</TableHead>
-                  <TableHead>IP</TableHead>
-                  <TableHead>{language === "ar" ? "نوع الاتصال" : "Connection Type"}</TableHead>
-                  <TableHead>{language === "ar" ? "النوع" : "Type"}</TableHead>
-                  <TableHead>{t("common.status")}</TableHead>
-                  <TableHead>{language === "ar" ? "حالة التهيئة" : "Provisioning"}</TableHead>
-                  <TableHead>{language === "ar" ? "آخر اتصال" : "Last Seen"}</TableHead>
-                  <TableHead className="text-center">{t("common.actions")}</TableHead>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-semibold">{language === "ar" ? "الاسم" : "Name"}</TableHead>
+                  <TableHead className="font-semibold">IP</TableHead>
+                  <TableHead className="font-semibold">{language === "ar" ? "نوع الاتصال" : "Connection"}</TableHead>
+                  <TableHead className="font-semibold">{language === "ar" ? "النوع" : "Type"}</TableHead>
+                  <TableHead className="font-semibold">{t("common.status")}</TableHead>
+                  <TableHead className="font-semibold">{language === "ar" ? "حالة التهيئة" : "Provisioning"}</TableHead>
+                  <TableHead className="font-semibold">{language === "ar" ? "آخر اتصال" : "Last Seen"}</TableHead>
+                  <TableHead className="text-center font-semibold w-[100px]">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredDevices.map((device: any) => (
-                  <TableRow key={device.id}>
-                    <TableCell className="font-medium">
+                  <TableRow key={device.id} className="hover:bg-muted/30 transition-colors">
+                    <TableCell className="py-3">
                       <div className="flex items-center gap-2">
-                        <Router className="h-4 w-4 text-muted-foreground" />
-                        {device.shortname || device.nasname}
+                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Router className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <span className="font-medium text-sm">{device.shortname || device.nasname}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono">{device.nasname}</TableCell>
-                    <TableCell>
+                    <TableCell className="py-3 font-mono text-sm text-muted-foreground">{device.nasname}</TableCell>
+                    <TableCell className="py-3">
                       {getConnectionTypeBadge((device as any).connectionType || "public_ip")}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{device.type || "mikrotik"}</Badge>
+                    <TableCell className="py-3">
+                      <Badge variant="outline" className="text-xs">{device.type || "mikrotik"}</Badge>
                     </TableCell>
-                    <TableCell>{getStatusBadge(device.status)}</TableCell>
-                    <TableCell>{getProvisioningStatusBadge((device as any).provisioningStatus, (device as any).connectionType)}</TableCell>
-                    <TableCell>{formatDate(device.lastSeen)}</TableCell>
+                    <TableCell className="py-3">{getStatusBadge(device.status)}</TableCell>
+                    <TableCell className="py-3">{getProvisioningStatusBadge((device as any).provisioningStatus, (device as any).connectionType)}</TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground">{formatDate(device.lastSeen)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -1112,6 +1115,7 @@ export default function NasDevices() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Router className="h-12 w-12 text-muted-foreground mb-4" />

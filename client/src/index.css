@@ -77,7 +77,13 @@
   --chart-3: var(--color-blue-600);
   --chart-4: var(--color-blue-700);
   --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
+  --radius: 0.5rem;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
   --font-sans: "Cairo", "Inter", system-ui, sans-serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.235 0.015 65);
@@ -152,25 +158,37 @@
     @apply scroll-smooth;
   }
   
-  /* Enhanced Typography */
+  /* Modern Typography System */
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
   }
   
   h1 {
-    @apply text-3xl md:text-4xl lg:text-5xl;
+    @apply text-2xl md:text-3xl font-bold;
+    letter-spacing: -0.02em;
   }
   
   h2 {
-    @apply text-2xl md:text-3xl lg:text-4xl;
+    @apply text-xl md:text-2xl font-semibold;
+    letter-spacing: -0.015em;
   }
   
   h3 {
-    @apply text-xl md:text-2xl lg:text-3xl;
+    @apply text-lg md:text-xl font-semibold;
+    letter-spacing: -0.01em;
   }
   
   h4 {
-    @apply text-lg md:text-xl;
+    @apply text-base md:text-lg font-medium;
+  }
+  
+  /* Compact text styles for dashboard */
+  .text-compact {
+    @apply text-sm leading-tight;
+  }
+  
+  .text-stat {
+    @apply text-2xl md:text-3xl font-bold tracking-tight;
   }
   
   /* Better readability */

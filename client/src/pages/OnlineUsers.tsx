@@ -210,73 +210,74 @@ export default function OnlineUsers() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">المستخدم</TableHead>
-                    <TableHead className="text-right">IP المستخدم</TableHead>
-                    <TableHead className="text-right">الشبكة (NAS)</TableHead>
-                    <TableHead className="text-right">مدة الاتصال</TableHead>
-                    <TableHead className="text-right">تحميل</TableHead>
-                    <TableHead className="text-right">رفع</TableHead>
-                    <TableHead className="text-right">MAC</TableHead>
-                    <TableHead className="text-center">إجراءات</TableHead>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="text-right font-semibold">المستخدم</TableHead>
+                    <TableHead className="text-right font-semibold">IP المستخدم</TableHead>
+                    <TableHead className="text-right font-semibold">الشبكة</TableHead>
+                    <TableHead className="text-right font-semibold">مدة الاتصال</TableHead>
+                    <TableHead className="text-right font-semibold">تحميل</TableHead>
+                    <TableHead className="text-right font-semibold">رفع</TableHead>
+                    <TableHead className="text-right font-semibold">MAC</TableHead>
+                    <TableHead className="text-center font-semibold w-[100px]">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSessions.map((session) => (
-                    <TableRow key={session.id}>
-                      <TableCell>
+                    <TableRow key={session.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                          <span className="font-medium">{session.username}</span>
+                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                          <span className="font-medium text-sm">{session.username}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Globe className="h-4 w-4 text-muted-foreground" />
-                          {session.framedIpAddress || "-"}
+                      <TableCell className="py-3">
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <Globe className="h-3.5 w-3.5" />
+                          <span className="font-mono">{session.framedIpAddress || "-"}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Monitor className="h-4 w-4 text-muted-foreground" />
+                      <TableCell className="py-3">
+                        <div className="flex items-center gap-1.5">
+                          <Monitor className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                           <div>
-                            <div className="font-medium">{session.nasName || session.nasIpAddress}</div>
+                            <div className="font-medium text-sm">{session.nasName || session.nasIpAddress}</div>
                             {session.nasName && (
-                              <div className="text-xs text-muted-foreground">{session.nasIpAddress}</div>
+                              <div className="text-xs text-muted-foreground font-mono">{session.nasIpAddress}</div>
                             )}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          {formatDuration(session.sessionTime || 0)}
+                      <TableCell className="py-3">
+                        <div className="flex items-center gap-1.5 text-sm">
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="font-medium">{formatDuration(session.sessionTime || 0)}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-blue-500">
+                      <TableCell className="py-3">
+                        <Badge variant="outline" className="text-blue-600 text-xs">
                           <Download className="h-3 w-3 ml-1" />
                           {formatBytes(session.inputOctets || 0)}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-purple-500">
+                      <TableCell className="py-3">
+                        <Badge variant="outline" className="text-purple-600 text-xs">
                           <Upload className="h-3 w-3 ml-1" />
                           {formatBytes(session.outputOctets || 0)}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <span className="text-xs font-mono">
+                      <TableCell className="py-3">
+                        <span className="text-xs font-mono text-muted-foreground">
                           {session.callingStationId || "-"}
                         </span>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center py-3">
                         <Button
                           variant="destructive"
                           size="sm"
+                          className="h-8"
                           onClick={() => handleDisconnect(session)}
                         >
-                          <WifiOff className="h-4 w-4 ml-1" />
+                          <WifiOff className="h-3.5 w-3.5 ml-1" />
                           فصل
                         </Button>
                       </TableCell>
