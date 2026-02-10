@@ -3051,3 +3051,35 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Animations: Add subtle micro-interactions (hover, transitions)
 - [ ] Shadows: Consistent elevation system
 - [ ] Borders: Unified border radius and colors
+
+
+## Admin Console UI - Unified Management (User Request)
+
+### Phase 1: Create Admin Console Page ✅ COMPLETED
+- [x] Create `/client/src/pages/AdminConsole.tsx` with horizontal Tabs
+- [x] Tab 1: الموظفين (Staff Management)
+- [x] Tab 2: العملاء (Clients)
+- [x] Tab 3: الموزعين (Resellers)
+- [x] Tab 4: خطط الصلاحيات (Permission Plans)
+- [x] Tab 5: الاستثناءات (User Overrides)
+- [x] Search + filter inherited from each page component
+- [x] Buttons inherited from each page component
+- [x] Add route in App.tsx (/admin)
+- [x] Role check (owner/super_admin only)
+
+### Phase 2: Update Sidebar (menu-config.ts) ✅ COMPLETED
+- [x] Add "لوحة الإدارة" menu item (Owner/Super_Admin only)
+- [x] Remove duplicate items:
+  - لوحة التحكم الرئيسية (Admin Control - removed)
+  - التحكم بالصلاحيات (Feature Access - removed)
+  - الموزعين (Resellers - removed from sidebar)
+  - العملاء (Clients - removed from sidebar)
+- [x] Hide from Client role (via requiredRole check)
+- [x] Keep Staff Management for client_owner only
+
+### Phase 3: Testing
+- [ ] Test Owner access to Admin Console
+- [ ] Test Client cannot see Admin Console
+- [ ] Test all tabs work correctly
+- [ ] Checkpoint
+

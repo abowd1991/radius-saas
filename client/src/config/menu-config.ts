@@ -104,7 +104,25 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     ],
   },
 
-  // 5. Users & Clients (Client Management)
+  // 5. Admin Console (Owner/Super_Admin only) - Unified Management
+  {
+    id: "admin",
+    icon: Shield,
+    label: "Admin Console",
+    labelAr: "لوحة الإدارة",
+    requiredRole: ["super_admin", "owner"],
+    items: [
+      { 
+        icon: Shield, 
+        label: "Admin Console", 
+        labelAr: "لوحة الإدارة", 
+        path: "/admin",
+        requiredRole: ["super_admin", "owner"]
+      },
+    ],
+  },
+
+  // 6. Users & Clients (Client Management)
   {
     id: "users",
     icon: Users,
@@ -113,13 +131,11 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     requiredPermissionGroup: "client_management",
     items: [
       { icon: UserCheck, label: "Subscribers", labelAr: "المشتركين", path: "/subscribers" },
-      { icon: Users, label: "Clients", labelAr: "العملاء", path: "/users-management" },
-      { icon: Building2, label: "Resellers", labelAr: "الموزعين", path: "/resellers" },
       { icon: Users, label: "Staff Management", labelAr: "إدارة الموظفين", path: "/staff-management", requiredRole: ["client_owner"] },
     ],
   },
 
-  // 6. Access Control (Cards & Vouchers)
+  // 7. Access Control (Cards & Vouchers)
   {
     id: "access",
     icon: Shield,
@@ -132,7 +148,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     ],
   },
 
-  // 7. Cards & Vouchers
+  // 8. Cards & Vouchers
   {
     id: "cards",
     icon: CreditCard,
@@ -145,7 +161,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     ],
   },
 
-  // 8. Billing (Billing & Finance)
+  // 9. Billing (Billing & Finance)
   {
     id: "billing",
     icon: Receipt,
@@ -167,7 +183,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     ],
   },
 
-  // 9. Reports & Analytics
+  // 10. Reports & Analytics
   {
     id: "reports",
     icon: PieChart,
@@ -180,7 +196,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     ],
   },
 
-  // 10. Support
+  // 11. Support
   {
     id: "support",
     icon: MessageSquare,
@@ -192,7 +208,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     ],
   },
 
-  // 11. System Settings (Owner/Super Admin only)
+  // 12. System Settings (Owner/Super Admin only)
   {
     id: "system",
     icon: Cog,
@@ -205,9 +221,6 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
       { icon: Database, label: "Backups", labelAr: "النسخ الاحتياطي", path: "/backup-management" },
       { icon: Settings, label: "Site Settings", labelAr: "إعدادات الموقع", path: "/site-settings" },
       { icon: CreditCard, label: "Subscription Plans", labelAr: "خطط الاشتراك", path: "/subscription-plans" },
-      { icon: Shield, label: "Admin Control", labelAr: "لوحة التحكم الرئيسية", path: "/admin-control" },
-      { icon: Settings, label: "System Admin", labelAr: "إدارة النظام", path: "/system-admin" },
-      { icon: Shield, label: "Feature Access", labelAr: "التحكم بالصلاحيات", path: "/feature-access" },
       { icon: Smartphone, label: "SMS Management", labelAr: "إدارة SMS", path: "/sms" },
     ],
   },
