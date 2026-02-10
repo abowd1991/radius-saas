@@ -3209,3 +3209,10 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 ### Phase 5: Testing
 - [x] Created support-isread.test.ts
 - [x] All 3 tests passed
+
+
+## Bug Fix - Admin Cannot See Messages in Support (Feb 10, 2026)
+- [x] Investigate why admin (owner/super_admin) cannot see messages in support tickets
+- [x] Check getMessages API for role-based filtering issues
+- [x] Fix query to allow admin to see all messages (added owner role check)
+- [x] Test with admin account (3/3 tests passed)

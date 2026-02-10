@@ -2973,7 +2973,11 @@ const ticketsRouter = router({
       const ticket = await ticketDb.getTicketById(input.ticketId);
       if (!ticket) throw new TRPCError({ code: "NOT_FOUND", message: "Ticket not found" });
       
-      if (ctx.user.role !== 'super_admin' && ticket.userId !== ctx.user.id) {
+      // Allow owner, super_admin, or ticket owner to see messages
+      const isAdmin = ctx.user.role === 'owner' || ctx.user.role === 'super_admin';
+      const isTicketOwner = ticket.userId === ctx.user.id;
+      
+      if (!isAdmin && !isTicketOwner) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
