@@ -376,7 +376,7 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0 overflow-y-auto">
+          <SidebarContent className="gap-1 overflow-y-auto py-2">
             {menuSections.map((section) => {
               const isExpanded = expandedSections.includes(section.id);
               const isSingleItem = section.items.length === 1;
@@ -387,18 +387,18 @@ function DashboardLayoutContent({
                 const item = section.items[0];
                 const isActive = location === item.path;
                 return (
-                  <SidebarMenu key={section.id} className="px-2 py-0.5">
+                  <SidebarMenu key={section.id} className="px-3 py-0">
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         isActive={isActive}
                         onClick={() => setLocation(item.path)}
                         tooltip={item.label}
-                        className="h-10 transition-all font-normal"
+                        className="h-9 transition-all font-medium hover:bg-accent"
                       >
                         <item.icon
-                          className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                          className={`h-4 w-4 ${isActive ? "text-primary" : "text-muted-foreground"}`}
                         />
-                        <span>{item.label}</span>
+                        <span className="text-sm">{item.label}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
@@ -413,24 +413,24 @@ function DashboardLayoutContent({
                   onOpenChange={() => toggleSection(section.id)}
                   className="group/collapsible"
                 >
-                  <SidebarMenu className="px-2 py-0.5">
+                  <SidebarMenu className="px-3 py-0">
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                           tooltip={section.label}
-                          className={`h-10 transition-all font-medium ${sectionHasActiveItem ? "bg-accent/50" : ""}`}
+                          className={`h-9 transition-all font-semibold hover:bg-accent ${sectionHasActiveItem ? "bg-accent/50" : ""}`}
                         >
                           <section.icon
-                            className={`h-4 w-4 ${sectionHasActiveItem ? "text-primary" : ""}`}
+                            className={`h-4 w-4 ${sectionHasActiveItem ? "text-primary" : "text-muted-foreground"}`}
                           />
-                          <span className="flex-1">{section.label}</span>
+                          <span className="flex-1 text-sm">{section.label}</span>
                           <ChevronRight
                             className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
                           />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-                        <SidebarMenu className={`${direction === "rtl" ? "pr-4 border-r" : "pl-4 border-l"} border-border/50 mt-1 space-y-0.5`}>
+                        <SidebarMenu className={`${direction === "rtl" ? "pr-3 border-r-2" : "pl-3 border-l-2"} border-border/30 mt-1 space-y-0.5 ml-1`}>
                           {section.items.map((item) => {
                             const isActive = location === item.path;
                             return (
@@ -439,10 +439,10 @@ function DashboardLayoutContent({
                                   isActive={isActive}
                                   onClick={() => setLocation(item.path)}
                                   tooltip={item.label}
-                                  className="h-9 transition-all font-normal text-sm"
+                                  className="h-8 transition-all font-normal text-sm hover:bg-accent"
                                 >
                                   <item.icon
-                                    className={`h-3.5 w-3.5 ${isActive ? "text-primary" : ""}`}
+                                    className={`h-3.5 w-3.5 ${isActive ? "text-primary" : "text-muted-foreground"}`}
                                   />
                                   <span>{item.label}</span>
                                 </SidebarMenuButton>
@@ -539,24 +539,21 @@ function DashboardLayoutContent({
       </div>
 
       <SidebarInset className="flex-1">
-        {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? t("nav.dashboard")}
-                  </span>
-                </div>
-              </div>
-            </div>
+        {/* Fixed Header - Always visible */}
+        <header className="flex border-b h-12 items-center justify-between bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40 shadow-sm">
+          <div className="flex items-center gap-3">
+            {isMobile && <SidebarTrigger className="h-8 w-8 rounded-lg" />}
+            <span className="text-sm font-medium text-foreground">
+              {activeMenuItem?.label ?? t("nav.dashboard")}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
             <ThemeToggleButton />
             <NotificationBell />
           </div>
-        )}
+        </header>
         <SubscriptionBanner />
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4">{children}</main>
       </SidebarInset>
     </div>
   );

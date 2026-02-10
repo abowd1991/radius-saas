@@ -2960,3 +2960,68 @@ Transform the platform from "functional" to "world-class SaaS product" (Stripe/C
 - ❌ NO modifications to FreeRADIUS configuration
 - ❌ NO changes to RADIUS server settings
 - ✅ ONLY UI/Frontend/Backend API changes allowed
+
+
+## UI Refresh Phase 1 + 2: Design System (User Request - Priority)
+
+### Goal
+Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) with reusable Design System components
+
+### Phase 1: Core Layout - Foundation
+#### Header ✅ COMPLETED
+- [x] Fixed position (sticky top, z-40)
+- [x] Compact height (h-12 instead of h-14)
+- [x] Professional styling (shadow-sm, backdrop-blur)
+- [x] Always visible (not just mobile)
+- [x] Consistent spacing (px-4, gap-2/3)
+
+#### Sidebar ✅ COMPLETED
+- [x] Modern unified icons (lucide-react - already present)
+- [x] Organized sections with clear hierarchy
+- [x] Improved spacing (gap-1, py-2, px-3)
+- [x] Permission-aware filtering (already implemented via menu-config)
+- [x] Collapsible sections (already present)
+- [x] Active state highlighting (text-primary, bg-accent)
+- [x] Compact heights (h-9 for sections, h-8 for items)
+- [x] Better borders (border-l-2 for nested items)
+- [x] Icon colors (text-muted-foreground when inactive)
+
+#### Container Spacing ✅ COMPLETED
+- [x] Reduce large empty spaces (p-4 instead of p-4 md:p-6)
+- [x] Consistent padding system (unified p-4)
+- [x] Tighter gaps (already applied in Dashboard cards)
+
+### Phase 2: Tables System - Reusable Components ✅ COMPLETED
+
+#### Pagination Component ✅
+- [x] Created `/client/src/components/ui/data-pagination.tsx`
+- [x] Props: totalItems, itemsPerPage, currentPage, totalPages, onPageChange
+- [x] Modern design (numbered buttons + first/last/prev/next)
+- [x] Show "X-Y of Z items" in Arabic
+- [x] Smart page numbers (shows ... for large ranges)
+- [x] Fully reusable
+
+#### Sorting System ✅
+- [x] Created `/client/src/hooks/useSorting.ts` hook
+- [x] Created `/client/src/components/ui/sortable-table-head.tsx` component
+- [x] Clickable table headers with hover effects
+- [x] Sort indicators (ArrowUp/ArrowDown/ArrowUpDown icons)
+- [x] Cycle: asc → desc → null
+- [x] Handles numbers, dates, strings
+- [x] Fully reusable
+
+#### Loading Skeletons ✅
+- [x] Created `/client/src/components/ui/table-skeleton.tsx`
+- [x] Configurable rows/columns
+- [x] Matches table structure
+- [x] Smooth loading experience
+
+#### Filter Chips (Deferred)
+- [ ] Will be added when needed in specific pages
+
+### Implementation Notes
+- All components MUST be reusable
+- Follow shadcn/ui patterns
+- TypeScript with proper types
+- Responsive design
+- Accessibility (keyboard navigation, ARIA labels)
