@@ -278,10 +278,15 @@ export async function deleteAllUserPermissionOverrides(userId: number) {
 // ============================================================================
 
 export async function getUserEffectivePermissions(userId: number) {
+  console.log('[getUserEffectivePermissions] Called with userId:', userId);
   const db = await getDb();
   // Get user
   const [user] = await db.select().from(users).where(eq(users.id, userId));
-  if (!user) return null;
+  console.log('[getUserEffectivePermissions] User found:', user);
+  if (!user) {
+    console.log('[getUserEffectivePermissions] User not found, returning null');
+    return null;
+  }
 
   // Owner has all permissions
   if (user.role === "owner" || user.role === "super_admin") {
@@ -320,25 +325,24 @@ export async function getUserEffectivePermissions(userId: number) {
   });
 
   // Apply overrides
-  overrides.forEach((override: any) => {
+  for (const override of overrides) {
     if (override.isGranted) {
       // Grant access (add if not exists)
       if (!groupMap.has(override.groupId)) {
         // Fetch group details
-        db.select()
+        const db = await getDb();
+        const [group] = await db.select()
           .from(permissionGroups)
-          .where(eq(permissionGroups.id, override.groupId))
-          .then(([group]: [any]) => {
-            if (group) {
-              groupMap.set(override.groupId, { ...group, source: "override_grant" });
-            }
-          });
+          .where(eq(permissionGroups.id, override.groupId));
+        if (group) {
+          groupMap.set(override.groupId, { ...group, source: "override_grant" });
+        }
       }
     } else {
       // Revoke access (remove if exists)
       groupMap.delete(override.groupId);
     }
-  });
+  }
 
   return {
     userId,

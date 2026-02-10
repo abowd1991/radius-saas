@@ -230,9 +230,14 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { language, setLanguage, t, direction } = useLanguage();
-  const { permissions } = useFeatureAccess();
+  const { permissions, isLoading: permissionsLoading } = useFeatureAccess();
+
+  console.log('[DashboardLayout] User role:', user?.role);
+  console.log('[DashboardLayout] Permissions:', permissions);
+  console.log('[DashboardLayout] Permissions loading:', permissionsLoading);
 
   const menuSections = getMenuSections(user?.role || "client", language, permissions);
+  console.log('[DashboardLayout] Menu sections count:', menuSections.length);
   const allMenuItems = flattenSections(menuSections);
   const activeMenuItem = allMenuItems.find((item) => item.path === location);
 

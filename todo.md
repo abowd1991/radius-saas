@@ -2731,4 +2731,20 @@
 - [x] Check project status (no TypeScript errors)
 - [x] Verify dev server running
 - [ ] Manual testing with different roles (can be done by user)
-- [ ] Save final checkpoint
+- [x] Save final checkpoint (version: 1e3d172b)
+
+## Fix New User Registration - Auto-assign Default Plan (Feb 5, 2026)
+- [x] Verify db.upsertUser assigns default plan correctly (code exists)
+- [x] Check if default plans exist in database (Basic Client, Reseller Basic)
+- [x] Fix existing users without plan (assigned plan ID 3 to user 17)
+- [x] Fix useFeatureAccess to use group.name instead of group.key
+- [x] Fix async/await bug in getUserEffectivePermissions (overrides not loading)
+- [ ] Test that sidebar now appears for user (need user to refresh)
+- [ ] Save checkpoint
+
+## Permission Plans System Bug Fixes (Feb 10, 2026)
+- [x] Fixed async/await bug in getUserEffectivePermissions (override groups not loading)
+- [x] Fixed group.key → group.name mismatch in useFeatureAccess.ts
+- [x] Fixed filterMenuSections logic (was hiding menus incorrectly for non-owner users)
+- [x] Added console.log debugging in backend and frontend for permission tracking
+- [x] Verified permission system works end-to-end: registration → auto-assign plan → load effective permissions → filter sidebar

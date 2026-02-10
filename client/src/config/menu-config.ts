@@ -227,9 +227,14 @@ export function filterMenuSections(
       if (section.requiredRole && !section.requiredRole.includes(role)) {
         return null;
       }
-      if (section.requiredPermissionGroup && !permissions[section.requiredPermissionGroup]) {
-        // Super admin bypasses permission checks
-        if (role !== "super_admin" && role !== "owner") {
+      
+      // Check permission group requirement
+      if (section.requiredPermissionGroup) {
+        // Owner/super_admin bypass permission checks
+        const hasPermission = permissions[section.requiredPermissionGroup];
+        const isSuperUser = role === "super_admin" || role === "owner";
+        
+        if (!hasPermission && !isSuperUser) {
           return null;
         }
       }
@@ -239,11 +244,16 @@ export function filterMenuSections(
         if (item.requiredRole && !item.requiredRole.includes(role)) {
           return false;
         }
-        if (item.requiredPermissionGroup && !permissions[item.requiredPermissionGroup]) {
-          if (role !== "super_admin" && role !== "owner") {
+        
+        if (item.requiredPermissionGroup) {
+          const hasPermission = permissions[item.requiredPermissionGroup];
+          const isSuperUser = role === "super_admin" || role === "owner";
+          
+          if (!hasPermission && !isSuperUser) {
             return false;
           }
         }
+        
         return true;
       });
 

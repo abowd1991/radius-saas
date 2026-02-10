@@ -1,0 +1,17 @@
+{
+  "query": "SELECT u.id, u.username, u.role, u.permissionPlanId, pp.name as planName \nFROM users u \nLEFT JOIN permission_plans pp ON u.permissionPlanId = pp.id \nWHERE u.username = 'abowd';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT u.id, u.username, u.role, u.permissionPlanId, pp.name as planName \nFROM users u \nLEFT JOIN permission_plans pp ON u.permissionPlanId = pp.id \nWHERE u.username = 'abowd';",
+  "rows": [
+    {
+      "id": "17",
+      "username": "abowd",
+      "role": "client",
+      "permissionPlanId": "3",
+      "planName": "Reseller Basic"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\trole\tpermissionPlanId\tplanName\n17\tabowd\tclient\t3\tReseller Basic\n",
+  "stderr": "",
+  "execution_time_ms": 379
+}

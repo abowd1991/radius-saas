@@ -1,0 +1,9 @@
+{
+  "query": "-- Assign default plan to existing users without a plan\nUPDATE users u\nJOIN permission_plans p ON p.role = u.role AND p.isDefault = 1\nSET u.permissionPlanId = p.id\nWHERE u.permissionPlanId IS NULL AND u.role IN ('client', 'reseller');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute -- Assign default plan to existing users without a plan\nUPDATE users u\nJOIN permission_plans p ON p.role = u.role AND p.isDefault = 1\nSET u.permissionPlanId = p.id\nWHERE u.permissionPlanId IS NULL AND u.role IN ('client', 'reseller');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 606
+}

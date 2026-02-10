@@ -265,6 +265,8 @@ export const userEffectivePermissionsRouter = router({
   get: protectedProcedure
     .input(z.object({ userId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
+      console.log('[userEffectivePermissions.get] Called with:', { userId: input.userId, ctxUserId: ctx.user.id, role: ctx.user.role });
+      
       // Users can get their own permissions, owner can get anyone's
       const targetUserId = input.userId || ctx.user.id;
       
@@ -272,6 +274,8 @@ export const userEffectivePermissionsRouter = router({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      return await permissionDb.getUserEffectivePermissions(targetUserId);
+      const result = await permissionDb.getUserEffectivePermissions(targetUserId);
+      console.log('[userEffectivePermissions.get] Result:', JSON.stringify(result, null, 2));
+      return result;
     }),
 });

@@ -58,6 +58,7 @@ export function useFeatureAccess() {
 
   // Convert group permissions to legacy format
   const permissions = useMemo(() => {
+    console.log('[useFeatureAccess] effectivePermissions:', effectivePermissions);
     if (!effectivePermissions) {
       // Default permissions for clients without a plan
       return {
@@ -94,8 +95,9 @@ export function useFeatureAccess() {
     // Map group keys to boolean permissions
     const groupPermissions: Record<string, boolean> = {};
     effectivePermissions.groups.forEach((group: any) => {
-      groupPermissions[group.key] = true;
+      groupPermissions[group.name] = true;
     });
+    console.log('[useFeatureAccess] groupPermissions:', groupPermissions);
 
     // Map to legacy permissions for backward compatibility
     return {
