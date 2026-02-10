@@ -383,6 +383,12 @@ export default function Support() {
                         <div className={`flex-1 max-w-[80%] ${
                           msg.senderId === user?.id ? "text-end" : ""
                         }`}>
+                          {/* Sender name */}
+                          <p className={`text-xs font-semibold mb-1 ${
+                            msg.senderId === user?.id ? "text-end" : ""
+                          }`}>
+                            {msg.senderId === user?.id ? "أنت" : (msg.senderName || "المدير")}
+                          </p>
                           <div className={`inline-block p-3 rounded-lg ${
                             msg.senderId === user?.id
                               ? "bg-primary text-primary-foreground"

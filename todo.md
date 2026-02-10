@@ -3128,3 +3128,27 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Auto-refresh notifications every 30 seconds
 - [ ] Toast notification for new support messages
 - [ ] Sound notification (optional)
+
+
+## Support Page UI Fixes
+
+### Phase 1: Fix Messages Display for Admin ✅ COMPLETED
+- [x] Fixed getMessagesByTicketId - added join with users table
+- [x] Added senderName and senderEmail to query result
+- [x] Messages now show for admin with full details
+
+### Phase 2: Add Sender Name in Messages ✅ COMPLETED
+- [x] Show sender name above each message
+- [x] Display "أنت" for current user
+- [x] Display senderName or "المدير" for others
+- [x] Added font-semibold styling for sender name
+
+### Phase 3: Visual Indicator for Read/Unread ❌ SKIPPED
+- [x] chatMessages table doesn't have isRead field
+- [x] Would require schema migration to add
+- [x] Skipped for now
+
+### Phase 4: Reverse Order (Newest First) ✅ COMPLETED
+- [x] Changed sort order: orderBy(desc(chatMessages.createdAt))
+- [x] Newest messages now appear at top
+- [x] Oldest messages at bottom

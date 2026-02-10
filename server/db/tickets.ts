@@ -1,6 +1,6 @@
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../db";
-import { supportTickets, chatMessages, InsertSupportTicket, InsertChatMessage } from "../../drizzle/schema";
+import { supportTickets, chatMessages, users, InsertSupportTicket, InsertChatMessage } from "../../drizzle/schema";
 import { TenantContext, canSeeAllData, getEffectiveOwnerId } from "../tenant-isolation";
 import { nanoid } from "nanoid";
 
@@ -138,10 +138,22 @@ export async function getMessagesByTicketId(ticketId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  return db.select()
+  const messages = await db.select({
+    id: chatMessages.id,
+    ticketId: chatMessages.ticketId,
+    senderId: chatMessages.senderId,
+    message: chatMessages.message,
+    attachmentUrl: chatMessages.attachmentUrl,
+    createdAt: chatMessages.createdAt,
+    senderName: users.name,
+    senderEmail: users.email,
+  })
     .from(chatMessages)
+    .leftJoin(users, eq(chatMessages.senderId, users.id))
     .where(eq(chatMessages.ticketId, ticketId))
-    .orderBy(chatMessages.createdAt);
+    .orderBy(desc(chatMessages.createdAt)); // Newest first
+    
+  return messages;
 }
 
 export async function updateTicketStatus(id: number, status: "open" | "in_progress" | "waiting" | "resolved" | "closed") {
