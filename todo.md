@@ -3434,3 +3434,6 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Test: Reject request with reason
 - [ ] Test: Duplicate reference number validation
 - [ ] Test: Image upload and S3 storage
+
+### Bug Report - Bank Transfer
+- [x] إصلاح: عند رفع إشعار التحويل البنكي يبقى "يتم معالجة الأمر" ولا ينتهي

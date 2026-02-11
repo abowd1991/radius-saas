@@ -51,34 +51,35 @@ export default function BankTransferRecharge() {
 
     try {
       // Convert file to base64
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
 
-        const result = await submitMutation.mutateAsync({
-          requestedAmount: 10, // Default $10
-          receiptImage: {
-            data: base64,
-            filename: selectedFile.name,
-            mimeType: selectedFile.type,
-          },
-        });
+      const result = await submitMutation.mutateAsync({
+        requestedAmount: 10, // Default $10
+        receiptImage: {
+          data: base64,
+          filename: selectedFile.name,
+          mimeType: selectedFile.type,
+        },
+      });
 
-        toast.success("تم إرسال طلب الشحن بنجاح!");
-        toast.info(`تم استخراج: ${result.extractedData.amount || "N/A"} ${result.extractedData.currency || ""} = $${result.finalAmountUSD.toFixed(2)}`);
-        
-        setSelectedFile(null);
-        setPreviewUrl(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-        
-        refetch();
-        setIsSubmitting(false);
-      };
-      reader.readAsDataURL(selectedFile);
+      toast.success("تم إرسال طلب الشحن بنجاح!");
+      toast.info(`تم استخراج: ${result.extractedData.amount || "N/A"} ${result.extractedData.currency || ""} = $${result.finalAmountUSD.toFixed(2)}`);
+      
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      
+      refetch();
     } catch (error: any) {
       toast.error(error.message || "فشل إرسال الطلب");
+    } finally {
       setIsSubmitting(false);
     }
   };
