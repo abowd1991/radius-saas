@@ -3737,3 +3737,12 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Backend procedure: users.getActivityTimeline
 - [ ] Display: login history, balance changes, card creation, NAS management
 - [ ] Add route and sidebar link
+
+
+## Bug Fixes (Feb 11, 2026 - Error Report #2)
+
+- [x] Error 1: Fix clientCardSales role check (allow owner/super_admin to access)
+- [x] Error 2: Fix Email validation in createClientByAdmin (already implemented correctly)
+- [x] Error 3: Fix bulk delete query (added validation for empty IDs array)
+- [x] Error 4: Fix HTML nesting (no errors found - all tables use proper structure)
+- [x] Error 5: Fix NasHealthWidget missing keys (already using unique keys correctly)

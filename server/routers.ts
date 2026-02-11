@@ -2964,9 +2964,13 @@ const vouchersRouter = router({
     }),
 
   bulkDelete: protectedProcedure
-    .input(z.object({ ids: z.array(z.number()) }))
+    .input(z.object({ ids: z.array(z.number()).min(1) }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      
+      if (input.ids.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'No IDs provided' });
+      }
       
       // Get cards to verify ownership
       const cards = await db.select().from(radiusCards).where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`).execute();

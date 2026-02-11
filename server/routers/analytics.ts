@@ -266,10 +266,8 @@ const analyticsRouter = router({
       const db = await getDb();
       const { days } = input;
       
-      // Only clients can access this
-      if (ctx.user.role === 'super_admin' || ctx.user.role === 'owner') {
-        throw new Error('This endpoint is for clients only');
-      }
+      // Clients can view their own data, owner/super_admin can view all
+      const isAdmin = ctx.user.role === 'super_admin' || ctx.user.role === 'owner';
 
       const endDate = new Date();
       const startDate = new Date();
