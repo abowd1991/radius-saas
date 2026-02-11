@@ -78,10 +78,16 @@ const connectionTypes = [
   { value: "vpn_sstp", labelAr: "اتصال VPN SSTP", labelEn: "VPN SSTP", icon: Link2 },
 ];
 
-// IP Pool Stats Component
+// IP Pool Stats Component (Admin Only)
 function IPPoolStats() {
+  const { user } = useAuth();
   const { language } = useLanguage();
   const { data: poolStats, isLoading } = trpc.nas.getPoolStats.useQuery();
+
+  // Only show for owner/super_admin
+  if (!user || (user.role !== 'owner' && user.role !== 'super_admin')) {
+    return null;
+  }
 
   if (isLoading) {
     return (

@@ -3932,3 +3932,13 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
   - [x] Add warning when pool is 90%+ full
   - [x] Arabic/English support
 - [ ] Test dashboard display
+
+## Fix: Move IP Pool Stats to Admin-Only VPN Page (Feb 12, 2026)
+- [x] Hide IP Pool Stats from NAS Devices page for clients
+  - [x] Add role check (only show for owner/super_admin)
+  - [x] Keep NAS creation available for all users
+- [x] Move IP Pool Stats to /vpn page (VPN Management)
+  - [x] Updated VpnConnections.tsx page
+  - [x] Add IP Pool Stats component (admin only)
+  - [x] Ensure proper role-based access control
+- [ ] Test visibility for client vs admin roles
