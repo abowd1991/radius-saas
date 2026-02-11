@@ -6005,22 +6005,26 @@ const bankTransferRouter = router({
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
       
       const { bankTransferRequests } = await import('../drizzle/schema');
-      const { storagePut } = await import('./storage');
+      const { saveReceiptImage } = await import('./services/localFileStorage');
       const { extractReceiptData, validateExtractedData } = await import('./services/ocrService');
       const { getExchangeRate } = await import('./services/exchangeRateService');
       
       try {
         const imageBuffer = Buffer.from(input.receiptImage.data, 'base64');
         
-        // Run OCR on the image buffer directly (before uploading to S3)
+        // Run OCR on the image buffer directly (before uploading)
         const ocrData = await extractReceiptData(imageBuffer);
         if (!validateExtractedData(ocrData)) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Failed to extract valid data from receipt' });
         }
         
-        // Upload to S3 after successful OCR
-        const fileKey = `bank-receipts/${ctx.user.id}/${Date.now()}-${input.receiptImage.filename}`;
-        const { url: receiptImageUrl } = await storagePut(fileKey, imageBuffer, input.receiptImage.mimeType);
+        // Save to local storage with organized filename
+        const { publicUrl: receiptImageUrl } = await saveReceiptImage(
+          ctx.user.id,
+          ocrData.referenceNumber!,
+          imageBuffer,
+          input.receiptImage.mimeType
+        );
         
         const existing = await db.select().from(bankTransferRequests)
           .where(eq(bankTransferRequests.referenceNumber, ocrData.referenceNumber!))

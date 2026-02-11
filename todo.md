@@ -3442,3 +3442,5 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] إصلاح: Unexpected token 'S', "Service Unavailable" is not valid JSON
 - [x] إصلاح نهائي: Exchange Rate API error ما زال يظهر بعد النشر - "Service Unavailable" JSON parsing
 - [x] إصلاح: JSON parsing error في frontend (client-side) - الخطأ يحدث في bundled code
+- [x] إصلاح: "Unable to transform response from server" - error handler غير متوافق مع tRPC superjson
+- [x] تغيير: رفع صور الإشعارات على السيرفر المحلي بدلاً من S3 مع أسماء ملفات واضحة

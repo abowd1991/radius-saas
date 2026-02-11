@@ -46,6 +46,9 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   app.use(cookieParser());
+  
+  // Serve uploaded files (bank receipts, etc.)
+  app.use("/uploads", express.static("uploads"));
   // Health check endpoint (for Management API)
   app.get("/health", (req, res) => {
     res.json({
