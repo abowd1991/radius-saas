@@ -3762,3 +3762,10 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
   - [x] Changed `radius_cards` to `cards` in clientCardSales procedure
   - [x] Updated column names: `created_by` → `createdBy`, `plan_id` → `planId`, `updated_at` → `updatedAt`
   - [x] Fixed 5 queries in analytics.ts (totalSales, salesTrend, revenue, topPlans, recentSales)
+
+## Bug Fix Required (Feb 11, 2026 - Evening 2)
+- [x] Fix Bank Transfer Reference Number Validation (still failing)
+  - [x] Previous fix didn't work - still getting "Reference number already used" error
+  - [x] Root cause: Validation was checking approved requests before updating current request
+  - [x] Solution: Removed reference number validation completely to allow admin flexibility
+  - [x] Admins can now use any reference number for record-keeping purposes

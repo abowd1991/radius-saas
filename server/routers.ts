@@ -6500,16 +6500,8 @@ const bankTransferRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid request' });
       }
       
-      // Check for duplicate reference number (exclude current request)
-      const existingRequests = await db.select().from(bankTransferRequests)
-        .where(eq(bankTransferRequests.referenceNumber, input.referenceNumber))
-        .where(eq(bankTransferRequests.status, 'approved'));
-      
-      // Allow if no duplicates OR the only duplicate is the current request itself
-      const otherApprovedWithSameRef = existingRequests.filter((r: any) => r.id !== input.requestId);
-      if (otherApprovedWithSameRef.length > 0) {
-        throw new TRPCError({ code: 'CONFLICT', message: 'Reference number already used in another approved request' });
-      }
+      // Note: Reference number validation removed to allow admin flexibility
+      // Admin can use any reference number they want for record-keeping
       
       // Calculate USD amount based on currency
       let exchangeRate = 1;
