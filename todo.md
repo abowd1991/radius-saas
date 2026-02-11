@@ -3508,4 +3508,38 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Rename "Billing" to "Billing & Wallet" (الفوترة والمحفظة)
 - [x] Move Bank Transfer Requests from Admin Console to Billing section
 - [x] Reorder Billing section: Bank Transfer, Wallet, Wallet Ledger, Invoices, Subscriptions, Billing Dashboard
-- [ ] Test all navigation links
+- [x] Test all navigation links (TypeScript compilation successful)
+
+## Dashboard Stats Cards (Feb 11, 2026)
+
+### Admin Dashboard Stats:
+- [x] Total Revenue (إجمالي الإيرادات)
+- [x] Pending Bank Transfer Requests (طلبات التحويل البنكي قيد المراجعة)
+- [x] Total System Balance (رصيد النظام الكلي)
+- [x] Monthly Revenue (الإيرادات الشهرية)
+- [x] Active Users Count (عدد المستخدمين النشطين)
+- [x] Expiring Subscriptions (اشتراكات تنتهي قريباً - خلال 7 أيام)
+- [x] New Users This Month (مستخدمين جدد هذا الشهر)
+- [x] Low Balance Accounts (حسابات منخفضة الرصيد < $5)
+
+### Client Dashboard Stats:
+- [x] My Current Balance (رصيدي الحالي) + Progress Bar
+- [x] Trial Days Remaining (الأيام المتبقية من Trial)
+- [x] Balance Duration (مدة استمرار الرصيد - كم يوم)
+- [x] Active NAS Devices Count (عدد أجهزة NAS النشطة)
+- [x] Estimated Monthly Cost (التكلفة الشهرية المتوقعة)
+- [x] Last Deposit (آخر عملية شحن)
+- [x] Bank Transfer Requests Status (طلبات التحويل البنكي)
+- [x] Unread Notifications (الإشعارات غير المقروءة)
+
+### Backend:
+- [x] Create `dashboard.getAdminStats` procedure
+- [x] Create `dashboard.getClientStats` procedure
+- [x] Add stats calculations in db helpers
+
+### Frontend:
+- [x] Create StatsCard component (integrated inline)
+- [x] Add Admin Stats Cards in Dashboard (Owner/Admin view)
+- [x] Add Client Stats Cards in Dashboard (Client view)
+- [x] Add responsive grid layout (4 cols → 2 cols → 1 col)
+- [x] Add color coding (green/orange/red based on values)

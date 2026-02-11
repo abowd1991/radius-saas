@@ -24,7 +24,7 @@ import * as accountingService from "./services/accountingService";
 import * as sessionMonitor from "./services/sessionMonitor";
 import * as authService from "./services/authService";
 import { getDb } from "./db";
-import { radcheck, nasDevices, radiusCards, radacct, users, wallets } from "../drizzle/schema";
+import { radcheck, nasDevices, radiusCards, radacct, users, wallets, walletLedger } from "../drizzle/schema";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import * as radiusSubscribers from "./db/radiusSubscribers";
 import { logAudit } from "./services/auditLogService";
@@ -3351,6 +3351,202 @@ const notificationsRouter = router({
 // DASHBOARD STATS ROUTER
 // ============================================================================
 const dashboardRouter = router({
+  // Admin Stats - للمدير فقط
+  getAdminStats: superAdminProcedure.query(async ({ ctx }) => {
+    const database = await getDb();
+    
+    // Total Revenue (from wallet ledger)
+    const totalRevenueResult = await database
+      .select({ total: sql<string>`COALESCE(SUM(CAST(${walletLedger.amount} AS DECIMAL(10,2))), 0)` })
+      .from(walletLedger)
+      .where(sql`${walletLedger.type} = 'deposit'`);
+    const totalRevenue = totalRevenueResult[0]?.total || '0.00';
+    
+    // Pending Bank Transfer Requests
+    const pendingTransfersResult = await database
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(sql`bank_transfers`)
+      .where(sql`status = 'pending'`);
+    const pendingBankTransfers = pendingTransfersResult[0]?.count || 0;
+    
+    // Total System Balance (sum of all wallets)
+    const totalBalanceResult = await database
+      .select({ total: sql<string>`COALESCE(SUM(CAST(${wallets.balance} AS DECIMAL(10,2))), 0)` })
+      .from(wallets);
+    const totalSystemBalance = totalBalanceResult[0]?.total || '0.00';
+    
+    // Monthly Revenue (current month)
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const monthlyRevenueResult = await database
+      .select({ total: sql<string>`COALESCE(SUM(CAST(${walletLedger.amount} AS DECIMAL(10,2))), 0)` })
+      .from(walletLedger)
+      .where(
+        and(
+          sql`${walletLedger.type} = 'deposit'`,
+          sql`${walletLedger.createdAt} >= ${startOfMonth.toISOString()}`
+        )
+      );
+    const monthlyRevenue = monthlyRevenueResult[0]?.total || '0.00';
+    
+    // Active Users (accountStatus = 'active')
+    const activeUsersResult = await database
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(users)
+      .where(sql`${users.accountStatus} = 'active'`);
+    const activeUsers = activeUsersResult[0]?.count || 0;
+    
+    // Expiring Soon (subscriptionEndDate within 7 days)
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    const expiringSoonResult = await database
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(users)
+      .where(
+        and(
+          sql`${users.subscriptionEndDate} IS NOT NULL`,
+          sql`${users.subscriptionEndDate} <= ${sevenDaysFromNow.toISOString()}`,
+          sql`${users.subscriptionEndDate} >= ${new Date().toISOString()}`
+        )
+      );
+    const expiringSoon = expiringSoonResult[0]?.count || 0;
+    
+    // New Users This Month
+    const newUsersResult = await database
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(users)
+      .where(sql`${users.createdAt} >= ${startOfMonth.toISOString()}`);
+    const newUsersThisMonth = newUsersResult[0]?.count || 0;
+    
+    // Low Balance Accounts (balance < $5)
+    const lowBalanceResult = await database
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(wallets)
+      .where(sql`CAST(${wallets.balance} AS DECIMAL(10,2)) < 5.00`);
+    const lowBalanceAccounts = lowBalanceResult[0]?.count || 0;
+    
+    return {
+      totalRevenue,
+      pendingBankTransfers,
+      totalSystemBalance,
+      monthlyRevenue,
+      activeUsers,
+      expiringSoon,
+      newUsersThisMonth,
+      lowBalanceAccounts,
+    };
+  }),
+  
+  // Client Stats - للعميل فقط
+  getClientStats: protectedProcedure.query(async ({ ctx }) => {
+    const database = await getDb();
+    const userId = ctx.user.id;
+    
+    // Get wallet
+    const [wallet] = await database
+      .select()
+      .from(wallets)
+      .where(eq(wallets.userId, userId));
+    const currentBalance = wallet?.balance || '0.00';
+    
+    // Trial Days Remaining
+    let trialDaysLeft = 0;
+    if (ctx.user.trialEndDate) {
+      const trialEnd = new Date(ctx.user.trialEndDate);
+      const now = new Date();
+      const diffTime = trialEnd.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      trialDaysLeft = Math.max(0, diffDays);
+    }
+    
+    // Active NAS Devices Count
+    const tenantContext = getTenantContext(ctx.user);
+    const nasDevices = await nasDb.getNasDevicesByTenant(tenantContext);
+    const activeNasCount = nasDevices.length;
+    
+    // Estimated Monthly Cost ($10 per NAS per month)
+    const estimatedMonthlyCost = (activeNasCount * 10).toFixed(2);
+    
+    // Balance Duration (how many days balance will last)
+    const dailyCost = activeNasCount * 0.33; // $0.33 per day per NAS
+    const balanceNum = parseFloat(currentBalance);
+    const balanceDuration = dailyCost > 0 ? Math.floor(balanceNum / dailyCost) : 999;
+    
+    // Last Deposit
+    const lastDepositResult = await database
+      .select()
+      .from(walletLedger)
+      .where(
+        and(
+          eq(walletLedger.userId, userId),
+          sql`${walletLedger.type} = 'deposit'`
+        )
+      )
+      .orderBy(desc(walletLedger.createdAt))
+      .limit(1);
+    const lastDeposit = lastDepositResult[0] || null;
+    
+    // Bank Transfer Requests Status
+    const bankTransferStats = await database
+      .select({
+        status: sql<string>`status`,
+        count: sql<number>`COUNT(*)`
+      })
+      .from(sql`bank_transfers`)
+      .where(sql`user_id = ${userId}`)
+      .groupBy(sql`status`);
+    
+    const bankTransferRequests = {
+      pending: bankTransferStats.find((s: { status: string; count: number }) => s.status === 'pending')?.count || 0,
+      approved: bankTransferStats.find((s: { status: string; count: number }) => s.status === 'approved')?.count || 0,
+      rejected: bankTransferStats.find((s: { status: string; count: number }) => s.status === 'rejected')?.count || 0,
+    };
+    
+    // Unread Notifications
+    const unreadNotifications = await notificationDb.getUnreadCount(userId);
+    
+    // Last Billing
+    const lastBillingResult = await database
+      .select()
+      .from(walletLedger)
+      .where(
+        and(
+          eq(walletLedger.userId, userId),
+          sql`${walletLedger.type} = 'billing'`
+        )
+      )
+      .orderBy(desc(walletLedger.createdAt))
+      .limit(1);
+    const lastBilling = lastBillingResult[0] || null;
+    
+    // Total Spent (sum of all billing)
+    const totalSpentResult = await database
+      .select({ total: sql<string>`COALESCE(SUM(ABS(CAST(${walletLedger.amount} AS DECIMAL(10,2)))), 0)` })
+      .from(walletLedger)
+      .where(
+        and(
+          eq(walletLedger.userId, userId),
+          sql`${walletLedger.type} = 'billing'`
+        )
+      );
+    const totalSpent = totalSpentResult[0]?.total || '0.00';
+    
+    return {
+      currentBalance,
+      trialDaysLeft,
+      activeNasCount,
+      estimatedMonthlyCost,
+      balanceDuration,
+      lastDeposit,
+      bankTransferRequests,
+      unreadNotifications,
+      lastBilling,
+      totalSpent,
+    };
+  }),
+  
+  // Keep existing getStats for backward compatibility
   getStats: protectedProcedure.query(async ({ ctx }) => {
     // Owner/Super Admin Dashboard
     if (ctx.user.role === 'owner' || isAdmin(ctx.user.role)) {

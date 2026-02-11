@@ -36,6 +36,18 @@ export default function Dashboard() {
   // Fetch dashboard stats
   const { data: stats, isLoading, refetch } = trpc.dashboard.getStats.useQuery();
   
+  // Fetch admin stats (for owner/super_admin)
+  const { data: adminStats, isLoading: isAdminStatsLoading } = trpc.dashboard.getAdminStats.useQuery(
+    undefined,
+    { enabled: user?.role === 'owner' || user?.role === 'super_admin' }
+  );
+  
+  // Fetch client stats (for clients)
+  const { data: clientStats, isLoading: isClientStatsLoading } = trpc.dashboard.getClientStats.useQuery(
+    undefined,
+    { enabled: user?.role === 'client' || user?.role === 'client_owner' }
+  );
+  
   // Analytics data
   const [analyticsDays, setAnalyticsDays] = useState(30);
   const { data: revenueData } = trpc.analytics.revenueTrend.useQuery({ days: analyticsDays });
@@ -229,8 +241,130 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* New Admin Stats Cards */}
+        {isAdminStatsLoading ? (
+          <div className="text-center py-8">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+            <p className="text-sm text-muted-foreground mt-2">{language === "ar" ? "جاري التحميل..." : "Loading..."}</p>
+          </div>
+        ) : adminStats && (
+          <>
+            {/* Financial Stats */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="border-l-4 border-l-green-500">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{language === "ar" ? "إجمالي الإيرادات" : "Total Revenue"}</CardTitle>
+                  <Wallet className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{formatCurrency(adminStats.totalRevenue)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {language === "ar" ? "من جميع الإيداعات" : "From all deposits"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-orange-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/bank-transfer-admin")}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{language === "ar" ? "طلبات تحويل بنكي" : "Bank Transfer Requests"}</CardTitle>
+                  <AlertCircle className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">{formatNumber(adminStats.pendingBankTransfers)}</div>
+                  <Badge variant="secondary" className="mt-2 bg-orange-100 text-orange-700">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {language === "ar" ? "قيد المراجعة" : "Pending Review"}
+                  </Badge>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-blue-500">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{language === "ar" ? "رصيد النظام الكلي" : "Total System Balance"}</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">{formatCurrency(adminStats.totalSystemBalance)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {language === "ar" ? "مجموع أرصدة العملاء" : "Sum of all wallets"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-purple-500">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{language === "ar" ? "الإيرادات الشهرية" : "Monthly Revenue"}</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">{formatCurrency(adminStats.monthlyRevenue)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {language === "ar" ? "هذا الشهر" : "This month"}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* User Stats */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/clients")}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{language === "ar" ? "مستخدمين نشطين" : "Active Users"}</CardTitle>
+                  <Users className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatNumber(adminStats.activeUsers)}</div>
+                  <Badge variant="secondary" className="mt-2 bg-green-100 text-green-700">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    {language === "ar" ? "نشط" : "Active"}
+                  </Badge>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/clients")}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{language === "ar" ? "اشتراكات تنتهي قريباً" : "Expiring Soon"}</CardTitle>
+                  <AlertCircle className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">{formatNumber(adminStats.expiringSoon)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {language === "ar" ? "خلال 7 أيام" : "Within 7 days"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/clients")}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{language === "ar" ? "مستخدمين جدد" : "New Users"}</CardTitle>
+                  <Users className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">{formatNumber(adminStats.newUsersThisMonth)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {language === "ar" ? "هذا الشهر" : "This month"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/clients")}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{language === "ar" ? "حسابات منخفضة الرصيد" : "Low Balance Accounts"}</CardTitle>
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{formatNumber(adminStats.lowBalanceAccounts)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {language === "ar" ? "أقل من $5" : "Less than $5"}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+
+        {/* Old Stats Grid (keep for backward compatibility) */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/clients")}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">{t("dashboard.total_users")}</CardTitle>
@@ -539,8 +673,177 @@ export default function Dashboard() {
         isLoading={isBillingLoading} 
       /> */}
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* New Client Stats Cards */}
+      {isClientStatsLoading ? (
+        <div className="text-center py-8">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+          <p className="text-sm text-muted-foreground mt-2">{language === "ar" ? "جاري التحميل..." : "Loading..."}</p>
+        </div>
+      ) : clientStats && (
+        <>
+          {/* Balance & Trial Stats */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card 
+              className={`border-l-4 cursor-pointer hover:shadow-md transition-shadow ${
+                parseFloat(clientStats.currentBalance) > 10 ? 'border-l-green-500' :
+                parseFloat(clientStats.currentBalance) >= 1 ? 'border-l-orange-500' :
+                'border-l-red-500'
+              }`}
+              onClick={() => setLocation("/wallet")}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{language === "ar" ? "رصيدي الحالي" : "My Balance"}</CardTitle>
+                <Wallet className={`h-4 w-4 ${
+                  parseFloat(clientStats.currentBalance) > 10 ? 'text-green-500' :
+                  parseFloat(clientStats.currentBalance) >= 1 ? 'text-orange-500' :
+                  'text-red-500'
+                }`} />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${
+                  parseFloat(clientStats.currentBalance) > 10 ? 'text-green-600' :
+                  parseFloat(clientStats.currentBalance) >= 1 ? 'text-orange-600' :
+                  'text-red-600'
+                }`}>
+                  {formatCurrency(clientStats.currentBalance)}
+                </div>
+                <div className="mt-2">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                    <span>{language === "ar" ? "حالة الرصيد" : "Balance Status"}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all ${
+                        parseFloat(clientStats.currentBalance) > 10 ? 'bg-green-500' :
+                        parseFloat(clientStats.currentBalance) >= 1 ? 'bg-orange-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${Math.min(100, (parseFloat(clientStats.currentBalance) / 20) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-blue-500">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{language === "ar" ? "الأيام المتبقية من Trial" : "Trial Days Left"}</CardTitle>
+                <Clock className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">{clientStats.trialDaysLeft}</div>
+                <div className="mt-2">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                    <span>{language === "ar" ? "من 7 أيام" : "Out of 7 days"}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all"
+                      style={{ width: `${(clientStats.trialDaysLeft / 7) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-purple-500">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{language === "ar" ? "مدة استمرار الرصيد" : "Balance Duration"}</CardTitle>
+                <TrendingUp className="h-4 w-4 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-600">
+                  {clientStats.balanceDuration > 365 ? '∞' : clientStats.balanceDuration}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === "ar" ? "يوم متبقي" : "days remaining"}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-indigo-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/nas")}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{language === "ar" ? "أجهزة NAS النشطة" : "Active NAS Devices"}</CardTitle>
+                <Activity className="h-4 w-4 text-indigo-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-indigo-600">{clientStats.activeNasCount}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === "ar" ? "جهاز" : "devices"}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Billing & Activity Stats */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{language === "ar" ? "التكلفة الشهرية المتوقعة" : "Estimated Monthly Cost"}</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(clientStats.estimatedMonthlyCost)}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === "ar" ? `$10 × ${clientStats.activeNasCount} NAS` : `$10 × ${clientStats.activeNasCount} NAS`}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{language === "ar" ? "آخر عملية شحن" : "Last Deposit"}</CardTitle>
+                <Wallet className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                {clientStats.lastDeposit ? (
+                  <>
+                    <div className="text-2xl font-bold">{formatCurrency(clientStats.lastDeposit.amount)}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(clientStats.lastDeposit.createdAt).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{language === "ar" ? "لا توجد عمليات شحن" : "No deposits yet"}</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/bank-transfer-recharge")}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{language === "ar" ? "طلبات التحويل البنكي" : "Bank Transfer Requests"}</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2 text-sm">
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                    {clientStats.bankTransferRequests.pending} {language === "ar" ? "قيد المراجعة" : "Pending"}
+                  </Badge>
+                  <Badge variant="secondary" className="bg-green-100 text-green-700">
+                    {clientStats.bankTransferRequests.approved} {language === "ar" ? "موافق" : "Approved"}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{language === "ar" ? "إجمالي المصروفات" : "Total Spent"}</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(clientStats.totalSpent)}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === "ar" ? "منذ بداية الاشتراك" : "Since subscription start"}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* Old Stats Grid (keep for backward compatibility) */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/wallet")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">{t("dashboard.wallet_balance")}</CardTitle>
