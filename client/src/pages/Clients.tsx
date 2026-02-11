@@ -83,15 +83,16 @@ export default function Clients() {
   } = usePagination(sortedClients, 15);
 
   // Mutations
-  // Note: Client creation would be handled through registration or admin panel
-  const createClientMutation = {
-    mutate: (data: any) => {
-      toast.info(language === "ar" ? "سيتم إضافة هذه الميزة قريباً" : "This feature will be added soon");
+  const createClient = trpc.users.createClientByAdmin.useMutation({
+    onSuccess: () => {
+      toast.success(language === "ar" ? "تم إنشاء العميل بنجاح" : "Client created successfully");
       setIsAddDialogOpen(false);
+      refetch();
     },
-    isPending: false,
-  };
-  const createClient = createClientMutation;
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
 
   const updateClientMutation = {
     mutate: (data: any) => {
@@ -101,6 +102,16 @@ export default function Clients() {
     isPending: false,
   };
   const updateClient = updateClientMutation;
+
+  const deleteUser = trpc.users.delete.useMutation({
+    onSuccess: () => {
+      toast.success(language === "ar" ? "تم حذف المستخدم بنجاح" : "User deleted successfully");
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
 
   const toggleStatus = trpc.users.updateStatus.useMutation({
     onSuccess: () => {
@@ -151,6 +162,7 @@ export default function Clients() {
       email: formData.get("email") as string,
       phone: formData.get("phone") as string || undefined,
       address: formData.get("address") as string || undefined,
+      role: "client" as const,
     };
 
     if (editingClient) {
@@ -356,6 +368,18 @@ export default function Clients() {
                               {language === "ar" ? "تفعيل" : "Activate"}
                             </DropdownMenuItem>
                           )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => {
+                              if (window.confirm(language === "ar" ? "هل أنت متأكد من حذف هذا المستخدم؟" : "Are you sure you want to delete this user?")) {
+                                deleteUser.mutate({ userId: client.id });
+                              }
+                            }}
+                          >
+                            <Trash2 className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+                            {language === "ar" ? "حذف" : "Delete"}
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

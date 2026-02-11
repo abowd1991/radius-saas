@@ -158,6 +158,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     items: [
       { icon: CreditCard, label: "Vouchers", labelAr: "الكروت", path: "/vouchers" },
       { icon: Printer, label: "Print Cards", labelAr: "طباعة الكروت", path: "/print-cards" },
+      { icon: BarChart3, label: "Card Sales Analytics", labelAr: "تحليلات مبيعات الكروت", path: "/card-sales" },
     ],
   },
 
@@ -224,6 +225,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     requiredRole: ["super_admin", "owner"],
     items: [
       { icon: Settings, label: "Settings", labelAr: "الإعدادات", path: "/settings" },
+      { icon: Shield, label: "Default Plans", labelAr: "الخطط الافتراضية", path: "/default-plans" },
       { icon: History, label: "Audit Log", labelAr: "سجل العمليات", path: "/audit-log" },
       { icon: Database, label: "Backups", labelAr: "النسخ الاحتياطي", path: "/backup-management" },
       { icon: Settings, label: "Site Settings", labelAr: "إعدادات الموقع", path: "/site-settings" },

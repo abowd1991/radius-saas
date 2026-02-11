@@ -3589,3 +3589,94 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Error 4: Fix HTML nesting → No errors found (all tables use proper structure)
 - [x] Error 9: Add missing keys in NasHealthWidget → Changed key from index to entry.name
 - [ ] Error 2: Fix duplicate reference number validation in bank transfers (low priority)
+
+
+## System Gaps Implementation (Feb 11, 2026)
+
+### 🔴 Priority 1: Critical Features
+
+#### 1. Default Plans Management UI
+- [ ] Create `/default-plans` page
+- [ ] Display current default plan for each role (Client, Reseller)
+- [ ] Add "Set as Default" button for each Permission Plan
+- [ ] Add navigation link in Sidebar under "خطط الصلاحيات"
+- [ ] Backend: Already exists (`defaultPlansRouter`)
+
+#### 2. Create Client by Admin (Internal Registration)
+- [ ] Complete form in Clients.tsx (Name, Email, Password, Role, Permission Plan)
+- [ ] Connect to `trpc.users.createClientByAdmin.useMutation()`
+- [ ] Auto-assign Default Plan if not selected
+- [ ] Add validation (email format, password strength)
+- [ ] Success toast + redirect to client details
+
+#### 3. Delete User Functionality
+- [ ] Backend: Create `users.deleteUser` procedure (Soft delete: status = 'deleted')
+- [ ] Frontend: Add Delete button in Clients.tsx dropdown
+- [ ] Frontend: Add Delete button in Resellers.tsx dropdown
+- [ ] Add Confirmation Dialog: "هل أنت متأكد من حذف هذا المستخدم؟"
+- [ ] Show deleted users in separate tab (optional)
+
+### 🟡 Priority 2: Important Features
+
+#### 4. Sidebar Navigation Updates
+- [ ] Add "مبيعات الكروت" / "Card Sales" link (for clients only)
+- [ ] Icon: CreditCard or BarChart3
+- [ ] Route: `/card-sales`
+- [ ] Show only if user.role === 'client'
+
+#### 5. Set Default in Permission Plans UI
+- [ ] Add "Default" column in Permission Plans table
+- [ ] Show Badge "افتراضي" for current default plan
+- [ ] Add "Set as Default" button for each plan
+- [ ] Connect to `trpc.defaultPlans.setDefaultPlan.useMutation()`
+
+#### 6. Email Verification Page
+- [ ] Create `/verify-email` page
+- [ ] Accept `code` query parameter
+- [ ] Backend: Create `auth.verifyEmail` procedure
+- [ ] Show success/error message
+- [ ] Add "Resend Verification Email" button
+
+#### 7. Deposit History for Client
+- [ ] Create `/my-deposits` page (client only)
+- [ ] Display last 50 deposit transactions
+- [ ] Filter by date range (optional)
+- [ ] Show: Date, Amount, Method, Status
+- [ ] Backend: Create `wallet.getMyDeposits` procedure
+
+#### 8. NAS Health Dashboard Widget
+- [ ] Create NasHealthWidget component (already exists, needs integration)
+- [ ] Add to Dashboard (client view)
+- [ ] Show: Online/Offline count
+- [ ] Alert badge if any NAS is offline
+- [ ] Click to navigate to `/nas-health-monitor`
+
+### 🟢 Priority 3: Nice to Have
+
+#### 9. Export Reports (PDF/Excel)
+- [ ] Add Export button in Dashboard (admin)
+- [ ] Export stats as PDF (revenue, users, sessions)
+- [ ] Add Export button in Clients page
+- [ ] Export clients list as Excel
+- [ ] Add Export button in Resellers page
+- [ ] Export resellers list as Excel
+
+#### 10. Bulk Actions
+- [ ] Add checkbox column in Clients table
+- [ ] Add "Select All" checkbox in header
+- [ ] Add Bulk Actions dropdown (Suspend, Activate, Delete)
+- [ ] Confirmation dialog for bulk operations
+- [ ] Same for Resellers table
+
+#### 11. Advanced Search & Filters
+- [ ] Add Filter dropdown in Clients page (Status, Plan, Date Range)
+- [ ] Add Filter dropdown in Resellers page
+- [ ] Add Advanced Search (multiple fields)
+- [ ] Save filter preferences in localStorage
+
+#### 12. Activity Timeline
+- [ ] Create ActivityTimeline component
+- [ ] Show last 10 activities for client (login, deposit, card creation)
+- [ ] Add to Dashboard or Profile page
+- [ ] Backend: Create `activity.getMyTimeline` procedure
+- [ ] Store activities in `activity_log` table

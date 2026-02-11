@@ -53,6 +53,7 @@ import BankTransferRecharge from "./pages/BankTransferRecharge";
 import BankTransferAdmin from "./pages/BankTransferAdmin";
 import OwnerBillingDashboard from "./pages/OwnerBillingDashboard";
 import CardSales from "./pages/CardSales";
+import DefaultPlans from "./pages/DefaultPlans";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -261,9 +262,18 @@ function Router() {
         <PrintCards />
       </Route>
       <Route path="/card-sales">
-        <DashboardLayout>
-          <CardSales />
-        </DashboardLayout>
+        {() => (
+          <DashboardLayout>
+            <CardSales />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/default-plans">
+        {() => (
+          <DashboardLayout>
+            <DefaultPlans />
+          </DashboardLayout>
+        )}
       </Route>
       <Route path="/mikrotik-setup" component={MikrotikSetup} />
       <Route path="/404" component={NotFound} />

@@ -43,6 +43,7 @@ import {
   Ban,
   CheckCircle,
   Building2,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { usePagination } from "@/hooks/usePagination";
@@ -82,6 +83,16 @@ export default function Resellers() {
   } = usePagination(sortedResellers, 15);
 
   // Mutations
+  const deleteUser = trpc.users.delete.useMutation({
+    onSuccess: () => {
+      toast.success(language === "ar" ? "تم حذف المستخدم بنجاح" : "User deleted successfully");
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
+
   const toggleStatus = trpc.users.updateStatus.useMutation({
     onSuccess: () => {
       toast.success(language === "ar" ? "تم تحديث الحالة" : "Status updated");
@@ -340,6 +351,18 @@ export default function Resellers() {
                               {language === "ar" ? "تفعيل" : "Activate"}
                             </DropdownMenuItem>
                           )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => {
+                              if (window.confirm(language === "ar" ? "هل أنت متأكد من حذف هذا المستخدم؟" : "Are you sure you want to delete this user?")) {
+                                deleteUser.mutate({ userId: reseller.id });
+                              }
+                            }}
+                          >
+                            <Trash2 className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+                            {language === "ar" ? "حذف" : "Delete"}
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
