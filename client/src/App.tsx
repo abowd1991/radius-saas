@@ -54,6 +54,8 @@ import BankTransferAdmin from "./pages/BankTransferAdmin";
 import OwnerBillingDashboard from "./pages/OwnerBillingDashboard";
 import CardSales from "./pages/CardSales";
 import DefaultPlans from "./pages/DefaultPlans";
+import EmailVerification from "./pages/EmailVerification";
+import DepositHistory from "./pages/DepositHistory";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -272,6 +274,20 @@ function Router() {
         {() => (
           <DashboardLayout>
             <DefaultPlans />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/email-verification">
+        {() => (
+          <DashboardLayout>
+            <EmailVerification />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/deposit-history">
+        {() => (
+          <DashboardLayout>
+            <DepositHistory />
           </DashboardLayout>
         )}
       </Route>
