@@ -215,11 +215,11 @@ export default function BankTransferRecharge() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">سعر التحويل:</span>
-                    <p className="font-semibold">{request.exchangeRate.toFixed(4)}</p>
+                    <p className="font-semibold">{parseFloat(request.exchangeRate || '1').toFixed(4)}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">المبلغ النهائي:</span>
-                    <p className="font-semibold text-green-600">${request.finalAmountUSD.toFixed(2)}</p>
+                    <p className="font-semibold text-green-600">${parseFloat(request.finalAmountUSD || '0').toFixed(2)}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">الرقم المرجعي:</span>

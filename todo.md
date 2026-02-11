@@ -3464,3 +3464,4 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Exchange Rate API تلقائي للتحويل ILS→USD
 - [x] منع تكرار Reference Number
 - [x] حفظ الصور على السيرفر المحلي (uploads/bank-receipts/)
+- [x] إصلاح: exchangeRate.toFixed is not a function في Bank Transfer submitRequest
