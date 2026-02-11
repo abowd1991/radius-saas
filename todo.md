@@ -3447,3 +3447,20 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] إصلاح: 503 Service Unavailable ما زال يحدث في submitRequest - يحدث قبل saveReceiptImage
   - إضافة detailed error handling لكل خطوة (OCR, Storage, Exchange Rate)
   - الآن سيظهر رسالة خطأ واضحة تحدد المشكلة بالضبط
+- [ ] إصلاح: Dev server - EMFILE: too many open files
+
+### Bank Transfer - النظام الهجين (Hybrid System)
+- [ ] إزالة OCR من submitRequest
+- [ ] تعديل صفحة العميل - رفع صورة فقط (بدون OCR)
+- [ ] تعديل صفحة الأدمن - إضافة نموذج إدخال يدوي للبيانات
+- [ ] تحديث database schema - إزالة ocrData field
+- [ ] اختبار النظام الكامل
+
+## Bank Transfer - النظام الهجين (Completed - Feb 11, 2026)
+- [x] إزالة OCR من submitRequest
+- [x] تعديل صفحة العميل - رفع صورة فقط
+- [x] تعديل صفحة الأدمن - إضافة نموذج إدخال يدوي
+- [x] تحديث approve procedure لقبول البيانات اليدوية
+- [x] Exchange Rate API تلقائي للتحويل ILS→USD
+- [x] منع تكرار Reference Number
+- [x] حفظ الصور على السيرفر المحلي (uploads/bank-receipts/)

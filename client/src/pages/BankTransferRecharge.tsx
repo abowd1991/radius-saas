@@ -68,7 +68,7 @@ export default function BankTransferRecharge() {
       });
 
       toast.success("تم إرسال طلب الشحن بنجاح!");
-      toast.info(`تم استخراج: ${result.extractedData.amount || "N/A"} ${result.extractedData.currency || ""} = $${result.finalAmountUSD.toFixed(2)}`);
+      toast.info(result.message || "سيتم مراجعة طلبك من قبل الإدارة");
       
       setSelectedFile(null);
       setPreviewUrl(null);
@@ -146,7 +146,7 @@ export default function BankTransferRecharge() {
               <li>• تأكد من وضوح الصورة وظهور جميع التفاصيل</li>
               <li>• يجب أن يظهر الرقم المرجعي بوضوح</li>
               <li>• يجب أن يظهر المبلغ المحوّل والعملة</li>
-              <li>• سيتم استخراج البيانات تلقائياً من الصورة</li>
+              <li>• سيتم مراجعة طلبك من قبل الإدارة خلال 24 ساعة</li>
               <li>• العملات المدعومة: دولار أمريكي (USD) و شيكل إسرائيلي (ILS)</li>
             </ul>
           </div>

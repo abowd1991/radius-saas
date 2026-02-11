@@ -6006,33 +6006,19 @@ const bankTransferRouter = router({
       
       const { bankTransferRequests } = await import('../drizzle/schema');
       const { saveReceiptImage } = await import('./services/localFileStorage');
-      const { extractReceiptData, validateExtractedData } = await import('./services/ocrService');
-      const { getExchangeRate } = await import('./services/exchangeRateService');
       
       try {
         const imageBuffer = Buffer.from(input.receiptImage.data, 'base64');
         
-        // Run OCR on the image buffer directly (before uploading)
-        let ocrData;
-        try {
-          ocrData = await extractReceiptData(imageBuffer);
-          if (!validateExtractedData(ocrData)) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Failed to extract valid data from receipt' });
-          }
-        } catch (ocrError) {
-          console.error('OCR extraction failed:', ocrError);
-          throw new TRPCError({ 
-            code: 'INTERNAL_SERVER_ERROR', 
-            message: `OCR extraction failed: ${ocrError instanceof Error ? ocrError.message : 'Unknown error'}` 
-          });
-        }
+        // Generate temporary reference number (will be replaced by admin)
+        const tempRefNumber = `TEMP-${ctx.user.id}-${Date.now()}`;
         
         // Save to local storage with organized filename
         let receiptImageUrl;
         try {
           const result = await saveReceiptImage(
             ctx.user.id,
-            ocrData.referenceNumber!,
+            tempRefNumber,
             imageBuffer,
             input.receiptImage.mimeType
           );
@@ -6045,50 +6031,32 @@ const bankTransferRouter = router({
           });
         }
         
-        const existing = await db.select().from(bankTransferRequests)
-          .where(eq(bankTransferRequests.referenceNumber, ocrData.referenceNumber!))
-          .limit(1);
-        if (existing.length > 0) {
-          throw new TRPCError({ code: 'CONFLICT', message: `Reference number already used` });
-        }
-        
-        const currency = ocrData.currency || 'USD';
-        let exchangeRate;
-        try {
-          exchangeRate = await getExchangeRate(currency, 'USD');
-        } catch (exchangeError) {
-          console.error('Exchange rate fetch failed:', exchangeError);
-          throw new TRPCError({ 
-            code: 'INTERNAL_SERVER_ERROR', 
-            message: `Exchange rate fetch failed: ${exchangeError instanceof Error ? exchangeError.message : 'Unknown error'}` 
-          });
-        }
-        const transferredAmount = ocrData.amount!;
-        const finalAmountUSD = Math.round(transferredAmount * exchangeRate * 100) / 100;
-        
+        // Create pending request (admin will fill in the details)
         const [result] = await db.insert(bankTransferRequests).values({
           userId: ctx.user.id,
           requestedAmount: input.requestedAmount.toString(),
-          transferredAmount: transferredAmount.toString(),
-          transferredCurrency: currency as 'ILS' | 'USD',
-          exchangeRate: exchangeRate.toString(),
-          finalAmountUSD: finalAmountUSD.toString(),
+          transferredAmount: '0', // Will be filled by admin
+          transferredCurrency: 'USD', // Will be updated by admin
+          exchangeRate: '1', // Will be calculated when admin approves
+          finalAmountUSD: '0', // Will be calculated when admin approves
           receiptImageUrl,
-          referenceNumber: ocrData.referenceNumber!,
-          ocrData: JSON.stringify(ocrData),
+          referenceNumber: tempRefNumber, // Will be updated by admin
+          ocrData: null, // No OCR data
           status: 'pending',
         });
         
         return {
           success: true,
           requestId: Number(result.insertId),
-          extractedData: ocrData,
-          finalAmountUSD,
-          exchangeRate,
+          message: 'Receipt uploaded successfully. Your request will be reviewed by admin.',
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error instanceof Error ? error.message : 'Failed' });
+        console.error('Submit request failed:', error);
+        throw new TRPCError({ 
+          code: 'INTERNAL_SERVER_ERROR', 
+          message: error instanceof Error ? error.message : 'Failed to submit request' 
+        });
       }
     }),
     
@@ -6136,7 +6104,12 @@ const bankTransferRouter = router({
     }),
     
   approve: protectedProcedure
-    .input(z.object({ requestId: z.number() }))
+    .input(z.object({ 
+      requestId: z.number(),
+      transferredAmount: z.number().positive(),
+      transferredCurrency: z.enum(['USD', 'ILS']),
+      referenceNumber: z.string().min(1).max(100),
+    }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN' });
@@ -6146,6 +6119,7 @@ const bankTransferRouter = router({
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
       
       const { bankTransferRequests, wallets, walletLedger } = await import('../drizzle/schema');
+      const { getExchangeRate } = await import('./services/exchangeRateService');
       
       const [request] = await db.select().from(bankTransferRequests)
         .where(eq(bankTransferRequests.id, input.requestId)).limit(1);
@@ -6153,12 +6127,36 @@ const bankTransferRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid request' });
       }
       
+      // Check for duplicate reference number
+      const [existing] = await db.select().from(bankTransferRequests)
+        .where(eq(bankTransferRequests.referenceNumber, input.referenceNumber))
+        .where(eq(bankTransferRequests.status, 'approved'))
+        .limit(1);
+      if (existing) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Reference number already used in another approved request' });
+      }
+      
+      // Calculate USD amount based on currency
+      let exchangeRate = 1;
+      let finalAmountUSD = input.transferredAmount;
+      
+      if (input.transferredCurrency === 'ILS') {
+        try {
+          exchangeRate = await getExchangeRate('ILS', 'USD');
+          finalAmountUSD = Math.round(input.transferredAmount * exchangeRate * 100) / 100;
+        } catch (error) {
+          // Fallback rate if API fails
+          exchangeRate = 0.27;
+          finalAmountUSD = Math.round(input.transferredAmount * exchangeRate * 100) / 100;
+        }
+      }
+      
       const [wallet] = await db.select().from(wallets)
         .where(eq(wallets.userId, request.userId)).limit(1);
       if (!wallet) throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
       
       const currentBalance = parseFloat(wallet.balance);
-      const amountToAdd = parseFloat(request.finalAmountUSD);
+      const amountToAdd = finalAmountUSD;
       const newBalance = currentBalance + amountToAdd;
       
       await db.update(wallets).set({ balance: newBalance.toFixed(2) })
@@ -6179,6 +6177,11 @@ const bankTransferRouter = router({
       
       await db.update(bankTransferRequests).set({
         status: 'approved',
+        transferredAmount: input.transferredAmount.toString(),
+        transferredCurrency: input.transferredCurrency,
+        exchangeRate: exchangeRate.toString(),
+        finalAmountUSD: finalAmountUSD.toString(),
+        referenceNumber: input.referenceNumber,
         reviewedAt: new Date(),
         reviewedBy: ctx.user.id,
       }).where(eq(bankTransferRequests.id, input.requestId));
