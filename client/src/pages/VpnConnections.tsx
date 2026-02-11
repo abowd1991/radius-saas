@@ -69,6 +69,247 @@ const statusConfig: Record<string, { color: string; labelAr: string; labelEn: st
   error: { color: "bg-red-500", labelAr: "خطأ", labelEn: "Error", icon: AlertCircle },
 };
 
+// IP Pool Management Component (Admin Only)
+function IpPoolManagement() {
+  const { user } = useAuth();
+  const { language } = useLanguage();
+  const [isExpanding, setIsExpanding] = useState(false);
+  const [startIp, setStartIp] = useState('');
+  const [endIp, setEndIp] = useState('');
+  
+  const { data: ranges, isLoading, refetch } = trpc.nas.getIpPoolRanges.useQuery(undefined, {
+    enabled: user?.role === 'owner' || user?.role === 'super_admin',
+  });
+  
+  const expandMutation = trpc.nas.expandIpPool.useMutation({
+    onSuccess: () => {
+      toast.success(language === "ar" ? "تم توسيع مجموعة IP بنجاح" : "IP Pool expanded successfully");
+      setIsExpanding(false);
+      setStartIp('');
+      setEndIp('');
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Only show for owner/super_admin
+  if (!user || (user.role !== 'owner' && user.role !== 'super_admin')) {
+    return null;
+  }
+
+  const handleExpand = () => {
+    if (!startIp || !endIp) {
+      toast.error(language === "ar" ? "يرجى إدخال IP البداية والنهاية" : "Please enter Start and End IP");
+      return;
+    }
+    expandMutation.mutate({ startIp, endIp });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              {language === "ar" ? "إدارة مجموعة IP" : "IP Pool Management"}
+            </CardTitle>
+            <CardDescription>
+              {language === "ar" 
+                ? "إدارة نطاقات IP المتاحة للشبكات" 
+                : "Manage available IP ranges for networks"
+              }
+            </CardDescription>
+          </div>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setIsExpanding(!isExpanding)}
+          >
+            {isExpanding 
+              ? (language === "ar" ? "إلغاء" : "Cancel")
+              : (language === "ar" ? "توسيع المجموعة" : "Expand Pool")
+            }
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isExpanding && (
+          <div className="mb-6 p-4 border rounded-lg bg-muted/50">
+            <h4 className="font-medium mb-3">
+              {language === "ar" ? "إضافة نطاق IP جديد" : "Add New IP Range"}
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  {language === "ar" ? "IP البداية" : "Start IP"}
+                </label>
+                <Input
+                  placeholder="192.168.30.201"
+                  value={startIp}
+                  onChange={(e) => setStartIp(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  {language === "ar" ? "IP النهاية" : "End IP"}
+                </label>
+                <Input
+                  placeholder="192.168.30.254"
+                  value={endIp}
+                  onChange={(e) => setEndIp(e.target.value)}
+                />
+              </div>
+            </div>
+            <Button
+              onClick={handleExpand}
+              disabled={expandMutation.isPending}
+            >
+              {expandMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                language === "ar" ? "إضافة النطاق" : "Add Range"
+              )}
+            </Button>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : !ranges || ranges.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            {language === "ar" ? "لا توجد نطاقات IP" : "No IP ranges found"}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{language === "ar" ? "النطاق" : "Range"}</TableHead>
+                  <TableHead>{language === "ar" ? "الشبكة الفرعية" : "Subnet"}</TableHead>
+                  <TableHead>{language === "ar" ? "إجمالي IPs" : "Total IPs"}</TableHead>
+                  <TableHead>{language === "ar" ? "الحالة" : "Status"}</TableHead>
+                  <TableHead>{language === "ar" ? "تاريخ الإنشاء" : "Created At"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ranges.map((range: any) => (
+                  <TableRow key={range.id}>
+                    <TableCell className="font-mono text-sm">
+                      {range.startIp} - {range.endIp}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{range.subnet}.0/24</TableCell>
+                    <TableCell className="font-medium">{range.totalIps}</TableCell>
+                    <TableCell>
+                      <Badge variant={range.isActive ? 'default' : 'secondary'}>
+                        {range.isActive 
+                          ? (language === "ar" ? "نشط" : "Active")
+                          : (language === "ar" ? "غير نشط" : "Inactive")
+                        }
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(range.createdAt).toLocaleDateString(language === "ar" ? "ar" : "en")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// DHCP Leases Table Component (Admin Only)
+function DhcpLeasesTable() {
+  const { user } = useAuth();
+  const { language } = useLanguage();
+  const { data: leases, isLoading, refetch } = trpc.nas.listDhcpLeases.useQuery(undefined, {
+    enabled: user?.role === 'owner' || user?.role === 'super_admin',
+  });
+
+  // Only show for owner/super_admin
+  if (!user || (user.role !== 'owner' && user.role !== 'super_admin')) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Router className="h-5 w-5" />
+              {language === "ar" ? "حجوزات DHCP الثابتة" : "Static DHCP Leases"}
+            </CardTitle>
+            <CardDescription>
+              {language === "ar" 
+                ? "جميع حجوزات DHCP الثابتة المُدارة بواسطة النظام" 
+                : "All static DHCP leases managed by the system"
+              }
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : !leases || leases.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            {language === "ar" ? "لا توجد حجوزات DHCP" : "No DHCP leases found"}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{language === "ar" ? "عنوان MAC" : "MAC Address"}</TableHead>
+                  <TableHead>{language === "ar" ? "عنوان IP" : "IP Address"}</TableHead>
+                  <TableHead>{language === "ar" ? "اسم المضيف" : "Hostname"}</TableHead>
+                  <TableHead>{language === "ar" ? "الحالة" : "Status"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leases.map((lease: any, index: number) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-mono text-sm">{lease.mac}</TableCell>
+                    <TableCell className="font-mono text-sm">{lease.ip}</TableCell>
+                    <TableCell className="font-medium">{lease.hostname || '-'}</TableCell>
+                    <TableCell>
+                      <Badge variant={lease.status === 'active' ? 'default' : 'secondary'}>
+                        {lease.status === 'active' 
+                          ? (language === "ar" ? "نشط" : "Active")
+                          : (language === "ar" ? "غير نشط" : "Inactive")
+                        }
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // IP Pool Stats Component (Admin Only)
 function IPPoolStats() {
   const { user } = useAuth();
@@ -325,6 +566,12 @@ export default function VpnConnections() {
 
       {/* IP Pool Statistics (Admin Only) */}
       <IPPoolStats />
+
+      {/* DHCP Static Leases (Admin Only) */}
+      <DhcpLeasesTable />
+
+      {/* IP Pool Management (Admin Only) */}
+      <IpPoolManagement />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

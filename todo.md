@@ -3942,3 +3942,45 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
   - [x] Add IP Pool Stats component (admin only)
   - [x] Ensure proper role-based access control
 - [ ] Test visibility for client vs admin roles
+
+## New Features: DHCP Lease Viewer, IP Pool Expansion, NAS Re-assign IP (Feb 12, 2026)
+
+### Feature 1: DHCP Lease Viewer
+- [x] Add backend tRPC procedure: nas.listDhcpLeases()
+  - [x] Call dhcpLeaseManager.listStaticLeases()
+  - [x] Return array of {mac, ip, hostname, status}
+  - [x] Added role check (owner/super_admin only)
+- [x] Add DHCP Leases table in VPN page (/vpn)
+  - [x] Show MAC address, IP, Hostname, Status columns
+  - [x] Add refresh button
+  - [x] Admin only (role check)
+  - [x] Arabic/English support
+  - [x] Loading and empty states
+
+### Feature 2: IP Pool Expansion UI
+- [x] Add backend tRPC procedures
+  - [x] nas.expandIpPool({startIp, endIp}) - add new IP range
+  - [x] nas.getIpPoolRanges() - list all configured ranges
+  - [x] Created ip_pool_config table in database
+  - [x] Updated ipPoolManager.ts to use database ranges
+- [x] Add IP Pool Management section in VPN page
+  - [x] Show current ranges in table format
+  - [x] Add "Expand Pool" button with inline form
+  - [x] Input fields: Start IP, End IP
+  - [x] Validation (same subnet, no overlaps)
+  - [x] Admin only (role check)
+  - [x] Arabic/English support
+
+### Feature 3: NAS Re-assign IP
+- [x] Add backend tRPC procedure: nas.reassignIp({nasId})
+  - [x] Release current IP
+  - [x] Get new IP from pool
+  - [x] Update allocatedIp in database
+  - [x] Create new DHCP lease with new MAC (if available)
+  - [x] Remove old DHCP lease
+- [x] Add "Re-assign IP" button in NAS Devices page
+  - [x] Show in actions dropdown for each NAS
+  - [x] Confirmation dialog before action
+  - [x] Show success/error message
+  - [x] Admin only (role check)
+  - [x] Only show for VPN connections

@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS ip_pool_config (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  start_ip VARCHAR(15) NOT NULL,\n  end_ip VARCHAR(15) NOT NULL,\n  subnet VARCHAR(15) NOT NULL,\n  is_active BOOLEAN DEFAULT TRUE NOT NULL,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  created_by INT NOT NULL\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute CREATE TABLE IF NOT EXISTS ip_pool_config (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  start_ip VARCHAR(15) NOT NULL,\n  end_ip VARCHAR(15) NOT NULL,\n  subnet VARCHAR(15) NOT NULL,\n  is_active BOOLEAN DEFAULT TRUE NOT NULL,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  created_by INT NOT NULL\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1096
+}

@@ -265,6 +265,25 @@ export default function NasDevices() {
     },
   });
 
+  const reassignIp = trpc.nas.reassignIp.useMutation({
+    onSuccess: (result: any) => {
+      toast.success(result.message);
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleReassignIp = (nasId: number) => {
+    if (confirm(language === "ar" 
+      ? "هل أنت متأكد من إعادة تخصيص IP لهذه الشبكة؟ سيتم حذف DHCP Lease القديم وإنشاء واحد جديد."
+      : "Are you sure you want to re-assign IP for this network? The old DHCP lease will be removed and a new one created."
+    )) {
+      reassignIp.mutate({ nasId });
+    }
+  };
+
   // VPN Status Query
   const vpnStatusQuery = trpc.nas.getVpnStatus.useQuery(
     { id: vpnStatusDevice?.id || 0 },
@@ -1263,6 +1282,14 @@ export default function NasDevices() {
                             <DropdownMenuItem onClick={() => retryProvisioning.mutate({ nasId: device.id })}>
                               <Zap className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
                               {language === "ar" ? "إعادة التهيئة" : "Retry Provisioning"}
+                            </DropdownMenuItem>
+                          )}
+                          {/* Re-assign IP - only for VPN connections and admin only */}
+                          {((device as any).connectionType === 'vpn_l2tp' || (device as any).connectionType === 'vpn_sstp') && 
+                           (user?.role === 'owner' || user?.role === 'super_admin') && (
+                            <DropdownMenuItem onClick={() => handleReassignIp(device.id)}>
+                              <RefreshCw className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+                              {language === "ar" ? "إعادة تخصيص IP" : "Re-assign IP"}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />

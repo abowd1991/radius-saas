@@ -2300,6 +2300,111 @@ const nasRouter = router({
       const stats = await ipPoolManager.getPoolStats();
       return stats;
     }),
+
+  // List DHCP Static Leases (Admin Only)
+  listDhcpLeases: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Only allow owner/super_admin
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      
+      const dhcpLeaseManager = await import('./services/dhcpLeaseManager');
+      const leases = await dhcpLeaseManager.listStaticLeases();
+      return leases;
+    }),
+
+  // Get IP Pool Ranges (Admin Only)
+  getIpPoolRanges: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Only allow owner/super_admin
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      
+      const ipPoolManager = await import('./services/ipPoolManager');
+      const ranges = await ipPoolManager.getIpPoolRanges();
+      return ranges;
+    }),
+
+  // Expand IP Pool (Admin Only)
+  expandIpPool: protectedProcedure
+    .input(z.object({
+      startIp: z.string().min(7).max(15),
+      endIp: z.string().min(7).max(15),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Only allow owner/super_admin
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      
+      const ipPoolManager = await import('./services/ipPoolManager');
+      const result = await ipPoolManager.expandIpPool(input.startIp, input.endIp, ctx.user.id);
+      
+      if (!result.success) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: result.message });
+      }
+      
+      return result;
+    }),
+
+  // Re-assign IP for NAS (Admin Only)
+  reassignIp: protectedProcedure
+    .input(z.object({
+      nasId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Only allow owner/super_admin
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      
+      const ipPoolManager = await import('./services/ipPoolManager');
+      const dhcpLeaseManager = await import('./services/dhcpLeaseManager');
+      
+      // Get NAS details
+      const db = await getDb();
+      const nas = await db.select().from(nasDevices).where(sql`${nasDevices.id} = ${input.nasId}`).limit(1);
+      
+      if (!nas || nas.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS not found' });
+      }
+      
+      const currentNas = nas[0];
+      const oldIp = currentNas.allocatedIp;
+      
+      // Remove old DHCP lease if exists
+      if (oldIp && currentNas.lastMac) {
+        try {
+          await dhcpLeaseManager.removeStaticLease(currentNas.lastMac);
+        } catch (error) {
+          console.error('[NAS] Failed to remove old DHCP lease:', error);
+        }
+      }
+      
+      // Re-assign IP
+      const result = await ipPoolManager.reassignIpForNAS(input.nasId);
+      
+      if (!result.success) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: result.message });
+      }
+      
+      // Create new DHCP lease if MAC exists
+      if (result.newIp && currentNas.lastMac) {
+        try {
+          await dhcpLeaseManager.addStaticLease(
+            currentNas.lastMac,
+            result.newIp,
+            currentNas.shortname || `nas-${input.nasId}`
+          );
+        } catch (error) {
+          console.error('[NAS] Failed to create new DHCP lease:', error);
+        }
+      }
+      
+      return result;
+    }),
 });
 
 // ============================================================================

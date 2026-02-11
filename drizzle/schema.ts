@@ -1448,3 +1448,19 @@ export const bankTransferRequests = mysqlTable("bank_transfer_requests", {
 
 export type BankTransferRequest = typeof bankTransferRequests.$inferSelect;
 export type InsertBankTransferRequest = typeof bankTransferRequests.$inferInsert;
+
+// ============================================================================
+// IP POOL CONFIGURATION
+// ============================================================================
+export const ipPoolConfig = mysqlTable("ip_pool_config", {
+  id: int("id").primaryKey().autoincrement(),
+  startIp: varchar("start_ip", { length: 15 }).notNull(),
+  endIp: varchar("end_ip", { length: 15 }).notNull(),
+  subnet: varchar("subnet", { length: 15 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdBy: int("created_by").notNull(), // User ID who created this range
+});
+
+export type IpPoolConfig = typeof ipPoolConfig.$inferSelect;
+export type InsertIpPoolConfig = typeof ipPoolConfig.$inferInsert;
