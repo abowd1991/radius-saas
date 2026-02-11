@@ -3543,3 +3543,38 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Add Client Stats Cards in Dashboard (Client view)
 - [x] Add responsive grid layout (4 cols → 2 cols → 1 col)
 - [x] Add color coding (green/orange/red based on values)
+
+## Dashboard Charts & Card Sales Analytics (Feb 11, 2026)
+
+### Admin Dashboard Charts:
+- [x] Revenue Trend Chart (آخر 30 يوم - Line Chart)
+- [x] New Users Growth Chart (يومي - Bar Chart)
+- [x] Active Sessions Timeline (آخر 24 ساعة - Area Chart)
+- [x] Total Cards Created in System (إجمالي الكروت المنشأة - Stat Card)
+
+### Client Card Sales Page:
+- [x] Create new page: Card Sales Analytics (/card-sales)
+- [x] Total cards sold (إجمالي الكروت المباعة)
+- [x] Revenue from card sales (الإيرادات من الكروت)
+- [x] Cards by status chart (نشط/مستخدم/منتهي)
+- [x] Sales trend chart (مبيعات آخر 30 يوم)
+- [x] Top selling plans (أكثر الباقات مبيعاً)
+- [x] Recent sales table (آخر المبيعات)
+
+### Backend:
+- [x] Install Recharts library
+- [x] Create analytics.revenueTrend procedure
+- [x] Create analytics.userGrowth procedure
+- [x] Create analytics.sessionsTimeline procedure
+- [x] Create analytics.totalCardsCreated procedure (Admin only)
+- [x] Create analytics.clientCardSales procedure (Client only)
+
+### Frontend:
+- [x] Create RevenueChart component
+- [x] Create UserGrowthChart component
+- [x] Create SessionsChart component
+- [x] Create CardSalesChart component (integrated in CardSales page)
+- [x] Add charts to Admin Dashboard
+- [x] Create CardSales page for clients
+- [x] Add route /card-sales in App.tsx
+- [ ] Add navigation link in sidebar (clients only)

@@ -26,6 +26,9 @@ import { useLocation } from "wouter";
 import { RevenueTrendChart } from "@/components/charts/RevenueTrendChart";
 import { SessionsTrendChart } from "@/components/charts/SessionsTrendChart";
 import { NasHealthWidget } from "@/components/charts/NasHealthWidget";
+import { RevenueChart } from "@/components/charts/RevenueChart";
+import { UserGrowthChart } from "@/components/charts/UserGrowthChart";
+import { SessionsTimelineChart } from "@/components/charts/SessionsTimelineChart";
 import { useState } from "react";
 
 export default function Dashboard() {
@@ -53,6 +56,18 @@ export default function Dashboard() {
   const { data: revenueData } = trpc.analytics.revenueTrend.useQuery({ days: analyticsDays });
   const { data: sessionsData } = trpc.analytics.sessionsTrend.useQuery({ days: analyticsDays });
   const { data: nasHealthData } = trpc.analytics.nasHealth.useQuery();
+  const { data: userGrowthData } = trpc.analytics.userGrowth.useQuery(
+    { days: analyticsDays },
+    { enabled: user?.role === 'owner' || user?.role === 'super_admin' }
+  );
+  const { data: sessionsTimelineData } = trpc.analytics.sessionsTimeline.useQuery(
+    undefined,
+    { enabled: user?.role === 'owner' || user?.role === 'super_admin' }
+  );
+  const { data: totalCardsData } = trpc.analytics.totalCardsCreated.useQuery(
+    undefined,
+    { enabled: user?.role === 'owner' || user?.role === 'super_admin' }
+  );
   
   // Fetch billing info for clients
   const { data: billingData, isLoading: isBillingLoading } = trpc.billing.getMySummary.useQuery(
@@ -487,6 +502,55 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
+          {/* Revenue Chart */}
+          <div className="lg:col-span-2">
+            <RevenueChart data={revenueData || []} isLoading={!revenueData} />
+          </div>
+          
+          {/* Total Cards Created Stat */}
+          <Card className="border-l-4 border-l-purple-500">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">{language === "ar" ? "إجمالي الكروت المنشأة" : "Total Cards Created"}</CardTitle>
+              <CreditCard className="h-4 w-4 text-purple-500" />
+            </CardHeader>
+            <CardContent>
+              {isAdminStatsLoading ? (
+                <div className="text-center py-4">
+                  <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold text-purple-600">
+                    {formatNumber((totalCardsData as any)?.total_cards || 0)}
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{language === "ar" ? "نشط" : "Active"}</span>
+                      <span className="font-medium text-green-600">{formatNumber((totalCardsData as any)?.active_cards || 0)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{language === "ar" ? "مستخدم" : "Used"}</span>
+                      <span className="font-medium text-blue-600">{formatNumber((totalCardsData as any)?.used_cards || 0)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{language === "ar" ? "منتهي" : "Expired"}</span>
+                      <span className="font-medium text-red-600">{formatNumber((totalCardsData as any)?.expired_cards || 0)}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* User Growth & Sessions Charts */}
+        <div className="grid gap-4 md:grid-cols-2 mt-4">
+          <UserGrowthChart data={userGrowthData || []} isLoading={!userGrowthData} />
+          <SessionsTimelineChart data={sessionsTimelineData || []} isLoading={!sessionsTimelineData} />
         </div>
 
         {/* Quick Actions */}

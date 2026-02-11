@@ -178,6 +178,177 @@ const analyticsRouter = router({
       cards: cardsResult[0],
     };
   }),
+
+  // User growth trend (new registrations per day)
+  userGrowth: protectedProcedure
+    .input(z.object({
+      days: z.number().min(7).max(90).default(30),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const { days } = input;
+      
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      // Only super_admin/owner can see all users
+      if (ctx.user.role !== 'super_admin' && ctx.user.role !== 'owner') {
+        throw new Error('Unauthorized: Only admins can view user growth');
+      }
+
+      const result = await db.execute(sql.raw(`
+        SELECT 
+          DATE(createdAt) as date,
+          COUNT(*) as new_users,
+          SUM(CASE WHEN role = 'client' THEN 1 ELSE 0 END) as new_clients,
+          SUM(CASE WHEN role = 'reseller' THEN 1 ELSE 0 END) as new_resellers
+        FROM users
+        WHERE createdAt >= '${startDate.toISOString()}'
+          AND createdAt <= '${endDate.toISOString()}'
+        GROUP BY DATE(createdAt)
+        ORDER BY date ASC
+      `));
+
+      return result;
+    }),
+
+  // Sessions timeline (last 24 hours - hourly)
+  sessionsTimeline: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    
+    // Only super_admin/owner can see all sessions
+    if (ctx.user.role !== 'super_admin' && ctx.user.role !== 'owner') {
+      throw new Error('Unauthorized: Only admins can view sessions timeline');
+    }
+
+    const result = await db.execute(sql.raw(`
+      SELECT 
+        DATE_FORMAT(acctstarttime, '%Y-%m-%d %H:00:00') as hour,
+        COUNT(*) as session_count,
+        COUNT(DISTINCT username) as unique_users
+      FROM radacct
+      WHERE acctstarttime >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+      GROUP BY DATE_FORMAT(acctstarttime, '%Y-%m-%d %H:00:00')
+      ORDER BY hour ASC
+    `));
+
+    return result;
+  }),
+
+  // Total cards created in system (Admin only)
+  totalCardsCreated: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    
+    // Only super_admin/owner can see total cards
+    if (ctx.user.role !== 'super_admin' && ctx.user.role !== 'owner') {
+      throw new Error('Unauthorized: Only admins can view total cards');
+    }
+
+    const result = await db.execute(sql.raw(`
+      SELECT 
+        COUNT(*) as total_cards,
+        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_cards,
+        SUM(CASE WHEN status = 'used' THEN 1 ELSE 0 END) as used_cards,
+        SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired_cards
+      FROM radius_cards
+    `));
+
+    return result[0];
+  }),
+
+  // Client card sales analytics
+  clientCardSales: protectedProcedure
+    .input(z.object({
+      days: z.number().min(7).max(90).default(30),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const { days } = input;
+      
+      // Only clients can access this
+      if (ctx.user.role === 'super_admin' || ctx.user.role === 'owner') {
+        throw new Error('This endpoint is for clients only');
+      }
+
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      // Total cards sold (created by this client)
+      const totalSalesResult = await db.execute(sql.raw(`
+        SELECT 
+          COUNT(*) as total_cards,
+          SUM(CASE WHEN status = 'used' THEN 1 ELSE 0 END) as sold_cards,
+          SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as available_cards,
+          SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired_cards
+        FROM radius_cards
+        WHERE created_by = ${ctx.user.id}
+      `));
+
+      // Sales trend (cards used per day)
+      const salesTrendResult = await db.execute(sql.raw(`
+        SELECT 
+          DATE(updated_at) as date,
+          COUNT(*) as cards_sold
+        FROM radius_cards
+        WHERE created_by = ${ctx.user.id}
+          AND status = 'used'
+          AND updated_at >= '${startDate.toISOString()}'
+          AND updated_at <= '${endDate.toISOString()}'
+        GROUP BY DATE(updated_at)
+        ORDER BY date ASC
+      `));
+
+      // Revenue from cards (estimated based on plan prices)
+      const revenueResult = await db.execute(sql.raw(`
+        SELECT 
+          COALESCE(SUM(p.price), 0) as total_revenue
+        FROM radius_cards rc
+        LEFT JOIN plans p ON rc.plan_id = p.id
+        WHERE rc.created_by = ${ctx.user.id}
+          AND rc.status = 'used'
+      `));
+
+      // Top selling plans
+      const topPlansResult = await db.execute(sql.raw(`
+        SELECT 
+          p.name as plan_name,
+          COUNT(rc.id) as cards_sold,
+          SUM(p.price) as revenue
+        FROM radius_cards rc
+        LEFT JOIN plans p ON rc.plan_id = p.id
+        WHERE rc.created_by = ${ctx.user.id}
+          AND rc.status = 'used'
+        GROUP BY p.id, p.name
+        ORDER BY cards_sold DESC
+        LIMIT 5
+      `));
+
+      // Recent sales (last 10)
+      const recentSalesResult = await db.execute(sql.raw(`
+        SELECT 
+          rc.username,
+          rc.password,
+          p.name as plan_name,
+          rc.status,
+          rc.updated_at as sold_at
+        FROM radius_cards rc
+        LEFT JOIN plans p ON rc.plan_id = p.id
+        WHERE rc.created_by = ${ctx.user.id}
+          AND rc.status = 'used'
+        ORDER BY rc.updated_at DESC
+        LIMIT 10
+      `));
+
+      return {
+        totalSales: totalSalesResult[0],
+        salesTrend: salesTrendResult,
+        revenue: revenueResult[0],
+        topPlans: topPlansResult,
+        recentSales: recentSalesResult,
+      };
+    }),
 });
 
 export { analyticsRouter };
