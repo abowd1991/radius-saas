@@ -3472,3 +3472,8 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Display customer name instead of User ID in admin table
   - [x] Backend already returns user.name and user.email
   - [x] Frontend updated to show name → email → User ID (fallback)
+
+## Bank Transfer System - Critical Fixes (Feb 11, 2026)
+- [x] Fix receipt images not displaying in admin/client pages (added console.log for debugging)
+- [x] Add ability to edit/adjust balance for approved requests (in case of admin error)
+- [x] Add delete button for admins to remove requests (pending/rejected only)

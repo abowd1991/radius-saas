@@ -47,7 +47,11 @@ export default function BankTransferAdmin() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [adjustmentAmount, setAdjustmentAmount] = useState("");
+  const [adjustmentReason, setAdjustmentReason] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   
   // Form fields for manual input
@@ -58,6 +62,8 @@ export default function BankTransferAdmin() {
   const { data: requests, isLoading, refetch } = trpc.bankTransfer.getAll.useQuery({});
   const approveMutation = trpc.bankTransfer.approve.useMutation();
   const rejectMutation = trpc.bankTransfer.reject.useMutation();
+  const adjustBalanceMutation = trpc.bankTransfer.adjustBalance.useMutation();
+  const deleteMutation = trpc.bankTransfer.deleteRequest.useMutation();
 
   const openEditDialog = (request: any) => {
     setSelectedRequest(request);
@@ -118,6 +124,51 @@ export default function BankTransferAdmin() {
       refetch();
     } catch (error: any) {
       toast.error(error.message || (language === "ar" ? "فشل الرفض" : "Rejection failed"));
+    }
+  };
+  
+  const handleAdjustBalance = async () => {
+    if (!selectedRequest || !adjustmentAmount.trim() || !adjustmentReason.trim()) {
+      toast.error(language === "ar" ? "يرجى إدخال المبلغ والسبب" : "Please enter amount and reason");
+      return;
+    }
+
+    const amount = parseFloat(adjustmentAmount);
+    if (isNaN(amount)) {
+      toast.error(language === "ar" ? "المبلغ غير صحيح" : "Invalid amount");
+      return;
+    }
+
+    try {
+      await adjustBalanceMutation.mutateAsync({
+        requestId: selectedRequest.id,
+        adjustmentAmount: amount,
+        reason: adjustmentReason,
+      });
+      toast.success(language === "ar" ? "تم تعديل الرصيد بنجاح" : "Balance adjusted successfully");
+      setIsAdjustDialogOpen(false);
+      setSelectedRequest(null);
+      setAdjustmentAmount("");
+      setAdjustmentReason("");
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || (language === "ar" ? "فشل التعديل" : "Adjustment failed"));
+    }
+  };
+  
+  const handleDelete = async () => {
+    if (!selectedRequest) return;
+
+    try {
+      await deleteMutation.mutateAsync({
+        requestId: selectedRequest.id,
+      });
+      toast.success(language === "ar" ? "تم حذف الطلب" : "Request deleted");
+      setIsDeleteDialogOpen(false);
+      setSelectedRequest(null);
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || (language === "ar" ? "فشل الحذف" : "Deletion failed"));
     }
   };
 
@@ -255,10 +306,38 @@ export default function BankTransferAdmin() {
                             </Button>
                           </>
                         )}
-                        {request.status !== "pending" && (
+                        {request.status === "approved" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setAdjustmentAmount("");
+                              setAdjustmentReason("");
+                              setIsAdjustDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4 ml-1" />
+                            {language === "ar" ? "تعديل الرصيد" : "Adjust Balance"}
+                          </Button>
+                        )}
+                        {request.status === "rejected" && (
                           <span className="text-sm text-muted-foreground">
-                            {language === "ar" ? "تمت المعالجة" : "Processed"}
+                            {language === "ar" ? "مرفوض" : "Rejected"}
                           </span>
+                        )}
+                        {(request.status === "pending" || request.status === "rejected") && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <XCircle className="w-4 h-4 ml-1" />
+                            {language === "ar" ? "حذف" : "Delete"}
+                          </Button>
                         )}
                       </div>
                     </TableCell>
@@ -404,6 +483,77 @@ export default function BankTransferAdmin() {
               {rejectMutation.isPending 
                 ? (language === "ar" ? "جاري الرفض..." : "Rejecting...") 
                 : (language === "ar" ? "تأكيد الرفض" : "Confirm Rejection")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Adjust Balance Dialog */}
+      <Dialog open={isAdjustDialogOpen} onOpenChange={setIsAdjustDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{language === "ar" ? "تعديل الرصيد" : "Adjust Balance"}</DialogTitle>
+            <DialogDescription>
+              {language === "ar" 
+                ? "إضافة أو خصم رصيد من محفظة العميل (مثال: 10 للإضافة، -5 للخصم)" 
+                : "Add or deduct balance from customer wallet (e.g., 10 to add, -5 to deduct)"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{language === "ar" ? "المبلغ (USD)" : "Amount (USD)"}</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder={language === "ar" ? "مثال: 10 أو -5" : "e.g., 10 or -5"}
+                value={adjustmentAmount}
+                onChange={(e) => setAdjustmentAmount(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>{language === "ar" ? "سبب التعديل" : "Adjustment Reason"}</Label>
+              <Textarea
+                placeholder={language === "ar" ? "سبب التعديل..." : "Adjustment reason..."}
+                value={adjustmentReason}
+                onChange={(e) => setAdjustmentReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAdjustDialogOpen(false)}>
+              {language === "ar" ? "إلغاء" : "Cancel"}
+            </Button>
+            <Button onClick={handleAdjustBalance} disabled={adjustBalanceMutation.isPending}>
+              <CheckCircle className="w-4 h-4 ml-2" />
+              {adjustBalanceMutation.isPending 
+                ? (language === "ar" ? "جاري التعديل..." : "Adjusting...") 
+                : (language === "ar" ? "تأكيد التعديل" : "Confirm Adjustment")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>{language === "ar" ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle>
+            <DialogDescription>
+              {language === "ar" 
+                ? "هل أنت متأكد من حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء." 
+                : "Are you sure you want to delete this request? This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              {language === "ar" ? "إلغاء" : "Cancel"}
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
+              <XCircle className="w-4 h-4 ml-2" />
+              {deleteMutation.isPending 
+                ? (language === "ar" ? "جاري الحذف..." : "Deleting...") 
+                : (language === "ar" ? "تأكيد الحذف" : "Confirm Deletion")}
             </Button>
           </DialogFooter>
         </DialogContent>

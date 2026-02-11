@@ -6016,6 +6016,13 @@ const bankTransferRouter = router({
         // Save to local storage with organized filename
         let receiptImageUrl;
         try {
+          console.log('[Bank Transfer] Saving receipt image:', {
+            userId: ctx.user.id,
+            refNumber: tempRefNumber,
+            bufferSize: imageBuffer.length,
+            mimeType: input.receiptImage.mimeType
+          });
+          
           const result = await saveReceiptImage(
             ctx.user.id,
             tempRefNumber,
@@ -6023,6 +6030,11 @@ const bankTransferRouter = router({
             input.receiptImage.mimeType
           );
           receiptImageUrl = result.publicUrl;
+          
+          console.log('[Bank Transfer] Receipt image saved successfully:', {
+            publicUrl: receiptImageUrl,
+            filePath: result.filePath
+          });
         } catch (storageError) {
           console.error('File storage failed:', storageError);
           throw new TRPCError({ 
@@ -6213,6 +6225,108 @@ const bankTransferRouter = router({
         reviewedBy: ctx.user.id,
         adminNotes: input.reason,
       }).where(eq(bankTransferRequests.id, input.requestId));
+      
+      return { success: true };
+    }),
+    
+  adjustBalance: protectedProcedure
+    .input(z.object({ 
+      requestId: z.number(),
+      adjustmentAmount: z.number(), // Can be positive or negative
+      reason: z.string().min(1).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      const { bankTransferRequests, wallets, walletLedger } = await import('../drizzle/schema');
+      
+      const [request] = await db.select().from(bankTransferRequests)
+        .where(eq(bankTransferRequests.id, input.requestId)).limit(1);
+      if (!request || request.status !== 'approved') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Can only adjust approved requests' });
+      }
+      
+      const [wallet] = await db.select().from(wallets)
+        .where(eq(wallets.userId, request.userId)).limit(1);
+      if (!wallet) throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
+      
+      const currentBalance = parseFloat(wallet.balance);
+      const newBalance = currentBalance + input.adjustmentAmount;
+      
+      if (newBalance < 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Adjustment would result in negative balance' });
+      }
+      
+      await db.update(wallets).set({ balance: newBalance.toFixed(2) })
+        .where(eq(wallets.id, wallet.id));
+      
+      await db.insert(walletLedger).values({
+        userId: request.userId,
+        type: input.adjustmentAmount > 0 ? 'credit' : 'debit',
+        amount: Math.abs(input.adjustmentAmount).toFixed(2),
+        balanceBefore: currentBalance.toFixed(2),
+        balanceAfter: newBalance.toFixed(2),
+        reason: `Balance adjustment for bank transfer #${request.id}: ${input.reason}`,
+        reasonAr: `تعديل رصيد للتحويل البنكي #${request.id}: ${input.reason}`,
+        relatedEntityType: 'bank_transfer_adjustment',
+        relatedEntityId: request.id,
+        performedBy: ctx.user.id,
+      });
+      
+      // Update finalAmountUSD in request to reflect the adjustment
+      const oldFinalAmount = parseFloat(request.finalAmountUSD || '0');
+      const newFinalAmount = oldFinalAmount + input.adjustmentAmount;
+      
+      await db.update(bankTransferRequests).set({
+        finalAmountUSD: newFinalAmount.toFixed(2),
+        adminNotes: `${request.adminNotes || ''}\n[Adjustment] ${input.reason}`,
+      }).where(eq(bankTransferRequests.id, input.requestId));
+      
+      return { success: true, newBalance };
+    }),
+    
+  deleteRequest: protectedProcedure
+    .input(z.object({ requestId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      const { bankTransferRequests } = await import('../drizzle/schema');
+      const { deleteReceiptImage } = await import('./services/localFileStorage');
+      
+      const [request] = await db.select().from(bankTransferRequests)
+        .where(eq(bankTransferRequests.id, input.requestId)).limit(1);
+      if (!request) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
+      }
+      
+      // Don't allow deleting approved requests (to maintain audit trail)
+      if (request.status === 'approved') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot delete approved requests. Use adjustBalance instead.' });
+      }
+      
+      // Delete the receipt image file
+      if (request.receiptImageUrl) {
+        try {
+          await deleteReceiptImage(request.receiptImageUrl);
+        } catch (error) {
+          console.error('Failed to delete receipt image:', error);
+          // Continue with deletion even if file deletion fails
+        }
+      }
+      
+      // Delete the request from database
+      await db.delete(bankTransferRequests)
+        .where(eq(bankTransferRequests.id, input.requestId));
       
       return { success: true };
     }),
