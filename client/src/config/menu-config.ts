@@ -119,13 +119,6 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
         path: "/admin",
         requiredRole: ["super_admin", "owner"]
       },
-      { 
-        icon: Receipt, 
-        label: "Bank Transfer Requests", 
-        labelAr: "طلبات التحويل البنكي", 
-        path: "/bank-transfer-admin",
-        requiredRole: ["super_admin", "owner"]
-      },
     ],
   },
 
@@ -168,14 +161,25 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     ],
   },
 
-  // 9. Billing (Billing & Finance)
+  // 9. Billing & Wallet (Billing & Finance)
   {
     id: "billing",
     icon: Receipt,
-    label: "Billing",
-    labelAr: "الفوترة",
+    label: "Billing & Wallet",
+    labelAr: "الفوترة والمحفظة",
     requiredPermissionGroup: "billing_finance",
     items: [
+      { 
+        icon: Receipt, 
+        label: "Bank Transfer Requests", 
+        labelAr: "طلبات التحويل البنكي", 
+        path: "/bank-transfer-admin",
+        requiredRole: ["super_admin", "owner"]
+      },
+      { icon: Wallet, label: "Wallet", labelAr: "المحفظة", path: "/wallet" },
+      { icon: History, label: "Wallet Ledger", labelAr: "سجل المحفظة", path: "/wallet-ledger" },
+      { icon: FileText, label: "Invoices", labelAr: "الفواتير", path: "/invoices" },
+      { icon: CreditCard, label: "Subscriptions", labelAr: "الاشتراكات", path: "/tenant-subscriptions" },
       { 
         icon: LayoutDashboard, 
         label: "Billing Dashboard", 
@@ -183,10 +187,6 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
         path: "/owner-billing",
         requiredRole: ["super_admin", "owner"]
       },
-      { icon: FileText, label: "Invoices", labelAr: "الفواتير", path: "/invoices" },
-      { icon: Wallet, label: "Wallet", labelAr: "المحفظة", path: "/wallet" },
-      { icon: Wallet, label: "Wallet Ledger", labelAr: "سجل المحفظة", path: "/wallet-ledger" },
-      { icon: CreditCard, label: "Subscriptions", labelAr: "الاشتراكات", path: "/tenant-subscriptions" },
     ],
   },
 

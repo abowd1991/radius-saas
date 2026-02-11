@@ -3502,3 +3502,10 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Fix receipt images not displaying in Admin review dialog (switched to S3 storage)
 - [x] Fix receipt images not displaying in Client wallet transactions (switched to S3 storage)
 - [x] Verify image upload and storage process (using S3 instead of local storage)
+
+## Sidebar Reorganization - Billing & Wallet Section (Feb 11, 2026)
+- [x] Audit all pages in Billing section (all pages exist and working)
+- [x] Rename "Billing" to "Billing & Wallet" (الفوترة والمحفظة)
+- [x] Move Bank Transfer Requests from Admin Console to Billing section
+- [x] Reorder Billing section: Bank Transfer, Wallet, Wallet Ledger, Invoices, Subscriptions, Billing Dashboard
+- [ ] Test all navigation links
