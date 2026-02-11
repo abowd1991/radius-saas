@@ -3680,3 +3680,39 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Add to Dashboard or Profile page
 - [ ] Backend: Create `activity.getMyTimeline` procedure
 - [ ] Store activities in `activity_log` table
+
+
+## ClientManagement Redesign (Comprehensive Client Control Page)
+
+### Phase 1: Client List + Bulk Actions
+- [ ] Redesign ClientManagement.tsx with modern table
+- [ ] Add checkbox column for multi-select
+- [ ] Add "Select All" checkbox in header
+- [ ] Add Bulk Actions toolbar (Delete, Suspend, Activate)
+- [ ] Add client filters (Status, Role, Date range)
+- [ ] Add search by name/email
+- [ ] Add pagination
+
+### Phase 2: Individual Client Actions
+- [ ] Edit Client Dialog (Name, Email, Phone, Address, Status, Balance)
+- [ ] Change Password Dialog (New password + Confirm)
+- [ ] Delete Client with confirmation
+- [ ] View Client Details
+
+### Phase 3: Permission Management Dialog (3 Tabs)
+- [ ] Tab 1: Permission Plan (Select from existing plans)
+- [ ] Tab 2: Permission Overrides (Checkboxes for each permission + Actions)
+- [ ] Tab 3: Feature Access (Enable/Disable specific features)
+- [ ] Save permissions with validation
+
+### Phase 4: Sidebar & Navigation Cleanup
+- [ ] Update Sidebar to show "Client Management" only
+- [ ] Remove duplicate links (Clients, UserPermissionOverride, FeatureAccessControl)
+- [ ] Update routes to redirect old pages to ClientManagement
+
+### Phase 5: Backend Integration
+- [ ] Add bulkDeleteClients procedure
+- [ ] Add bulkSuspendClients procedure
+- [ ] Add bulkActivateClients procedure
+- [ ] Add changeClientPassword procedure
+- [ ] Add updateClientPermissions procedure

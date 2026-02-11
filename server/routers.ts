@@ -787,6 +787,89 @@ const usersRouter = router({
       console.log(`[User Password] Admin ${ctx.user.id} changed password for user ${input.userId}`);
       return { success: true, message: 'Password changed successfully' };
     }),
+
+  // Bulk delete users (Super Admin only)
+  bulkDelete: superAdminProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ input, ctx }) => {
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      // Get users to verify they're not admins
+      const usersToDelete = await drizzleDb.select().from(users).where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`);
+      
+      // Check if any are admins or self
+      const forbidden = usersToDelete.some((u: any) => 
+        u.role === 'owner' || u.role === 'super_admin' || u.id === ctx.user.id
+      );
+      
+      if (forbidden) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot delete admin users or yourself' });
+      }
+      
+      // Delete users and their data
+      for (const userId of input.ids) {
+        // Get usernames first
+        const userCards = await drizzleDb.execute(
+          sql`SELECT username FROM radius_cards WHERE createdBy = ${userId}`
+        );
+        const usernames = (userCards as any[]).map((card: any) => card.username);
+        
+        // Delete radcheck/radreply entries
+        if (usernames.length > 0) {
+          await drizzleDb.execute(
+            sql`DELETE FROM radcheck WHERE username IN (${sql.join(usernames.map(u => sql`${u}`), sql`, `)})`
+          );
+          await drizzleDb.execute(
+            sql`DELETE FROM radreply WHERE username IN (${sql.join(usernames.map(u => sql`${u}`), sql`, `)})`
+          );
+        }
+        
+        // Delete user's data
+        await drizzleDb.execute(sql`DELETE FROM radius_cards WHERE createdBy = ${userId}`);
+        await drizzleDb.execute(sql`DELETE FROM nas WHERE owner_id = ${userId}`);
+        await drizzleDb.execute(sql`DELETE FROM plans WHERE owner_id = ${userId}`);
+        await drizzleDb.execute(sql`DELETE FROM audit_logs WHERE user_id = ${userId}`);
+        
+        // Delete user
+        await drizzleDb.delete(users).where(eq(users.id, userId));
+      }
+      
+      console.log(`[Bulk Delete] Admin ${ctx.user.id} deleted ${input.ids.length} users`);
+      return { success: true, count: input.ids.length };
+    }),
+
+  // Bulk suspend users (Super Admin only)
+  bulkSuspend: superAdminProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ input, ctx }) => {
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      // Update status to suspended
+      await drizzleDb.update(users)
+        .set({ status: 'suspended' })
+        .where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`);
+      
+      console.log(`[Bulk Suspend] Admin ${ctx.user.id} suspended ${input.ids.length} users`);
+      return { success: true, count: input.ids.length };
+    }),
+
+  // Bulk activate users (Super Admin only)
+  bulkActivate: superAdminProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ input, ctx }) => {
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      // Update status to active
+      await drizzleDb.update(users)
+        .set({ status: 'active' })
+        .where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`);
+      
+      console.log(`[Bulk Activate] Admin ${ctx.user.id} activated ${input.ids.length} users`);
+      return { success: true, count: input.ids.length };
+    }),
 });
 
 // Helper function to generate random password
