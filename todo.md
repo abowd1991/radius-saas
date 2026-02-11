@@ -3274,3 +3274,56 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Notification Sound
   - [x] صوت عند إرسال رسالة بنجاح (Web Audio API)
   - [ ] صوت عند استقبال رسالة جديدة (future enhancement)
+
+
+## Client Management Enhancements (Feb 11, 2026)
+
+### Phase 1: Default Plan Management UI
+- [x] إضافة قسم "الخطة الافتراضية" في Settings أو Plans Management (already exists in PermissionPlans.tsx)
+- [x] عرض جميع الخطط مع مؤشر للخطة الافتراضية الحالية
+- [x] زر "تعيين كافتراضية" لكل خطة (handleSetDefault function)
+- [x] Confirmation dialog عند تغيير الخطة الافتراضية
+- [x] استخدام defaultPlansRouter API الموجود
+
+### Phase 2: Create New Client by Admin
+- [x] إضافة نموذج "إنشاء عميل جديد" في Users Management
+- [x] حقول: الاسم، البريد الإلكتروني، كلمة المرور (اختيارية - توليد تلقائي)
+- [x] تعيين الخطة الافتراضية تلقائياً عند الإنشاء (Backend)
+- [x] توليد كلمة مرور عشوائية قوية إذا لم يتم إدخالها (generateRandomPassword)
+- [x] عرض بيانات الدخول للمدير بعد الإنشاء (للنسخ)
+- [ ] إرسال بريد إلكتروني (اختياري) مع بيانات الدخول (future enhancement)
+
+### Phase 3: Delete Inactive Clients
+- [x] إضافة زر "حذف" في Users Management (للمدير فقط) - already exists
+- [x] Confirmation dialog مع تحذير من حذف جميع البيانات - already exists
+- [x] حذف cascade لجميع البيانات المرتبطة:
+  - [x] Subscriptions
+  - [x] Sessions
+  - [x] Cards
+  - [x] Support tickets (via cascade)
+  - [x] Invoices (via cascade)
+- [x] منع حذف المدير (owner/super_admin) لنفسه - already exists
+
+### Phase 4: Admin Change Client Password
+- [x] إضافة زر "تغيير كلمة المرور" في Users Management (dropdown menu)
+- [x] Dialog لإدخال كلمة المرور الجديدة
+- [x] توليد كلمة مرور عشوائية (زر)
+- [x] عرض كلمة المرور الجديدة للمدير (للنسخ) - in input field
+- [ ] إرسال إشعار للعميل بتغيير كلمة المرور (اختياري) - future enhancement
+- [x] Audit log لتسجيل تغيير كلمة المرور من قبل المدير (user_password_change action)
+
+### Phase 5: Backend APIs
+- [x] createClientByAdmin mutation
+- [x] deleteClient mutation (with cascade) - already exists
+- [x] changeClientPassword mutation (admin only)
+- [x] getDefaultPlan query (already exists)
+- [x] setDefaultPlan mutation (already exists)
+- [x] user_password_change audit action added
+
+### Phase 6: Testing
+- [x] Created client-management-enhancements.test.ts
+- [x] Test: Create client with auto-generated password (PASSED)
+- [x] Test: Create client with custom password (PASSED)
+- [x] Test: Create reseller with default plan (PASSED)
+- [x] Test: Reject duplicate email (PASSED)
+- [x] 4/4 tests passed

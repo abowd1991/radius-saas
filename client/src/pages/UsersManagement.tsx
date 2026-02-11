@@ -71,6 +71,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 type UserStatus = "all" | "trial" | "active" | "expired" | "suspended";
 type UserRole = "all" | "owner" | "super_admin" | "client_admin" | "reseller" | "client" | "support";
 
+// Helper function to generate random password
+function generateRandomPassword(): string {
+  const length = 12;
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return password;
+}
+
 export default function UsersManagement() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<UserStatus>("all");
@@ -83,6 +94,11 @@ export default function UsersManagement() {
   const [extendDays, setExtendDays] = useState(30);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [newRole, setNewRole] = useState<string>("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [newClientData, setNewClientData] = useState({ name: "", email: "", password: "", role: "client" as "client" | "reseller" });
+  const [newPassword, setNewPassword] = useState("");
+  const [createdCredentials, setCreatedCredentials] = useState<any>(null);
 
   // Fetch all users
   const { data: allUsers, isLoading, refetch } = trpc.users.list.useQuery({});
@@ -135,6 +151,26 @@ export default function UsersManagement() {
       refetch();
       setShowRoleDialog(false);
       setSelectedUser(null);
+    },
+    onError: (error: any) => toast.error(error.message),
+  });
+
+  const createClientMutation = trpc.users.createClientByAdmin.useMutation({
+    onSuccess: (data) => {
+      setCreatedCredentials(data);
+      toast.success("تم إنشاء العميل بنجاح");
+      refetch();
+      setNewClientData({ name: "", email: "", password: "", role: "client" });
+    },
+    onError: (error: any) => toast.error(error.message),
+  });
+
+  const changePasswordMutation = trpc.users.changeClientPassword.useMutation({
+    onSuccess: () => {
+      toast.success("تم تغيير كلمة المرور بنجاح");
+      setShowPasswordDialog(false);
+      setSelectedUser(null);
+      setNewPassword("");
     },
     onError: (error: any) => toast.error(error.message),
   });
@@ -239,10 +275,16 @@ export default function UsersManagement() {
             <h1 className="text-2xl font-bold text-white">إدارة المستخدمين</h1>
             <p className="text-slate-400 mt-1">عرض وإدارة جميع المستخدمين في النظام</p>
           </div>
-          <Button onClick={() => refetch()} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 ml-2" />
-            تحديث
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setShowCreateDialog(true)} size="sm">
+              <User className="h-4 w-4 ml-2" />
+              إنشاء عميل جديد
+            </Button>
+            <Button onClick={() => refetch()} variant="outline" size="sm">
+              <RefreshCw className="h-4 w-4 ml-2" />
+              تحديث
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -519,6 +561,17 @@ export default function UsersManagement() {
                                     <Shield className="h-4 w-4 ml-2" />
                                     تغيير الدور
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedUser(u);
+                                      setNewPassword("");
+                                      setShowPasswordDialog(true);
+                                    }}
+                                    className="text-purple-400 focus:bg-slate-700"
+                                  >
+                                    <CreditCard className="h-4 w-4 ml-2" />
+                                    تغيير كلمة المرور
+                                  </DropdownMenuItem>
                                   <DropdownMenuSeparator className="bg-slate-700" />
                                   <DropdownMenuItem
                                     onClick={() => {
@@ -727,6 +780,190 @@ export default function UsersManagement() {
                 disabled={changeRoleMutation.isPending || !newRole}
               >
                 {changeRoleMutation.isPending ? "جارٍ التغيير..." : "تغيير الدور"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Client Dialog */}
+        <Dialog open={showCreateDialog} onOpenChange={(open) => {
+          setShowCreateDialog(open);
+          if (!open) {
+            setCreatedCredentials(null);
+            setNewClientData({ name: "", email: "", password: "", role: "client" });
+          }
+        }}>
+          <DialogContent className="bg-slate-800 border-slate-700 max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-white">إنشاء عميل جديد</DialogTitle>
+              <DialogDescription className="text-slate-400">
+                إنشاء حساب عميل جديد من قبل المدير
+              </DialogDescription>
+            </DialogHeader>
+            {createdCredentials ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-green-900/20 border border-green-700 rounded-lg">
+                  <h3 className="text-green-400 font-semibold mb-3">✅ تم إنشاء العميل بنجاح!</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">الاسم:</span>
+                      <span className="text-white">{newClientData.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">البريد الإلكتروني:</span>
+                      <span className="text-white">{createdCredentials.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">اسم المستخدم:</span>
+                      <span className="text-white">{createdCredentials.username}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">كلمة المرور:</span>
+                      <div className="flex gap-2 items-center">
+                        <span className="text-white font-mono bg-slate-900 px-2 py-1 rounded">{createdCredentials.password}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(createdCredentials.password);
+                            toast.success("تم نسخ كلمة المرور");
+                          }}
+                        >
+                          نسخ
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-yellow-400 text-xs mt-3">⚠️ احفظ كلمة المرور الآن! لن تتمكن من رؤيتها مرة أخرى.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-slate-200">الاسم</Label>
+                  <Input
+                    value={newClientData.name}
+                    onChange={(e) => setNewClientData({ ...newClientData, name: e.target.value })}
+                    className="bg-slate-700/50 border-slate-600 text-white"
+                    placeholder="اسم العميل"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-200">البريد الإلكتروني</Label>
+                  <Input
+                    type="email"
+                    value={newClientData.email}
+                    onChange={(e) => setNewClientData({ ...newClientData, email: e.target.value })}
+                    className="bg-slate-700/50 border-slate-600 text-white"
+                    placeholder="email@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-200">كلمة المرور (اختياري)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={newClientData.password}
+                      onChange={(e) => setNewClientData({ ...newClientData, password: e.target.value })}
+                      className="bg-slate-700/50 border-slate-600 text-white"
+                      placeholder="اتركه فارغاً للتوليد التلقائي"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const randomPass = generateRandomPassword();
+                        setNewClientData({ ...newClientData, password: randomPass });
+                        toast.success("تم توليد كلمة مرور عشوائية");
+                      }}
+                    >
+                      توليد
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-400">سيتم توليد كلمة مرور عشوائية قوية إذا تركت الحقل فارغاً</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-200">الدور</Label>
+                  <Select value={newClientData.role} onValueChange={(val: "client" | "reseller") => setNewClientData({ ...newClientData, role: val })}>
+                    <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="client">عميل (Client)</SelectItem>
+                      <SelectItem value="reseller">موزع (Reseller)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              {createdCredentials ? (
+                <Button onClick={() => {
+                  setShowCreateDialog(false);
+                  setCreatedCredentials(null);
+                  setNewClientData({ name: "", email: "", password: "", role: "client" });
+                }}>
+                  إغلاق
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                    إلغاء
+                  </Button>
+                  <Button
+                    onClick={() => createClientMutation.mutate(newClientData)}
+                    disabled={createClientMutation.isPending || !newClientData.name || !newClientData.email}
+                  >
+                    {createClientMutation.isPending ? "جارٍ الإنشاء..." : "إنشاء"}
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Change Password Dialog */}
+        <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+          <DialogContent className="bg-slate-800 border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="text-white">تغيير كلمة المرور</DialogTitle>
+              <DialogDescription className="text-slate-400">
+                تغيير كلمة مرور المستخدم {selectedUser?.name || selectedUser?.username}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-slate-200">كلمة المرور الجديدة</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="bg-slate-700/50 border-slate-600 text-white"
+                    placeholder="أدخل كلمة المرور الجديدة"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const randomPass = generateRandomPassword();
+                      setNewPassword(randomPass);
+                      toast.success("تم توليد كلمة مرور عشوائية");
+                    }}
+                  >
+                    توليد
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-400">يجب أن تكون كلمة المرور 8 أحرف على الأقل</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowPasswordDialog(false)}>
+                إلغاء
+              </Button>
+              <Button
+                onClick={() => selectedUser && newPassword && changePasswordMutation.mutate({ userId: selectedUser.id, newPassword })}
+                disabled={changePasswordMutation.isPending || !newPassword || newPassword.length < 8}
+              >
+                {changePasswordMutation.isPending ? "جارٍ التغيير..." : "تغيير كلمة المرور"}
               </Button>
             </DialogFooter>
           </DialogContent>

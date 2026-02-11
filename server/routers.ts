@@ -682,7 +682,123 @@ const usersRouter = router({
       console.log(`[User Delete] Super admin ${ctx.user.id} deleted user ${input.userId}`);
       return { success: true, message: 'User deleted successfully' };
     }),
+
+  // Create client by admin (Super Admin only)
+  createClientByAdmin: superAdminProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      email: z.string().email(),
+      password: z.string().min(8).optional(), // Optional - will generate if not provided
+      role: z.enum(['client', 'reseller']).default('client'),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      // Check if email already exists
+      const existingUser = await drizzleDb.select().from(users).where(eq(users.email, input.email));
+      if (existingUser.length > 0) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Email already exists' });
+      }
+      
+      // Generate password if not provided
+      const bcrypt = await import('bcryptjs');
+      const plainPassword = input.password || generateRandomPassword();
+      const hashedPassword = await bcrypt.hash(plainPassword, 10);
+      
+      // Generate username from email
+      const username = input.email.split('@')[0] + '_' + Math.random().toString(36).substring(2, 6);
+      
+      // Get default permission plan for role
+      const permissionDb = await import('./db-permission-plans');
+      const defaultPlan = await permissionDb.getDefaultPlanForRole(input.role);
+      
+      // Create trial dates
+      const trialStartDate = new Date();
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 days trial
+      
+      // Create user
+      const result = await drizzleDb.insert(users).values({
+        name: input.name,
+        email: input.email,
+        username,
+        password: hashedPassword,
+        role: input.role,
+        accountStatus: 'trial',
+        trialStartDate,
+        trialEndDate,
+        permissionPlanId: defaultPlan?.id || null,
+        emailVerified: true, // Admin-created users are pre-verified
+      });
+      
+      const userId = result.insertId ? parseInt(String(result.insertId), 10) : 0;
+      
+      console.log(`[User Create] Admin ${ctx.user.id} created ${input.role} user ${userId} (${input.email})`);
+      
+      return { 
+        success: true, 
+        userId: userId || 0,
+        username,
+        email: input.email,
+        password: plainPassword, // Return plain password to show to admin
+        message: 'Client created successfully' 
+      };
+    }),
+
+  // Change client password by admin (Super Admin only)
+  changeClientPassword: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      newPassword: z.string().min(8),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await db.getUserById(input.userId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      // Prevent changing owner/super_admin password
+      if ((user as any).role === 'owner' || (user as any).role === 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot change admin password' });
+      }
+      
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      // Hash new password
+      const bcrypt = await import('bcryptjs');
+      const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+      
+      // Update password
+      await drizzleDb.update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, input.userId));
+      
+      // Log audit
+      await logAudit({
+        userId: ctx.user.id,
+        userRole: ctx.user.role,
+        action: 'user_password_change',
+        targetType: 'user',
+        targetId: input.userId.toString(),
+        details: { message: `Admin changed password for user ${input.userId}` },
+        result: 'success',
+      });
+      
+      console.log(`[User Password] Admin ${ctx.user.id} changed password for user ${input.userId}`);
+      return { success: true, message: 'Password changed successfully' };
+    }),
 });
+
+// Helper function to generate random password
+function generateRandomPassword(): string {
+  const length = 12;
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return password;
+}
 
 // ============================================================================
 // PLANS ROUTER

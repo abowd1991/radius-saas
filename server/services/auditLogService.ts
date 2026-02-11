@@ -33,6 +33,7 @@ export type AuditAction =
   | 'permission_plan_change'
   | 'permission_override_add'
   | 'permission_override_remove'
+  | 'user_password_change'
   // VPS Management actions
   | 'system_update'
   | 'system_rollback'
