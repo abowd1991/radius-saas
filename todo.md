@@ -3854,3 +3854,49 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
   - [x] Fixed 2 DELETE/SELECT FROM audit_logs WHERE user_id → userId
   - [x] Fixed 1 SELECT FROM audit_logs ORDER BY created_at → createdAt
   - [x] Total: 7 column name fixes for snake_case → camelCase
+
+## Feature: Static DHCP Lease System for NAS Devices (Feb 11, 2026)
+### Phase 1: Fix Current NAS
+- [x] Add static DHCP lease for current NAS (MAC: ca:cd:e6:1b:e7:64 → IP: 192.168.30.13)
+- [x] Update dnsmasq configuration
+- [x] Restart dnsmasq service
+- [x] Test MikroTik reconnection
+- [x] Verify RADIUS authentication works - SUCCESS ✅
+
+### Phase 2: Backend API
+- [x] Create service: ipPoolManager.ts ✅
+  - [x] getNextAvailableIP() - auto-assign from pool
+  - [x] isIPInPool() - validate IP range
+  - [x] getPoolStats() - utilization metrics
+  - [x] reserveIPForNAS() - reserve IP for NAS
+  - [x] releaseIP() - free IP back to pool
+- [x] Create service: dhcpLeaseManager.ts ✅
+  - [x] addStaticLease(mac, ip, hostname) - via SSH
+  - [x] removeStaticLease(mac) - via SSH
+  - [x] listStaticLeases() - get all static leases
+  - [x] getCurrentLeases() - get DHCP leases
+  - [x] findMACByIP() - lookup MAC by IP
+- [ ] Integrate with twoPhaseProvisioningService
+  - [ ] Update autoProvisionNewNas to use ipPoolManager
+  - [ ] Update to use dhcpLeaseManager instead of sshVpn
+
+### Phase 3: Auto-Cleanup
+- [ ] Hook into NAS disable procedure
+- [ ] Hook into NAS delete procedure
+- [ ] Auto-remove static lease on disable/delete
+- [ ] Update nas table: track lease status
+- [ ] Add audit logging for lease operations
+
+### Phase 4: Frontend UI
+- [ ] Add "Disable NAS" button in NAS management page
+- [ ] Add "Release IP" button in NAS management page
+- [ ] Add confirmation dialogs
+- [ ] Show lease status in NAS list
+- [ ] Add success/error notifications
+
+### Phase 5: Testing & Documentation
+- [ ] Test static lease creation
+- [ ] Test auto-cleanup on disable
+- [ ] Test auto-cleanup on delete
+- [ ] Test IP pool management
+- [ ] Write documentation for admins
