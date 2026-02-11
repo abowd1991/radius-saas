@@ -3483,5 +3483,7 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Add Bank Transfer as third option in "Add Balance" dialog (with PayPal & Stripe)
 - [x] Add image upload form when Bank Transfer is selected
 - [x] Add currency selection (USD/ILS) in Bank Transfer form
-- [ ] Set Trial period = 7 days automatically on registration
-- [ ] Prevent billing during Trial period (only start after Trial ends)
+- [x] Fix wallet balance not showing in Dashboard ($10 added but shows $0)
+- [x] Hide "Daily Cost" card from all client pages
+- [x] Set Trial period = 7 days automatically on registration (already implemented)
+- [x] Prevent billing during Trial period (only start after Trial ends)

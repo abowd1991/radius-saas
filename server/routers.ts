@@ -24,7 +24,7 @@ import * as accountingService from "./services/accountingService";
 import * as sessionMonitor from "./services/sessionMonitor";
 import * as authService from "./services/authService";
 import { getDb } from "./db";
-import { radcheck, nasDevices, radiusCards, radacct, users } from "../drizzle/schema";
+import { radcheck, nasDevices, radiusCards, radacct, users, wallets } from "../drizzle/schema";
 import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import * as radiusSubscribers from "./db/radiusSubscribers";
 import { logAudit } from "./services/auditLogService";
@@ -3428,6 +3428,12 @@ const dashboardRouter = router({
           )
         );
       
+      // Get wallet balance
+      const [wallet] = await database
+        .select()
+        .from(wallets)
+        .where(eq(wallets.userId, ctx.user.id));
+      
       return {
         totalStaff: staffMembers.length,
         activeNasCount: nasDevices.length,
@@ -3435,7 +3441,7 @@ const dashboardRouter = router({
         usedCards,
         cardsUsedToday: cardsUsedToday[0]?.count || 0,
         cardsUsedThisWeek: cardsUsedThisWeek[0]?.count || 0,
-        walletBalance: "0.00",
+        walletBalance: wallet?.balance || "0.00",
         pendingInvoices: 0,
       };
     }
@@ -3458,12 +3464,19 @@ const dashboardRouter = router({
       const totalCards = ownerBatches.reduce((sum, b) => sum + (b.stats?.total || 0), 0);
       const usedCards = ownerBatches.reduce((sum, b) => sum + (b.stats?.used || 0), 0);
       
+      // Get wallet balance
+      const database = await getDb();
+      const [wallet] = await database
+        .select()
+        .from(wallets)
+        .where(eq(wallets.userId, ctx.user.id));
+      
       return {
         totalNasDevices: ownerNasDevices.length,
         activeSessions: ownerSessions.length,
         totalCards,
         usedCards,
-        walletBalance: "0.00",
+        walletBalance: wallet?.balance || "0.00",
         pendingInvoices: 0,
       };
     }

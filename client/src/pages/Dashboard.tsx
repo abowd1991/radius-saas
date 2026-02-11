@@ -533,11 +533,11 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {/* Billing Info */}
-      <BillingInfo 
+      {/* Billing Info - Hidden for clients as requested */}
+      {/* <BillingInfo 
         data={billingData || null} 
         isLoading={isBillingLoading} 
-      />
+      /> */}
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

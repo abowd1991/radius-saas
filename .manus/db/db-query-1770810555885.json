@@ -1,0 +1,45 @@
+{
+  "query": "SELECT u.id, u.username, u.email, w.balance, w.updatedAt \nFROM users u \nLEFT JOIN wallets w ON u.id = w.userId \nWHERE u.role = 'client' \nORDER BY u.id DESC \nLIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT u.id, u.username, u.email, w.balance, w.updatedAt \nFROM users u \nLEFT JOIN wallets w ON u.id = w.userId \nWHERE u.role = 'client' \nORDER BY u.id DESC \nLIMIT 5;",
+  "rows": [
+    {
+      "id": "30043",
+      "username": "duplicate-1770771745207_8d4m",
+      "email": "duplicate-1770771745207@example.com",
+      "balance": "NULL",
+      "updatedAt": "NULL"
+    },
+    {
+      "id": "30041",
+      "username": "test-custom-1770771744750_e693",
+      "email": "test-custom-1770771744750@example.com",
+      "balance": "NULL",
+      "updatedAt": "NULL"
+    },
+    {
+      "id": "30040",
+      "username": "test-auto-1770771744234_z9tw",
+      "email": "test-auto-1770771744234@example.com",
+      "balance": "NULL",
+      "updatedAt": "NULL"
+    },
+    {
+      "id": "30039",
+      "username": "test-short-pwd-1770771710295_d7ky",
+      "email": "test-short-pwd-1770771710295@example.com",
+      "balance": "NULL",
+      "updatedAt": "NULL"
+    },
+    {
+      "id": "30038",
+      "username": "test-pwd-change-1770771710003_5832",
+      "email": "test-pwd-change-1770771710003@example.com",
+      "balance": "NULL",
+      "updatedAt": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\temail\tbalance\tupdatedAt\n30043\tduplicate-1770771745207_8d4m\tduplicate-1770771745207@example.com\tNULL\tNULL\n30041\ttest-custom-1770771744750_e693\ttest-custom-1770771744750@example.com\tNULL\tNULL\n30040\ttest-auto-1770771744234_z9tw\ttest-auto-1770771744234@example.com\tNULL\tNULL\n30039\ttest-short-pwd-1770771710295_d7ky\ttest-short-pwd-1770771710295@example.com\tNULL\tNULL\n30038\ttest-pwd-change-1770771710003_5832\ttest-pwd-change-1770771710003@example.com\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 366
+}

@@ -89,6 +89,18 @@ export async function processDailyBilling(
       return { success: false, error: "Daily billing not enabled" };
     }
 
+    // Check if user is still in trial period
+    if (user.accountStatus === 'trial' && user.trialEndDate) {
+      const now = new Date();
+      const trialEnd = new Date(user.trialEndDate);
+      if (now < trialEnd) {
+        return { 
+          success: false, 
+          error: "User is in trial period - no billing" 
+        };
+      }
+    }
+
     // Calculate daily cost
     const { activeNasCount, dailyCost } = await calculateDailyCost(userId);
 

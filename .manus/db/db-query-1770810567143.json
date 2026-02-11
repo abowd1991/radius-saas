@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, userId, type, amount, balanceAfter, reason, createdAt \nFROM wallet_ledger \nWHERE userId = 17 \nORDER BY createdAt DESC \nLIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, userId, type, amount, balanceAfter, reason, createdAt \nFROM wallet_ledger \nWHERE userId = 17 \nORDER BY createdAt DESC \nLIMIT 10;",
+  "rows": [
+    {
+      "id": "30002",
+      "userId": "17",
+      "type": "credit",
+      "amount": "10.00",
+      "balanceAfter": "10.00",
+      "reason": "Bank transfer approved (Ref: TEMP-17-1770808096404)",
+      "createdAt": "2026-02-11 11:08:45"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\ttype\tamount\tbalanceAfter\treason\tcreatedAt\n30002\t17\tcredit\t10.00\t10.00\tBank transfer approved (Ref: TEMP-17-1770808096404)\t2026-02-11 11:08:45\n",
+  "stderr": "",
+  "execution_time_ms": 351
+}
