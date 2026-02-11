@@ -3,13 +3,23 @@ import { getDb } from "../db";
 import { radiusCards, cardBatches, plans, radcheck, radreply, radusergroup } from "../../drizzle/schema";
 import { nanoid } from "nanoid";
 
-// Generate random username with configurable length and prefix
-function generateUsername(length: number = 6, prefix: string = ''): string {
+// Generate random username with configurable length, prefix, and userId for tenant isolation
+function generateUsername(length: number = 6, prefix: string = '', userId?: number): string {
   const chars = '0123456789';
-  let result = prefix;
+  
+  // Add userId prefix for tenant isolation (e.g., U17-123456)
+  let result = userId ? `U${userId}-` : '';
+  
+  // Add custom prefix if provided (e.g., U17-VIP123456)
+  if (prefix) {
+    result += prefix;
+  }
+  
+  // Add random numbers
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
+  
   return result;
 }
 
@@ -70,7 +80,8 @@ export async function createRadiusCard(data: CardCreationOptions) {
   const passwordLength = data.passwordLength || 4;
   const prefix = data.prefix || '';
   
-  const username = generateUsername(usernameLength, prefix);
+  // Generate username with userId prefix for tenant isolation
+  const username = generateUsername(usernameLength, prefix, data.createdBy);
   const password = generatePassword(passwordLength);
   const serialNumber = generateSerialNumber();
 

@@ -3769,3 +3769,24 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
   - [x] Root cause: Validation was checking approved requests before updating current request
   - [x] Solution: Removed reference number validation completely to allow admin flexibility
   - [x] Admins can now use any reference number for record-keeping purposes
+
+## Critical Issue: Card Username Collision Between Tenants (Feb 11, 2026)
+- [x] Investigate current card creation logic
+  - [x] Check how usernames are generated for cards
+  - [x] Verified NO tenant isolation in username generation (only random numbers)
+  - [x] Confirmed two clients CAN create cards with same username (collision risk)
+- [x] Design solution for tenant-isolated usernames
+  - [x] Add userId prefix to usernames (Format: U{userId}-{numbers})
+  - [x] RADIUS authentication works with prefixed usernames (no changes needed)
+  - [x] Backward compatibility maintained (old cards without prefix still work)
+- [x] Implement username prefix system
+  - [x] Updated generateUsername() to include userId prefix
+  - [x] Updated createRadiusCard() to pass userId to generateUsername()
+  - [x] Custom prefix support maintained (e.g., U17-VIP123456)
+- [x] Test multi-tenant isolation
+  - [x] Test two clients creating cards with same base username - PASSED ✅
+  - [x] Verify RADIUS authentication works correctly - PASSED ✅
+  - [x] Verify no data leakage between tenants - PASSED ✅
+  - [x] Created 4 vitest tests - all passed (7.17s)
+  - [x] Tested username format: U{userId}-{numbers}
+  - [x] Tested custom prefix: U{userId}-{prefix}{numbers}
