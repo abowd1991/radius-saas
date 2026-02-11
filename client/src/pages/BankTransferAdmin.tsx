@@ -256,6 +256,7 @@ export default function BankTransferAdmin() {
                 <TableRow>
                   <TableHead>{language === "ar" ? "المعرف" : "ID"}</TableHead>
                   <TableHead>{language === "ar" ? "العميل" : "User"}</TableHead>
+                  <TableHead>{language === "ar" ? "المبلغ" : "Amount"}</TableHead>
                   <TableHead>{language === "ar" ? "التاريخ" : "Date"}</TableHead>
                   <TableHead>{language === "ar" ? "الحالة" : "Status"}</TableHead>
                   <TableHead>{language === "ar" ? "الإشعار" : "Receipt"}</TableHead>
@@ -267,6 +268,9 @@ export default function BankTransferAdmin() {
                   <TableRow key={request.id}>
                     <TableCell className="font-medium">#{request.id}</TableCell>
                     <TableCell>{request.user?.name || request.user?.email || `User ${request.userId}`}</TableCell>
+                    <TableCell>
+                      <span className="font-medium">{request.requestedAmount} {request.requestedCurrency || 'USD'}</span>
+                    </TableCell>
                     <TableCell>
                       {new Date(request.submittedAt).toLocaleString(language === "ar" ? "ar-EG" : "en-US")}
                     </TableCell>

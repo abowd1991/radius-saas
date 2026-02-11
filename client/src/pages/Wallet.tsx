@@ -52,6 +52,9 @@ export default function Wallet() {
   const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [receiptImage, setReceiptImage] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string>("");
+  const [transferCurrency, setTransferCurrency] = useState<"USD" | "ILS">("USD");
 
   // Fetch wallet data
   const { data: wallet, isLoading: walletLoading, refetch: refetchWallet } = trpc.wallet.getMyWallet.useQuery();
@@ -72,6 +75,8 @@ export default function Wallet() {
       toast.error(error.message);
     },
   });
+  
+  const submitBankTransfer = trpc.bankTransfer.submitRequest.useMutation();
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
@@ -121,11 +126,63 @@ export default function Wallet() {
     return labels[type]?.[language] || type;
   };
 
-  const handleDeposit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 16 * 1024 * 1024) {
+        toast.error(language === "ar" ? "حجم الصورة يجب أن يكون أقل من 16MB" : "Image size must be less than 16MB");
+        return;
+      }
+      setReceiptImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReceiptPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDeposit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!depositAmount || !paymentMethod) return;
 
-    // Note: In production, integrate with actual payment gateways
+    // If Bank Transfer, redirect to submission page with image upload
+    if (paymentMethod === "bank_palestine") {
+      if (!receiptImage) {
+        toast.error(language === "ar" ? "يرجى رفع صورة الإشعار" : "Please upload receipt image");
+        return;
+      }
+      
+      // Convert image to base64 and submit via tRPC
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64Data = (reader.result as string).split(',')[1];
+          await submitBankTransfer.mutateAsync({
+            requestedAmount: parseFloat(depositAmount),
+            requestedCurrency: transferCurrency,
+            receiptImage: {
+              data: base64Data,
+              filename: receiptImage.name,
+              mimeType: receiptImage.type,
+            },
+          });
+          toast.success(language === "ar" ? "تم إرسال الطلب بنجاح" : "Request submitted successfully");
+          setIsDepositDialogOpen(false);
+          setDepositAmount("");
+          setPaymentMethod("");
+          setReceiptImage(null);
+          setReceiptPreview("");
+          refetchWallet();
+        } catch (error: any) {
+          toast.error(error.message || (language === "ar" ? "فشل إرسال الطلب" : "Failed to submit request"));
+        }
+      };
+      reader.readAsDataURL(receiptImage);
+      return;
+    }
+
+    // For other payment methods (PayPal, Stripe)
     toast.info(language === "ar" ? "سيتم توجيهك لبوابة الدفع" : "Redirecting to payment gateway...");
     setIsDepositDialogOpen(false);
   };
@@ -143,12 +200,6 @@ export default function Wallet() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/bank-transfer-recharge">
-            <Button size="sm">
-              <DollarSign className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
-              {language === "ar" ? "شحن رصيد عبر بنك فلسطين" : "Recharge via Bank"}
-            </Button>
-          </Link>
           <Button variant="outline" size="sm" onClick={() => { refetchWallet(); refetchTransactions(); }}>
             <RefreshCw className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
             {language === "ar" ? "تحديث" : "Refresh"}
@@ -270,6 +321,48 @@ export default function Wallet() {
                           </Button>
                         </div>
                       </div>
+                      
+                      {/* Bank Transfer Receipt Upload */}
+                      {paymentMethod === "bank_palestine" && (
+                        <div className="space-y-4">
+                          {/* Currency Selection */}
+                          <div className="space-y-2">
+                            <Label>{language === "ar" ? "العملة المحولة" : "Transfer Currency"}</Label>
+                            <Select value={transferCurrency} onValueChange={(value: "USD" | "ILS") => setTransferCurrency(value)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="USD">{language === "ar" ? "دولار أمريكي (USD)" : "US Dollar (USD)"}</SelectItem>
+                                <SelectItem value="ILS">{language === "ar" ? "شيكل إسرائيلي (ILS)" : "Israeli Shekel (ILS)"}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <Label htmlFor="receipt">{language === "ar" ? "صورة الإشعار البنكي" : "Bank Receipt Image"}</Label>
+                          <Input
+                            id="receipt"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            required
+                          />
+                          {receiptPreview && (
+                            <div className="mt-2">
+                              <img
+                                src={receiptPreview}
+                                alt="Receipt preview"
+                                className="max-w-full max-h-48 object-contain rounded border"
+                              />
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {language === "ar" 
+                              ? "الحد الأقصى للحجم: 16MB" 
+                              : "Max size: 16MB"}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <DialogFooter>
                       <Button type="button" variant="outline" onClick={() => setIsDepositDialogOpen(false)}>

@@ -5994,6 +5994,7 @@ const bankTransferRouter = router({
   submitRequest: protectedProcedure
     .input(z.object({
       requestedAmount: z.number().min(1).max(10000),
+      requestedCurrency: z.enum(['USD', 'ILS']).default('USD'),
       receiptImage: z.object({
         data: z.string(),
         filename: z.string(),
@@ -6047,6 +6048,7 @@ const bankTransferRouter = router({
         const [result] = await db.insert(bankTransferRequests).values({
           userId: ctx.user.id,
           requestedAmount: input.requestedAmount.toString(),
+          requestedCurrency: input.requestedCurrency,
           transferredAmount: '0', // Will be filled by admin
           transferredCurrency: 'USD', // Will be updated by admin
           exchangeRate: '1', // Will be calculated when admin approves

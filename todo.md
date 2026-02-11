@@ -3477,3 +3477,11 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Fix receipt images not displaying in admin/client pages (added console.log for debugging)
 - [x] Add ability to edit/adjust balance for approved requests (in case of admin error)
 - [x] Add delete button for admins to remove requests (pending/rejected only)
+
+## Payment System Integration (Feb 11, 2026)
+- [x] Integrate Bank Transfer into payment methods list (remove separate button)
+- [x] Add Bank Transfer as third option in "Add Balance" dialog (with PayPal & Stripe)
+- [x] Add image upload form when Bank Transfer is selected
+- [x] Add currency selection (USD/ILS) in Bank Transfer form
+- [ ] Set Trial period = 7 days automatically on registration
+- [ ] Prevent billing during Trial period (only start after Trial ends)

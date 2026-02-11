@@ -1405,6 +1405,9 @@ export const bankTransferRequests = mysqlTable("bank_transfer_requests", {
   // Requested amount in USD (what the user wants to add to their wallet)
   requestedAmount: decimal("requestedAmount", { precision: 12, scale: 2 }).notNull(),
   
+  // Currency of the requested amount (selected by user)
+  requestedCurrency: mysqlEnum("requestedCurrency", ["ILS", "USD"]).default("USD").notNull(),
+  
   // Transferred amount (actual amount sent by user)
   transferredAmount: decimal("transferredAmount", { precision: 12, scale: 2 }).notNull(),
   
