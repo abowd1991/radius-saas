@@ -3440,3 +3440,4 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] إصلاح: OCR extraction failed - ENOENT error عند محاولة فتح URL كملف محلي
 - [x] إصلاح: 403 Forbidden عند تحميل صورة الإشعار من CloudFront للمعالجة بـ OCR
 - [x] إصلاح: Unexpected token 'S', "Service Unavailable" is not valid JSON
+- [x] إصلاح نهائي: Exchange Rate API error ما زال يظهر بعد النشر - "Service Unavailable" JSON parsing

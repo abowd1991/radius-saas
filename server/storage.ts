@@ -38,7 +38,19 @@ async function buildDownloadUrl(
     method: "GET",
     headers: buildAuthHeaders(apiKey),
   });
-  return (await response.json()).url;
+  
+  if (!response.ok) {
+    throw new Error(`Storage download URL failed: ${response.status} ${response.statusText}`);
+  }
+  
+  let result;
+  try {
+    result = await response.json();
+  } catch (parseError) {
+    throw new Error(`Storage API returned invalid JSON response`);
+  }
+  
+  return result.url;
 }
 
 function ensureTrailingSlash(value: string): string {
@@ -88,7 +100,19 @@ export async function storagePut(
       `Storage upload failed (${response.status} ${response.statusText}): ${message}`
     );
   }
-  const url = (await response.json()).url;
+  
+  let result;
+  try {
+    result = await response.json();
+  } catch (parseError) {
+    throw new Error(`Storage API returned invalid JSON response`);
+  }
+  
+  const url = result.url;
+  if (!url) {
+    throw new Error(`Storage API did not return a URL`);
+  }
+  
   return { key, url };
 }
 
