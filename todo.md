@@ -3254,3 +3254,23 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - client/src/pages/UsersManagement.tsx (3 fixes)
 - client/src/components/AccountStatusBanner.tsx (1 fix)
 - client/src/components/SubscriptionBanner.tsx (2 fixes)
+
+
+## Support Chat Redesign (Feb 11, 2026)
+- [x] عكس ترتيب الرسائل - الأقدم أولاً (من فوق)، الأحدث تحت
+- [x] Auto-scroll للأسفل عند فتح التذكرة أو إرسال رسالة
+- [x] إضافة Sidebar للتذاكر على اليمين
+  - [x] عرض Ticket Number + Subject
+  - [x] Badge للرسائل الجديدة (غير المقروءة)
+  - [x] تحديد التذكرة النشطة
+- [x] إضافة زر حذف التذكرة (للمدير فقط)
+  - [x] Confirmation dialog قبل الحذف
+  - [x] deleteTicket API في Backend
+- [x] Image Viewer Modal
+  - [x] الصور تفتح في Modal داخل الصفحة (ليس link خارجي)
+  - [x] زر إغلاق (X)
+  - [x] خلفية شفافة داكنة
+  - [x] إمكانية الإغلاق بالضغط خارج الصورة
+- [x] Notification Sound
+  - [x] صوت عند إرسال رسالة بنجاح (Web Audio API)
+  - [ ] صوت عند استقبال رسالة جديدة (future enhancement)

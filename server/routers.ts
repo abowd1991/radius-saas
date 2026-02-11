@@ -3011,6 +3011,12 @@ const ticketsRouter = router({
     .mutation(async ({ input }) => {
       return ticketDb.updateTicketStatus(input.id, input.status);
     }),
+
+  deleteTicket: superAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      return ticketDb.deleteTicket(input.id);
+    }),
 });
 
 // ============================================================================

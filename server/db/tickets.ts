@@ -119,7 +119,7 @@ export async function addMessage(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.insert(chatMessages).values({
+  const result = await db.insert(chatMessages).values({
     ticketId: data.ticketId,
     senderId: data.senderId,
     message: data.message,
@@ -132,7 +132,15 @@ export async function addMessage(data: {
     .set({ lastMessageAt: new Date() })
     .where(eq(supportTickets.id, data.ticketId));
   
-  return { success: true };
+  // Return the created message
+  const messageId = Number(result.insertId) || 0;
+  if (messageId > 0) {
+    const messages = await db.select().from(chatMessages).where(eq(chatMessages.id, messageId)).limit(1);
+    return messages[0];
+  }
+  
+  // Fallback: return success flag
+  return { success: true } as any;
 }
 
 export async function getMessagesByTicketId(ticketId: number) {
@@ -153,7 +161,7 @@ export async function getMessagesByTicketId(ticketId: number) {
     .from(chatMessages)
     .leftJoin(users, eq(chatMessages.senderId, users.id))
     .where(eq(chatMessages.ticketId, ticketId))
-    .orderBy(desc(chatMessages.createdAt)); // Newest first
+    .orderBy(chatMessages.createdAt); // Oldest first (ASC)
     
   return messages;
 }
@@ -205,4 +213,17 @@ export async function getOpenTicketsCount(userId?: number) {
   
   const result = await query;
   return result.length;
+}
+
+export async function deleteTicket(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Delete all messages first (foreign key constraint)
+  await db.delete(chatMessages).where(eq(chatMessages.ticketId, id));
+  
+  // Delete the ticket
+  await db.delete(supportTickets).where(eq(supportTickets.id, id));
+  
+  return { success: true };
 }
