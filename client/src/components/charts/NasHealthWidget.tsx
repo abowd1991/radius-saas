@@ -77,8 +77,8 @@ export function NasHealthWidget({ data, isLoading }: NasHealthWidgetProps) {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name as keyof typeof STATUS_COLORS] || 'hsl(var(--muted))'} />
+                {chartData.map((entry) => (
+                  <Cell key={entry.name} fill={STATUS_COLORS[entry.name as keyof typeof STATUS_COLORS] || 'hsl(var(--muted))'} />
                 ))}
               </Pie>
               <Tooltip />

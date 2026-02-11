@@ -63,7 +63,7 @@ const analyticsRouter = router({
 
       const result = await db.execute(sql.raw(`
         SELECT 
-          DATE_FORMAT(acctstarttime, '%Y-%m-%d') as date,
+          DATE(acctstarttime) as date,
           COUNT(DISTINCT username) as unique_users,
           COUNT(*) as total_sessions,
           SUM(TIMESTAMPDIFF(SECOND, acctstarttime, COALESCE(acctstoptime, NOW()))) / 3600 as total_hours
@@ -71,7 +71,7 @@ const analyticsRouter = router({
         WHERE acctstarttime >= '${startDate.toISOString()}'
           AND acctstarttime <= '${endDate.toISOString()}'
           AND ${ownerCondition}
-        GROUP BY DATE_FORMAT(acctstarttime, '%Y-%m-%d')
+        GROUP BY DATE(acctstarttime)
         ORDER BY date ASC
       `));
 

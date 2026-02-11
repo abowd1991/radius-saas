@@ -3365,7 +3365,7 @@ const dashboardRouter = router({
     // Pending Bank Transfer Requests
     const pendingTransfersResult = await database
       .select({ count: sql<number>`COUNT(*)` })
-      .from(sql`bank_transfers`)
+      .from(sql`bank_transfer_requests`)
       .where(sql`status = 'pending'`);
     const pendingBankTransfers = pendingTransfersResult[0]?.count || 0;
     
@@ -3493,8 +3493,8 @@ const dashboardRouter = router({
         status: sql<string>`status`,
         count: sql<number>`COUNT(*)`
       })
-      .from(sql`bank_transfers`)
-      .where(sql`user_id = ${userId}`)
+      .from(sql`bank_transfer_requests`)
+      .where(sql`userId = ${userId}`)
       .groupBy(sql`status`);
     
     const bankTransferRequests = {

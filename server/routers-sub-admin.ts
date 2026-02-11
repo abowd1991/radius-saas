@@ -3,7 +3,7 @@ import { router, protectedProcedure } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
 import { users } from "../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { logAudit } from "./services/auditLogService";
 
@@ -95,15 +95,15 @@ export const subAdminRouter = router({
   listMySubAdmins: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
 
-    // Only client_owner can list sub-admins
-    if (ctx.user.role !== "client_owner") {
+    // Owner/super_admin can see all sub-admins, client_owner can see only their own
+    if (ctx.user.role !== "client_owner" && ctx.user.role !== "owner" && ctx.user.role !== "super_admin") {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "Only client owners can list sub-admins",
+        message: "Only owners and client owners can list sub-admins",
       });
     }
 
-    // Get all users where tenantId = current user's id
+    // Get all users where tenantId = current user's id (or all if owner/super_admin)
     const subAdmins = await db
       .select({
         id: users.id,
@@ -114,7 +114,11 @@ export const subAdminRouter = router({
         createdAt: users.createdAt,
       })
       .from(users)
-      .where(eq(users.tenantId, ctx.user.id));
+      .where(
+        ctx.user.role === "owner" || ctx.user.role === "super_admin"
+          ? sql`${users.role} IN ('client_admin', 'client_staff')` // Owner sees all sub-admins
+          : eq(users.tenantId, ctx.user.id) // Client owner sees only their own
+      );
 
     return subAdmins;
   }),

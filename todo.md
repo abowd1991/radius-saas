@@ -3578,3 +3578,14 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Create CardSales page for clients
 - [x] Add route /card-sales in App.tsx
 - [ ] Add navigation link in sidebar (clients only)
+
+## Bug Fixes (Feb 11, 2026 - Error Report)
+
+### Critical Errors:
+- [x] Error 5-7: Add missing analytics procedures (totalCardsCreated, sessionsTimeline, userGrowth) - Already existed, just needed server restart
+- [x] Error 8: Fix bank_transfers table query → Changed to bank_transfer_requests
+- [x] Error 1: Replace DATE_FORMAT with DATE() for TiDB compatibility
+- [x] Error 3: Fix sub-admin permissions → Owner/super_admin can now access sub-admins
+- [x] Error 4: Fix HTML nesting → No errors found (all tables use proper structure)
+- [x] Error 9: Add missing keys in NasHealthWidget → Changed key from index to entry.name
+- [ ] Error 2: Fix duplicate reference number validation in bank transfers (low priority)
