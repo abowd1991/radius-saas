@@ -7,6 +7,7 @@
 
 import { getUsersDueForDailyBilling, processDailyBilling, checkLowBalance, markLowBalanceNotified } from "./billingService";
 import { notifyOwner } from "../_core/notification";
+import { sendTrialExpirationNotifications } from "./trialNotificationService";
 
 let intervalId: NodeJS.Timeout | null = null;
 let isRunning = false;
@@ -31,6 +32,14 @@ async function processDailyBillingCycle(): Promise<{
 
   try {
     console.log("[DailyBillingCron] Starting daily billing cycle...");
+
+    // Send trial expiration notifications (24h before trial ends)
+    try {
+      const trialNotificationResult = await sendTrialExpirationNotifications();
+      console.log(`[DailyBillingCron] Trial notifications: ${trialNotificationResult.notificationsSent} sent, ${trialNotificationResult.errors.length} errors`);
+    } catch (error) {
+      console.error('[DailyBillingCron] Failed to send trial notifications:', error);
+    }
 
     // Get all users due for daily billing
     const dueUserIds = await getUsersDueForDailyBilling();

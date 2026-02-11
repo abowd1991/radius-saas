@@ -3487,3 +3487,13 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Hide "Daily Cost" card from all client pages
 - [x] Set Trial period = 7 days automatically on registration (already implemented)
 - [x] Prevent billing during Trial period (only start after Trial ends)
+
+## Wallet & Billing UX Improvements (Feb 11, 2026)
+- [x] Add Progress Bar in Wallet showing remaining trial days
+- [x] Add Progress Bar showing estimated balance duration (days remaining based on current balance)
+- [x] Add Bank Transfer requests to wallet transactions table
+- [x] Show receipt image in transactions (clickable to enlarge)
+- [x] Add "Download PDF Receipt" button for approved bank transfers
+- [x] Add notification when balance ≤ $1 (critical low balance warning)
+- [x] Add Cron Job to send notification 24 hours before trial ends
+- [ ] Test billing deduction after 3 days (confirm balance decreases)

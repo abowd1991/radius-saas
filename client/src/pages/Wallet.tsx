@@ -77,6 +77,29 @@ export default function Wallet() {
   });
   
   const submitBankTransfer = trpc.bankTransfer.submitRequest.useMutation();
+  
+  const generateReceipt = trpc.bankTransfer.generateReceipt.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and download
+      const byteCharacters = atob(data.pdfData);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = data.filename;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success(language === "ar" ? "تم تحميل الإيصال بنجاح" : "Receipt downloaded successfully");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
@@ -106,6 +129,8 @@ export default function Wallet() {
         return <ArrowUpRight className="h-4 w-4 text-red-500" />;
       case "refund":
         return <RefreshCw className="h-4 w-4 text-blue-500" />;
+      case "bank_transfer":
+        return <Building className="h-4 w-4 text-blue-500" />;
       default:
         return <WalletIcon className="h-4 w-4" />;
     }
@@ -122,6 +147,7 @@ export default function Wallet() {
       transfer_in: { ar: "تحويل وارد", en: "Transfer In" },
       transfer_out: { ar: "تحويل صادر", en: "Transfer Out" },
       admin_adjustment: { ar: "تعديل إداري", en: "Admin Adjustment" },
+      bank_transfer: { ar: "تحويل بنكي", en: "Bank Transfer" },
     };
     return labels[type]?.[language] || type;
   };
@@ -379,6 +405,71 @@ export default function Wallet() {
                 </DialogContent>
               </Dialog>
             </div>
+            
+            {/* Trial & Balance Duration Progress Bars */}
+            {user?.accountStatus === 'trial' && user?.trialEndDate && (
+              <div className="mt-6 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {language === "ar" ? "الفترة التجريبية" : "Trial Period"}
+                  </span>
+                  <span className="font-medium">
+                    {(() => {
+                      const now = new Date();
+                      const trialEnd = new Date(user.trialEndDate);
+                      const daysLeft = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+                      return language === "ar" ? `${daysLeft} أيام متبقية` : `${daysLeft} days left`;
+                    })()}
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 transition-all" 
+                    style={{
+                      width: `${(() => {
+                        const now = new Date();
+                        const trialStart = new Date(user.trialStartDate || now);
+                        const trialEnd = new Date(user.trialEndDate);
+                        const totalDays = Math.max(1, (trialEnd.getTime() - trialStart.getTime()) / (1000 * 60 * 60 * 24));
+                        const daysLeft = Math.max(0, (trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                        return Math.max(0, Math.min(100, (daysLeft / totalDays) * 100));
+                      })()}%`
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            
+            {/* Balance Duration Estimate */}
+            {user?.accountStatus !== 'trial' && wallet && parseFloat(wallet.balance) > 0 && (
+              <div className="mt-6 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {language === "ar" ? "مدة الرصيد المتوقعة" : "Estimated Balance Duration"}
+                  </span>
+                  <span className="font-medium">
+                    {(() => {
+                      const balance = parseFloat(wallet.balance);
+                      const dailyCost = 0.33; // $0.33 per NAS per day - should come from backend
+                      const daysLeft = Math.floor(balance / dailyCost);
+                      return language === "ar" ? `~${daysLeft} يوم` : `~${daysLeft} days`;
+                    })()}
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 transition-all" 
+                    style={{
+                      width: `${(() => {
+                        const balance = parseFloat(wallet.balance);
+                        const maxBalance = 100; // Assume $100 is "full"
+                        return Math.min(100, (balance / maxBalance) * 100);
+                      })()}%`
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -426,7 +517,8 @@ export default function Wallet() {
               <TableRow>
                 <TableHead>{language === "ar" ? "النوع" : "Type"}</TableHead>
                 <TableHead>{t("common.amount")}</TableHead>
-                <TableHead>{language === "ar" ? "الرصيد بعد" : "Balance After"}</TableHead>
+                <TableHead>{language === "ar" ? "الحالة" : "Status"}</TableHead>
+                <TableHead>{language === "ar" ? "الإشعار" : "Receipt"}</TableHead>
                 <TableHead>{t("common.description")}</TableHead>
                 <TableHead>{t("common.date")}</TableHead>
               </TableRow>
@@ -461,9 +553,61 @@ export default function Wallet() {
                       }>
                         {tx.type === "subscription" || tx.type === "withdrawal" || tx.type === "card_purchase" || tx.type === "commission" ? "-" : "+"}
                         {formatCurrency(tx.amount)}
+                        {tx.requestedCurrency && tx.requestedCurrency !== 'USD' && (
+                          <span className="text-xs text-muted-foreground ml-1">({tx.requestedCurrency})</span>
+                        )}
                       </span>
                     </TableCell>
-                    <TableCell>{formatCurrency(tx.balanceAfter)}</TableCell>
+                    <TableCell>
+                      {tx.type === 'bank_transfer' ? (
+                        <Badge variant={
+                          tx.status === 'approved' ? 'default' : 
+                          tx.status === 'rejected' ? 'destructive' : 
+                          'secondary'
+                        }>
+                          {tx.status === 'approved' ? (
+                            language === "ar" ? "موافق عليه" : "Approved"
+                          ) : tx.status === 'rejected' ? (
+                            language === "ar" ? "مرفوض" : "Rejected"
+                          ) : (
+                            language === "ar" ? "قيد المراجعة" : "Pending"
+                          )}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {tx.type === 'bank_transfer' && tx.receiptImageUrl ? (
+                        <div className="flex items-center gap-2">
+                          <a 
+                            href={tx.receiptImageUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:underline flex items-center gap-1"
+                          >
+                            <Building className="h-4 w-4" />
+                            {language === "ar" ? "عرض" : "View"}
+                          </a>
+                          {tx.status === 'approved' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => generateReceipt.mutate({ requestId: tx.id })}
+                              disabled={generateReceipt.isPending}
+                            >
+                              {generateReceipt.isPending ? (
+                                language === "ar" ? "جاري..." : "Loading..."
+                              ) : (
+                                language === "ar" ? "PDF" : "PDF"
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-[200px] truncate">
                       {tx.description || "-"}
                     </TableCell>

@@ -206,6 +206,27 @@ export async function processDailyBilling(
       })
       .where(eq(users.id, userId));
 
+    // Send notification if balance is critically low (≤ $1)
+    if (balanceAfter <= 1) {
+      try {
+        const { notifications } = await import('../../drizzle/schema');
+        await db.insert(notifications).values({
+          userId,
+          type: 'balance',
+          title: 'Low Balance Warning',
+          titleAr: 'تحذير: رصيد منخفض جداً',
+          message: `Your balance is critically low: $${balanceAfter.toFixed(2)}. Please add funds immediately to avoid service suspension.`,
+          messageAr: `رصيدك منخفض جداً: $${balanceAfter.toFixed(2)}. يرجى إضافة رصيد فوراً لتجنب تعليق الخدمة.`,
+          isRead: false,
+          createdAt: new Date(),
+        });
+        console.log(`[Billing] Low balance notification sent to user ${userId}: $${balanceAfter.toFixed(2)}`);
+      } catch (error) {
+        console.error(`[Billing] Failed to send low balance notification to user ${userId}:`, error);
+        // Don't fail the billing process if notification fails
+      }
+    }
+
     await logAudit({
       userId: actorId || userId,
       userRole: "system",

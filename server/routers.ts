@@ -6345,6 +6345,86 @@ const bankTransferRouter = router({
       
       return { success: true };
     }),
+    
+  generateReceipt: protectedProcedure
+    .input(z.object({ requestId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      const { bankTransferRequests, users } = await import('../drizzle/schema');
+      
+      const [request] = await db.select()
+        .from(bankTransferRequests)
+        .innerJoin(users, eq(bankTransferRequests.userId, users.id))
+        .where(eq(bankTransferRequests.id, input.requestId))
+        .limit(1);
+      
+      if (!request) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
+      }
+      
+      // Only allow generating receipt for approved requests
+      if (request.bank_transfer_requests.status !== 'approved') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Receipt can only be generated for approved requests' });
+      }
+      
+      // Only allow user to generate their own receipt (or admin)
+      if (ctx.user.id !== request.bank_transfer_requests.userId && 
+          ctx.user.role !== 'owner' && 
+          ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      
+      // Generate PDF receipt
+      const PDFDocument = (await import('pdfkit')).default;
+      
+      const doc = new PDFDocument({ margin: 50 });
+      const chunks: Buffer[] = [];
+      
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      
+      await new Promise<void>((resolve, reject) => {
+        doc.on('end', () => resolve());
+        doc.on('error', reject);
+        
+        // Header
+        doc.fontSize(20).text('Payment Receipt', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(12).text('Radius Pro - Online RADIUS Service', { align: 'center' });
+        doc.moveDown(2);
+        
+        // Receipt Details
+        doc.fontSize(14).text('Receipt Details', { underline: true });
+        doc.moveDown();
+        
+        doc.fontSize(11);
+        doc.text(`Receipt ID: #${request.bank_transfer_requests.id}`);
+        doc.text(`Date: ${new Date(request.bank_transfer_requests.createdAt).toLocaleDateString()}`);
+        doc.text(`Customer: ${request.users.name || request.users.email}`);
+        doc.text(`Amount Paid: ${request.bank_transfer_requests.requestedAmount} ${request.bank_transfer_requests.requestedCurrency || 'USD'}`);
+        doc.text(`Final Amount (USD): $${request.bank_transfer_requests.finalAmountUSD}`);
+        doc.text(`Status: Approved`);
+        doc.text(`Approved Date: ${request.bank_transfer_requests.reviewedAt ? new Date(request.bank_transfer_requests.reviewedAt).toLocaleDateString() : 'N/A'}`);
+        
+        doc.moveDown(2);
+        
+        // Footer
+        doc.fontSize(10).text('Thank you for your payment!', { align: 'center' });
+        doc.text('This is an automatically generated receipt.', { align: 'center' });
+        
+        doc.end();
+      });
+      
+      const pdfBuffer = Buffer.concat(chunks);
+      const base64Pdf = pdfBuffer.toString('base64');
+      
+      return { 
+        success: true, 
+        pdfData: base64Pdf,
+        filename: `receipt-${request.bank_transfer_requests.id}.pdf`
+      };
+    }),
 });
 
 // ============================================================================
