@@ -215,7 +215,7 @@ export default function BankTransferAdmin() {
                 {requests.requests.map((request: any) => (
                   <TableRow key={request.id}>
                     <TableCell className="font-medium">#{request.id}</TableCell>
-                    <TableCell>{request.userName || `User ${request.userId}`}</TableCell>
+                    <TableCell>{request.user?.name || request.user?.email || `User ${request.userId}`}</TableCell>
                     <TableCell>
                       {new Date(request.submittedAt).toLocaleString(language === "ar" ? "ar-EG" : "en-US")}
                     </TableCell>

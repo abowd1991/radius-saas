@@ -3467,3 +3467,8 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] إصلاح: exchangeRate.toFixed is not a function في Bank Transfer submitRequest
 - [x] إصلاح: الصورة لا تظهر في صفحة Admin ولا Client - تم إصلاح static middleware لاستخدام مسار مطلق
 - [x] إضافة: رسالة توضيحية للعميل بعد رفع الصورة "تم رفع إشعارك، سيتم المراجعة في أسرع وقت"
+
+## Bank Transfer System - UX Improvements (Feb 11, 2026)
+- [x] Display customer name instead of User ID in admin table
+  - [x] Backend already returns user.name and user.email
+  - [x] Frontend updated to show name → email → User ID (fallback)
