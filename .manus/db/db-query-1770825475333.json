@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, userId, requestedAmount, requestedCurrency, receiptImageUrl, status, createdAt \nFROM bank_transfer_requests \nORDER BY createdAt DESC \nLIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, userId, requestedAmount, requestedCurrency, receiptImageUrl, status, createdAt \nFROM bank_transfer_requests \nORDER BY createdAt DESC \nLIMIT 3;",
+  "rows": [
+    {
+      "id": "16",
+      "userId": "17",
+      "requestedAmount": "10.00",
+      "requestedCurrency": "USD",
+      "receiptImageUrl": "/uploads/bank-receipts/user-17_ref-TEMP-17-1770808096404_2026-02-11_1770808096405.jpeg",
+      "status": "approved",
+      "createdAt": "2026-02-11 11:08:16"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\trequestedAmount\trequestedCurrency\treceiptImageUrl\tstatus\tcreatedAt\n16\t17\t10.00\tUSD\t/uploads/bank-receipts/user-17_ref-TEMP-17-1770808096404_2026-02-11_1770808096405.jpeg\tapproved\t2026-02-11 11:08:16\n",
+  "stderr": "",
+  "execution_time_ms": 361
+}

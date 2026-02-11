@@ -6019,7 +6019,6 @@ const bankTransferRouter = router({
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
       
       const { bankTransferRequests } = await import('../drizzle/schema');
-      const { saveReceiptImage } = await import('./services/localFileStorage');
       
       try {
         const imageBuffer = Buffer.from(input.receiptImage.data, 'base64');
@@ -6027,30 +6026,34 @@ const bankTransferRouter = router({
         // Generate temporary reference number (will be replaced by admin)
         const tempRefNumber = `TEMP-${ctx.user.id}-${Date.now()}`;
         
-        // Save to local storage with organized filename
+        // Save to S3 storage
         let receiptImageUrl;
         try {
-          console.log('[Bank Transfer] Saving receipt image:', {
+          console.log('[Bank Transfer] Saving receipt image to S3:', {
             userId: ctx.user.id,
             refNumber: tempRefNumber,
             bufferSize: imageBuffer.length,
             mimeType: input.receiptImage.mimeType
           });
           
-          const result = await saveReceiptImage(
-            ctx.user.id,
-            tempRefNumber,
+          // Get file extension from MIME type
+          const ext = input.receiptImage.mimeType.split('/')[1] || 'jpg';
+          const date = new Date().toISOString().split('T')[0];
+          const timestamp = Date.now();
+          const filename = `bank-receipts/user-${ctx.user.id}_ref-${tempRefNumber}_${date}_${timestamp}.${ext}`;
+          
+          const { url } = await storagePut(
+            filename,
             imageBuffer,
             input.receiptImage.mimeType
           );
-          receiptImageUrl = result.publicUrl;
+          receiptImageUrl = url;
           
-          console.log('[Bank Transfer] Receipt image saved successfully:', {
-            publicUrl: receiptImageUrl,
-            filePath: result.filePath
+          console.log('[Bank Transfer] Receipt image saved to S3 successfully:', {
+            url: receiptImageUrl
           });
         } catch (storageError) {
-          console.error('File storage failed:', storageError);
+          console.error('S3 storage failed:', storageError);
           throw new TRPCError({ 
             code: 'INTERNAL_SERVER_ERROR', 
             message: `File storage failed: ${storageError instanceof Error ? storageError.message : 'Unknown error'}` 

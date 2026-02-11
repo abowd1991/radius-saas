@@ -193,12 +193,13 @@ export default function Wallet() {
               mimeType: receiptImage.type,
             },
           });
-          toast.success(language === "ar" ? "تم إرسال الطلب بنجاح" : "Request submitted successfully");
+          toast.success(language === "ar" ? "تم إرسال الطلب بنجاح - سيتم مراجعته من قبل الإدارة" : "Request submitted successfully - Will be reviewed by admin");
           setIsDepositDialogOpen(false);
           setDepositAmount("");
           setPaymentMethod("");
           setReceiptImage(null);
           setReceiptPreview("");
+          refetchTransactions(); // Refresh transactions to show new request
           refetchWallet();
         } catch (error: any) {
           toast.error(error.message || (language === "ar" ? "فشل إرسال الطلب" : "Failed to submit request"));

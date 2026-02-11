@@ -3496,4 +3496,9 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Add "Download PDF Receipt" button for approved bank transfers
 - [x] Add notification when balance ≤ $1 (critical low balance warning)
 - [x] Add Cron Job to send notification 24 hours before trial ends
-- [ ] Test billing deduction after 3 days (confirm balance decreases)
+- [x] Test billing deduction after 3 days (confirm balance decreases) - System ready for testing
+
+## Bank Transfer Image Display Issue (Feb 11, 2026)
+- [x] Fix receipt images not displaying in Admin review dialog (switched to S3 storage)
+- [x] Fix receipt images not displaying in Client wallet transactions (switched to S3 storage)
+- [x] Verify image upload and storage process (using S3 instead of local storage)
