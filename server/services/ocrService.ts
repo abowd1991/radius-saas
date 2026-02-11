@@ -25,9 +25,23 @@ export async function extractReceiptData(imageUrl: string): Promise<OCRExtracted
   console.log(`[OCR] Starting OCR extraction for image: ${imageUrl}`);
   
   try {
+    // Download image from URL if it's a remote URL
+    let imageSource: string | Buffer = imageUrl;
+    
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      console.log(`[OCR] Downloading image from URL...`);
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to download image: ${response.statusText}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      imageSource = Buffer.from(arrayBuffer);
+      console.log(`[OCR] Image downloaded successfully (${imageSource.length} bytes)`);
+    }
+    
     // Run Tesseract OCR with Arabic and English support
     const result = await Tesseract.recognize(
-      imageUrl,
+      imageSource,
       'ara+eng', // Arabic + English
       {
         logger: (m) => {
