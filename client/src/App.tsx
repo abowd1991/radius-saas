@@ -56,6 +56,7 @@ import CardSales from "./pages/CardSales";
 import DefaultPlans from "./pages/DefaultPlans";
 import EmailVerification from "./pages/EmailVerification";
 import DepositHistory from "./pages/DepositHistory";
+import ActivityTimeline from "./pages/ActivityTimeline";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -288,6 +289,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <DepositHistory />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/activity-timeline">
+        {() => (
+          <DashboardLayout>
+            <ActivityTimeline />
           </DashboardLayout>
         )}
       </Route>

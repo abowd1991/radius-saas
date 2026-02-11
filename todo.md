@@ -3716,3 +3716,24 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Add bulkActivateClients procedure
 - [ ] Add changeClientPassword procedure
 - [ ] Add updateClientPermissions procedure
+
+
+## Final Improvements (Feb 11, 2026)
+
+### 1. Fix updateProfile Input
+- [ ] Add support for all fields (name, email, phone, address, status, balance)
+- [ ] Create new procedure: users.updateClientByAdmin
+- [ ] Update ClientManagement.tsx to use new procedure
+
+### 2. Advanced Filters in ClientManagement
+- [ ] Add date range filter (registration date)
+- [ ] Add balance range filter (min/max)
+- [ ] Add subscription status filter (trial/active/expired)
+- [ ] Add reseller filter (for super admin)
+- [ ] Update UI with filter panel
+
+### 3. Activity Timeline for Client
+- [ ] Create new page: ClientActivityTimeline.tsx
+- [ ] Backend procedure: users.getActivityTimeline
+- [ ] Display: login history, balance changes, card creation, NAS management
+- [ ] Add route and sidebar link

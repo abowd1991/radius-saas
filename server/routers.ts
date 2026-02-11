@@ -870,6 +870,66 @@ const usersRouter = router({
       console.log(`[Bulk Activate] Admin ${ctx.user.id} activated ${input.ids.length} users`);
       return { success: true, count: input.ids.length };
     }),
+
+  // Update client by admin (Super Admin only)
+  updateClientByAdmin: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      name: z.string().optional(),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+      address: z.string().optional(),
+      status: z.enum(['active', 'suspended', 'inactive']).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      const { userId, ...updateData } = input;
+      
+      // Check if user exists
+      const user = await db.getUserById(userId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      // Prevent updating owner/super_admin
+      if ((user as any).role === 'owner' || (user as any).role === 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot update admin users' });
+      }
+      
+      // Check if email is already taken by another user
+      if (updateData.email) {
+        const existingEmail = await drizzleDb.select().from(users).where(eq(users.email, updateData.email));
+        if (existingEmail.length > 0 && existingEmail[0].id !== userId) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'Email already taken' });
+        }
+      }
+      
+      // Update user
+      await drizzleDb.update(users)
+        .set(updateData)
+        .where(eq(users.id, userId));
+      
+      console.log(`[User Update] Admin ${ctx.user.id} updated user ${userId}`);
+      return { success: true, message: 'Client updated successfully' };
+    }),
+
+  // Get activity timeline for user (Super Admin only)
+  getActivityTimeline: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      limit: z.number().default(50),
+    }))
+    .query(async ({ input }) => {
+      const drizzleDb = await getDb();
+      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      // Get audit logs for this user
+      const logs = await drizzleDb.execute(
+        sql`SELECT * FROM audit_logs WHERE user_id = ${input.userId} ORDER BY created_at DESC LIMIT ${input.limit}`
+      );
+      
+      return { activities: logs };
+    }),
 });
 
 // Helper function to generate random password

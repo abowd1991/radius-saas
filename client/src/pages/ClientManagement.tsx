@@ -27,7 +27,8 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Filter
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,9 +37,15 @@ export default function ClientManagement() {
   const { language } = useLanguage();
   const utils = trpc.useUtils();
   
-  // Filters & Search
+   // Filters
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [balanceMin, setBalanceMin] = useState("");
+  const [balanceMax, setBalanceMax] = useState("");
+  const [subscriptionFilter, setSubscriptionFilter] = useState("all");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [page, setPage] = useState(1);
   
   // Bulk Selection
@@ -49,8 +56,22 @@ export default function ClientManagement() {
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; clientId: number | null; clientName: string }>({ open: false, clientId: null, clientName: "" });
   const [permissionsDialog, setPermissionsDialog] = useState<{ open: boolean; clientId: number | null; clientName: string }>({ open: false, clientId: null, clientName: "" });
   
-  // Form States
-  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", address: "", status: "active", balance: 0 });
+  // Forms
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    status: 'active' | 'suspended' | 'inactive';
+    balance: number;
+  }>({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    status: "active",
+    balance: 0,
+  });
   const [passwordForm, setPasswordForm] = useState({ newPassword: "", confirmPassword: "" });
   const [permissionsTab, setPermissionsTab] = useState("plan");
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
@@ -70,7 +91,7 @@ export default function ClientManagement() {
   const { data: permissionGroups } = trpc.permissionGroups.list.useQuery();
 
   // Mutations
-  const updateClientMutation = trpc.users.updateProfile.useMutation({
+  const updateClientMutation = trpc.users.updateClientByAdmin.useMutation({
     onSuccess: () => {
       toast.success(language === "ar" ? "تم تحديث بيانات العميل بنجاح" : "Client updated successfully");
       setEditDialog({ open: false, client: null });
@@ -167,7 +188,7 @@ export default function ClientManagement() {
   const handleSaveEdit = () => {
     if (!editDialog.client) return;
     updateClientMutation.mutate({
-      id: editDialog.client.id,
+      userId: editDialog.client.id,
       ...editForm,
     });
   };
@@ -276,7 +297,66 @@ export default function ClientManagement() {
                   <SelectItem value="inactive">{language === "ar" ? "غير نشط" : "Inactive"}</SelectItem>
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="w-full md:w-auto"
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                {language === "ar" ? "فلاتر متقدمة" : "Advanced Filters"}
+              </Button>
             </div>
+            
+            {/* Advanced Filters */}
+            {showAdvancedFilters && (
+              <div className="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <Label>{language === "ar" ? "من تاريخ" : "From Date"}</Label>
+                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                </div>
+                <div>
+                  <Label>{language === "ar" ? "إلى تاريخ" : "To Date"}</Label>
+                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                </div>
+                <div>
+                  <Label>{language === "ar" ? "الرصيد الأدنى" : "Min Balance"}</Label>
+                  <Input type="number" placeholder="0" value={balanceMin} onChange={(e) => setBalanceMin(e.target.value)} />
+                </div>
+                <div>
+                  <Label>{language === "ar" ? "الرصيد الأقصى" : "Max Balance"}</Label>
+                  <Input type="number" placeholder="1000" value={balanceMax} onChange={(e) => setBalanceMax(e.target.value)} />
+                </div>
+                <div>
+                  <Label>{language === "ar" ? "حالة الاشتراك" : "Subscription Status"}</Label>
+                  <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{language === "ar" ? "الكل" : "All"}</SelectItem>
+                      <SelectItem value="trial">{language === "ar" ? "تجريبي" : "Trial"}</SelectItem>
+                      <SelectItem value="active">{language === "ar" ? "نشط" : "Active"}</SelectItem>
+                      <SelectItem value="expired">{language === "ar" ? "منتهي" : "Expired"}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                      setBalanceMin("");
+                      setBalanceMax("");
+                      setSubscriptionFilter("all");
+                    }}
+                    className="w-full"
+                  >
+                    {language === "ar" ? "إعادة تعيين" : "Reset"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -446,7 +526,7 @@ export default function ClientManagement() {
               </div>
               <div>
                 <Label>{language === "ar" ? "الحالة" : "Status"}</Label>
-                <Select value={editForm.status} onValueChange={(value) => setEditForm({ ...editForm, status: value })}>
+                <Select value={editForm.status} onValueChange={(value) => setEditForm({ ...editForm, status: value as 'active' | 'suspended' | 'inactive' })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
