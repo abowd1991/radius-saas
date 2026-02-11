@@ -3900,3 +3900,35 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Test auto-cleanup on delete
 - [ ] Test IP pool management
 - [ ] Write documentation for admins
+
+## Implementation: Complete Static DHCP Lease System (Feb 12, 2026)
+### Task 1: Integrate with Two-Phase Provisioning
+- [x] Update twoPhaseProvisioningService to use ipPoolManager
+  - [x] Replaced sshVpn with dhcpLeaseManager for DHCP operations
+  - [x] Fixed import statements (getDb, nasDevices)
+  - [x] Updated all DHCP lease operations to use new manager
+- [x] Update to use dhcpLeaseManager instead of sshVpn
+  - [x] Replace sshVpn.createDhcpReservation() with dhcpLeaseManager.addStaticLease()
+  - [x] Replace sshVpn.listDhcpReservations() with dhcpLeaseManager.listStaticLeases()
+  - [x] Replace sshVpn.deleteDhcpReservation() with dhcpLeaseManager.removeStaticLease()
+- [ ] Test NAS creation with auto-assigned IP
+
+### Task 2: Add Auto-Cleanup
+- [x] Hook into NAS disable procedure (update with status='inactive')
+  - [x] Call dhcpLeaseManager.removeStaticLease() on disable
+  - [x] Keep allocatedIp in database for re-enabling later (not released)
+- [x] Hook into NAS delete procedure (Hard Delete)
+  - [x] Call dhcpLeaseManager.removeStaticLease() on delete
+  - [x] Call ipPoolManager.releaseIP() to free IP back to pool
+  - [x] Remove all associated data (RADIUS entries, VPN user, etc.)
+- [ ] Test disable and delete operations
+
+### Task 3: IP Pool Dashboard
+- [x] Add backend tRPC procedure: nas.getPoolStats()
+- [x] Create IP Pool Stats widget in NAS management page
+  - [x] Show total/allocated/available IPs (4 stat cards)
+  - [x] Show utilization percentage with color coding
+  - [x] Add visual progress bar (green/orange/red based on usage)
+  - [x] Add warning when pool is 90%+ full
+  - [x] Arabic/English support
+- [ ] Test dashboard display

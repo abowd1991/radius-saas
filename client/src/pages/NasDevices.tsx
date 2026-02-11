@@ -78,6 +78,106 @@ const connectionTypes = [
   { value: "vpn_sstp", labelAr: "اتصال VPN SSTP", labelEn: "VPN SSTP", icon: Link2 },
 ];
 
+// IP Pool Stats Component
+function IPPoolStats() {
+  const { language } = useLanguage();
+  const { data: poolStats, isLoading } = trpc.nas.getPoolStats.useQuery();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            {language === "ar" ? "إحصائيات مجموعة IP" : "IP Pool Statistics"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!poolStats) return null;
+
+  return (
+    <Card className="border-blue-500/30 bg-blue-500/5">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Globe className="h-5 w-5 text-blue-600" />
+          {language === "ar" ? "إحصائيات مجموعة IP" : "IP Pool Statistics"}
+        </CardTitle>
+        <CardDescription>
+          {language === "ar" 
+            ? "مجموعة IP المتاحة للشبكات VPN (192.168.30.10-200)" 
+            : "Available IP pool for VPN networks (192.168.30.10-200)"
+          }
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="text-center p-3 rounded-lg bg-background">
+            <div className="text-2xl font-bold text-blue-600">{poolStats.total}</div>
+            <div className="text-xs text-muted-foreground">
+              {language === "ar" ? "إجمالي IP" : "Total IPs"}
+            </div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-background">
+            <div className="text-2xl font-bold text-green-600">{poolStats.allocated}</div>
+            <div className="text-xs text-muted-foreground">
+              {language === "ar" ? "مخصص" : "Allocated"}
+            </div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-background">
+            <div className="text-2xl font-bold text-orange-600">{poolStats.available}</div>
+            <div className="text-xs text-muted-foreground">
+              {language === "ar" ? "متاح" : "Available"}
+            </div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-background">
+            <div className="text-2xl font-bold text-purple-600">{poolStats.utilizationPercent}%</div>
+            <div className="text-xs text-muted-foreground">
+              {language === "ar" ? "الاستخدام" : "Utilization"}
+            </div>
+          </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>{language === "ar" ? "الاستخدام" : "Usage"}</span>
+            <span className="font-medium">{poolStats.allocated} / {poolStats.total}</span>
+          </div>
+          <div className="h-3 w-full bg-muted rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-500 ${
+                poolStats.utilizationPercent >= 90 ? 'bg-red-500' :
+                poolStats.utilizationPercent >= 70 ? 'bg-orange-500' :
+                'bg-green-500'
+              }`}
+              style={{ width: `${poolStats.utilizationPercent}%` }}
+            />
+          </div>
+          {poolStats.utilizationPercent >= 90 && (
+            <div className="flex items-center gap-2 text-sm text-red-600 mt-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span>
+                {language === "ar" 
+                  ? "تحذير: مجموعة IP شبه ممتلئة!" 
+                  : "Warning: IP pool almost full!"
+                }
+              </span>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function NasDevices() {
   const { user } = useAuth();
   const { t, language, direction } = useLanguage();
@@ -1026,6 +1126,9 @@ export default function NasDevices() {
           </CardContent>
         </Card>
       </div>
+
+      {/* IP Pool Statistics */}
+      <IPPoolStats />
 
       {/* Search */}
       <Card>

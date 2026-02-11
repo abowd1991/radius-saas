@@ -3,8 +3,8 @@
  * Manages NAS IP allocation from a predefined pool
  */
 
-import { db } from "../db";
-import { nas } from "../../drizzle/schema";
+import { getDb } from "../db";
+import { nasDevices } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
 
 // IP Pool Configuration
@@ -36,12 +36,15 @@ function numberToIp(num: number): string {
  * Get all allocated IPs from database
  */
 async function getAllocatedIPs(): Promise<string[]> {
-  const allocatedNas = await db
-    .select({ allocatedIp: nas.allocatedIp })
-    .from(nas)
-    .where(sql`${nas.allocatedIp} IS NOT NULL`);
+  const db = await getDb();
+  if (!db) return [];
   
-  return allocatedNas.map(n => n.allocatedIp!).filter(Boolean);
+  const allocatedNas = await db
+    .select({ allocatedIp: nasDevices.allocatedIp })
+    .from(nasDevices)
+    .where(sql`${nasDevices.allocatedIp} IS NOT NULL`);
+  
+  return allocatedNas.map((n: any) => n.allocatedIp!).filter(Boolean);
 }
 
 /**

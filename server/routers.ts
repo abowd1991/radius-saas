@@ -1453,6 +1453,25 @@ const nasRouter = router({
       if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
+      
+      // If disabling NAS (status changing from active to inactive), cleanup DHCP lease
+      if (input.status === 'inactive' && nas.status === 'active') {
+        console.log(`[NAS Update] Disabling NAS ${input.id}, cleaning up DHCP lease...`);
+        try {
+          const lastMac = nas.lastMac;
+          if (lastMac) {
+            const dhcpLeaseManager = await import('./services/dhcpLeaseManager');
+            await dhcpLeaseManager.removeStaticLease(lastMac);
+            console.log(`[NAS Update] DHCP lease removed for MAC: ${lastMac}`);
+          }
+          
+          // Note: We keep allocatedIp in database for re-enabling later
+          // IP is only released on full delete, not on disable
+        } catch (error) {
+          console.error('[NAS Update] Failed to cleanup DHCP lease:', error);
+        }
+      }
+      
       const updatedNas = await nasDb.updateNas(input.id, input);
       
       // Reload FreeRADIUS to pick up NAS changes
@@ -1519,23 +1538,33 @@ const nasRouter = router({
         
         // 4. Delete DHCP reservation from VPS (Hard Delete - Single Source of Truth)
         try {
-          // DHCP hostname format: nas-{ip without dots}
-          const allocatedIp = nasCheck.allocatedIp;
-          if (allocatedIp) {
-            const dhcpHostname = `nas-${allocatedIp.replace(/\./g, '')}`;
-            console.log(`[NAS Delete] Deleting DHCP reservation: ${dhcpHostname}`);
-            const dhcpResult = await vpnApi.deleteDhcpReservation(dhcpHostname);
-            if (dhcpResult.success) {
-              console.log(`[NAS Delete] DHCP reservation deleted: ${dhcpHostname}`);
-            } else {
-              console.error(`[NAS Delete] Failed to delete DHCP reservation:`, dhcpResult.error);
-            }
+          const lastMac = nasCheck.lastMac;
+          if (lastMac) {
+            console.log(`[NAS Delete] Deleting DHCP reservation for MAC: ${lastMac}`);
+            const dhcpLeaseManager = await import('./services/dhcpLeaseManager');
+            await dhcpLeaseManager.removeStaticLease(lastMac);
+            console.log(`[NAS Delete] DHCP reservation deleted for MAC: ${lastMac}`);
+          } else {
+            console.log(`[NAS Delete] No MAC address found, skipping DHCP cleanup`);
           }
         } catch (error) {
           console.error('[NAS Delete] Failed to delete DHCP reservation:', error);
         }
         
-        // 5. Release allocated VPN IP from pool (Hard Delete - Single Source of Truth)
+        // 5. Release allocated IP back to pool
+        try {
+          const allocatedIp = nasCheck.allocatedIp;
+          if (allocatedIp) {
+            console.log(`[NAS Delete] Releasing IP ${allocatedIp} back to pool`);
+            const ipPoolManager = await import('./services/ipPoolManager');
+            await ipPoolManager.releaseIP(allocatedIp);
+            console.log(`[NAS Delete] IP ${allocatedIp} released successfully`);
+          }
+        } catch (error) {
+          console.error('[NAS Delete] Failed to release IP:', error);
+        }
+        
+        // 6. Release allocated VPN IP from pool (Hard Delete - Single Source of Truth)
         try {
           console.log(`[NAS Delete] Releasing allocated VPN IP for NAS ${input.id}`);
           const database = await getDb();
@@ -2262,6 +2291,14 @@ const nasRouter = router({
         lastTempIp: (nas as any).lastTempIp,
         lastMac: (nas as any).lastMac,
       }));
+    }),
+
+  // Get IP Pool Statistics
+  getPoolStats: protectedProcedure
+    .query(async () => {
+      const ipPoolManager = await import('./services/ipPoolManager');
+      const stats = await ipPoolManager.getPoolStats();
+      return stats;
     }),
 });
 

@@ -30,6 +30,8 @@
 import * as nasDb from '../db/nas';
 import * as sshVpn from './sshVpnService';
 import * as freeradiusService from './freeradiusService';
+import * as ipPoolManager from './ipPoolManager';
+import * as dhcpLeaseManager from './dhcpLeaseManager';
 import { getDb } from '../db';
 import { nasDevices, allocatedVpnIps } from '../../drizzle/schema';
 import { eq, and, ne } from 'drizzle-orm';
@@ -62,6 +64,7 @@ export async function rateLimitedReload(): Promise<{ success: boolean; message: 
 
 /**
  * Check if DHCP reservation already exists for this NAS
+ * @deprecated Use dhcpLeaseManager.listStaticLeases() directly instead
  */
 export async function checkExistingReservation(nasId: number): Promise<{
   exists: boolean;
@@ -70,20 +73,16 @@ export async function checkExistingReservation(nasId: number): Promise<{
   ipAddress?: string;
 }> {
   try {
-    const reservations = await sshVpn.listDhcpReservations();
-    if (!reservations.success || !reservations.reservations) {
-      return { exists: false };
-    }
-    
+    const leases = await dhcpLeaseManager.listStaticLeases();
     const hostname = `nas-${nasId}`;
-    const existing = reservations.reservations.find(r => r.hostname === hostname);
+    const existing = leases.find(l => l.hostname === hostname);
     
     if (existing) {
       return {
         exists: true,
         hostname: existing.hostname,
-        macAddress: existing.macAddress,
-        ipAddress: existing.ipAddress,
+        macAddress: existing.mac,
+        ipAddress: existing.ip,
       };
     }
     
@@ -139,16 +138,18 @@ export async function completeProvisioning(
   }
   
   // 4. Check if DHCP reservation already exists (idempotency)
-  const existingReservation = await checkExistingReservation(nasId);
+  const hostname = `nas-${nasId}`;
+  const existingLeases = await dhcpLeaseManager.listStaticLeases();
+  const existingReservation = existingLeases.find(l => l.hostname === hostname);
   
-  if (existingReservation.exists) {
+  if (existingReservation) {
     console.log(`[Provisioning] DHCP reservation already exists for NAS ${nasId}`);
     
     // If reservation exists but with different IP, we need to handle this
-    if (existingReservation.ipAddress !== actualIp) {
-      console.log(`[Provisioning] WARNING: Existing reservation IP (${existingReservation.ipAddress}) differs from current IP (${actualIp})`);
+    if (existingReservation.ip !== actualIp) {
+      console.log(`[Provisioning] WARNING: Existing reservation IP (${existingReservation.ip}) differs from current IP (${actualIp})`);
       // Delete old reservation and create new one
-      await sshVpn.deleteDhcpReservation(`nas-${nasId}`);
+      await dhcpLeaseManager.removeStaticLease(existingReservation.mac);
     } else {
       // Reservation exists with correct IP, just update database
       await nasDb.finalizeNasProvisioning(nasId, actualIp, macAddress);
@@ -157,17 +158,15 @@ export async function completeProvisioning(
     }
   }
   
-  // 5. Create DHCP reservation
-  const hostname = `nas-${nasId}`;
-  const reservationResult = await sshVpn.createDhcpReservation(macAddress, actualIp, hostname);
-  
-  if (!reservationResult.success && !reservationResult.error?.includes('already exists')) {
-    console.error(`[Provisioning] Failed to create DHCP reservation:`, reservationResult.error);
-    await nasDb.markNasProvisioningError(nasId, `DHCP reservation failed: ${reservationResult.error}`);
-    return { success: false, message: `DHCP reservation failed: ${reservationResult.error}` };
+  // 5. Create DHCP reservation using dhcpLeaseManager
+  try {
+    await dhcpLeaseManager.addStaticLease(macAddress, actualIp, hostname);
+    console.log(`[Provisioning] DHCP reservation created: ${macAddress} -> ${actualIp}`);
+  } catch (error: any) {
+    console.error(`[Provisioning] Failed to create DHCP reservation:`, error.message);
+    await nasDb.markNasProvisioningError(nasId, `DHCP reservation failed: ${error.message}`);
+    return { success: false, message: `DHCP reservation failed: ${error.message}` };
   }
-  
-  console.log(`[Provisioning] DHCP reservation created: ${macAddress} -> ${actualIp}`);
   
   // 6. Update NAS in database (nasname = actual IP, status = active)
   const finalizeResult = await nasDb.finalizeNasProvisioning(nasId, actualIp, macAddress);
@@ -255,9 +254,9 @@ export async function checkActiveNasForDhcpFix(): Promise<void> {
   if (activeVpnNas.length === 0) return;
   
   // Get current DHCP reservations
-  const reservations = await sshVpn.listDhcpReservations();
+  const reservations = await dhcpLeaseManager.listStaticLeases();
   const existingReservationHostnames = new Set(
-    (reservations.reservations || []).map(r => r.hostname)
+    reservations.map(r => r.hostname)
   );
   
   for (const nas of activeVpnNas) {
@@ -275,14 +274,13 @@ export async function checkActiveNasForDhcpFix(): Promise<void> {
       if (sessionInfo.success && sessionInfo.macAddress && sessionInfo.ipAddress) {
         console.log(`[Provisioning] Found VPN session for ${nas.vpnUsername}: IP=${sessionInfo.ipAddress}, MAC=${sessionInfo.macAddress}`);
         
-        // Create DHCP reservation
-        const reservationResult = await sshVpn.createDhcpReservation(
-          sessionInfo.macAddress,
-          nas.nasname, // Use the IP from database (the one we want to keep)
-          hostname
-        );
-        
-        if (reservationResult.success) {
+        // Create DHCP reservation using dhcpLeaseManager
+        try {
+          await dhcpLeaseManager.addStaticLease(
+            sessionInfo.macAddress,
+            nas.nasname, // Use the IP from database (the one we want to keep)
+            hostname
+          );
           console.log(`[Provisioning] Created DHCP reservation for NAS ${nas.id}: ${sessionInfo.macAddress} -> ${nas.nasname}`);
           
           // Update lastMac in database
@@ -295,8 +293,8 @@ export async function checkActiveNasForDhcpFix(): Promise<void> {
             console.log(`[Provisioning] IP mismatch (session: ${sessionInfo.ipAddress}, DB: ${nas.nasname}), disconnecting to force reconnect...`);
             await sshVpn.disconnectVpnSession(nas.vpnUsername);
           }
-        } else {
-          console.error(`[Provisioning] Failed to create DHCP reservation for NAS ${nas.id}:`, reservationResult.error);
+        } catch (error: any) {
+          console.error(`[Provisioning] Failed to create DHCP reservation for NAS ${nas.id}:`, error.message);
         }
       }
     }
