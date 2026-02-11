@@ -640,7 +640,7 @@ const usersRouter = router({
       const userCards = await drizzleDb.execute(
         sql`SELECT username FROM radius_cards WHERE createdBy = ${input.userId}`
       );
-      const usernames = (userCards as any[]).map((card: any) => card.username);
+      const usernames = (userCards as any[]).map((card: any) => card.username).filter((u: string) => u && u.trim() !== '');
       
       // 2. Delete radcheck entries for user's cards
       if (usernames.length > 0) {
@@ -813,7 +813,7 @@ const usersRouter = router({
         const userCards = await drizzleDb.execute(
           sql`SELECT username FROM radius_cards WHERE createdBy = ${userId}`
         );
-        const usernames = (userCards as any[]).map((card: any) => card.username);
+        const usernames = (userCards as any[]).map((card: any) => card.username).filter((u: string) => u && u.trim() !== '');
         
         // Delete radcheck/radreply entries
         if (usernames.length > 0) {
@@ -2981,12 +2981,12 @@ const vouchersRouter = router({
         if (unauthorized) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
       
-      // Get usernames for RADIUS cleanup
-      const usernames = cards.map((card: any) => card.username);
+      // Get usernames for RADIUS cleanup - filter out empty/null values
+      const usernames = cards.map((card: any) => card.username).filter((u: string) => u && u.trim() !== '');
       
       // Delete from RADIUS tables
       if (usernames.length > 0) {
-        await db.execute(sql`DELETE FROM radcheck WHERE username IN (${sql.join(usernames.map((u: string) => sql`${u}`), sql`, `)})`);  
+        await db.execute(sql`DELETE FROM radcheck WHERE username IN (${sql.join(usernames.map((u: string) => sql`${u}`), sql`, `)})`);
         await db.execute(sql`DELETE FROM radreply WHERE username IN (${sql.join(usernames.map((u: string) => sql`${u}`), sql`, `)})`);
         await db.execute(sql`DELETE FROM radacct WHERE username IN (${sql.join(usernames.map((u: string) => sql`${u}`), sql`, `)})`);
       }

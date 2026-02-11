@@ -3,7 +3,6 @@ import { usePagination } from "@/hooks/usePagination";
 import { useSorting } from "@/hooks/useSorting";
 import { DataPagination } from "@/components/ui/data-pagination";
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
-import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -220,7 +219,11 @@ export default function OnlineUsers() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <TableSkeleton rows={5} columns={8} />
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-14 bg-muted/30 rounded animate-pulse" />
+              ))}
+            </div>
           ) : paginatedSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <WifiOff className="h-12 w-12 mb-4" />

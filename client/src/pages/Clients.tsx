@@ -44,7 +44,15 @@ import {
   Activity,
   Ban,
   CheckCircle,
+  CreditCard,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState } from "react";
 import { usePagination } from "@/hooks/usePagination";
 import { useSorting } from "@/hooks/useSorting";
@@ -58,6 +66,8 @@ export default function Clients() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingClient, setEditingClient] = useState<any>(null);
+  const [changePlanClient, setChangePlanClient] = useState<any>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
 
   // Fetch clients
   const { data: clients, isLoading, refetch } = trpc.users.list.useQuery({
@@ -106,6 +116,21 @@ export default function Clients() {
   const deleteUser = trpc.users.delete.useMutation({
     onSuccess: () => {
       toast.success(language === "ar" ? "تم حذف المستخدم بنجاح" : "User deleted successfully");
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Fetch SaaS plans for plan change
+  const { data: saasPlans } = trpc.saasPlans.getAllAdmin.useQuery();
+
+  const changeClientPlan = trpc.users.changeClientPlan.useMutation({
+    onSuccess: (data: any) => {
+      toast.success(language === "ar" ? `تم تغيير الخطة إلى ${data.planName}` : `Plan changed to ${data.planName}`);
+      setChangePlanClient(null);
+      setSelectedPlanId("");
       refetch();
     },
     onError: (error: any) => {
@@ -351,6 +376,13 @@ export default function Clients() {
                             <Activity className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
                             {language === "ar" ? "عرض الاشتراكات" : "View Subscriptions"}
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setChangePlanClient(client);
+                            setSelectedPlanId(client.subscriptionPlanId?.toString() || "");
+                          }}>
+                            <CreditCard className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+                            {language === "ar" ? "تغيير الخطة" : "Change Plan"}
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {client.status === "active" ? (
                             <DropdownMenuItem
@@ -400,6 +432,65 @@ export default function Clients() {
           )}
         </CardContent>
       </Card>
+
+      {/* Change Plan Dialog */}
+      <Dialog open={!!changePlanClient} onOpenChange={(open) => { if (!open) { setChangePlanClient(null); setSelectedPlanId(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{language === "ar" ? "تغيير خطة العميل" : "Change Client Plan"}</DialogTitle>
+            <DialogDescription>
+              {language === "ar" 
+                ? `تغيير خطة الاشتراك للعميل ${changePlanClient?.name || changePlanClient?.username}`
+                : `Change subscription plan for ${changePlanClient?.name || changePlanClient?.username}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{language === "ar" ? "الخطة الحالية" : "Current Plan"}</Label>
+              <p className="text-sm text-muted-foreground">
+                {changePlanClient?.planName || (language === "ar" ? "بدون خطة" : "No plan")}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>{language === "ar" ? "الخطة الجديدة" : "New Plan"}</Label>
+              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={language === "ar" ? "اختر خطة" : "Select a plan"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {saasPlans?.map((plan: any) => (
+                    <SelectItem key={plan.id} value={plan.id.toString()}>
+                      <div className="flex items-center justify-between gap-4">
+                        <span>{language === "ar" ? (plan.nameAr || plan.name) : plan.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ${plan.priceMonthly}/{language === "ar" ? "شهر" : "mo"}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setChangePlanClient(null); setSelectedPlanId(""); }}>
+              {t("common.cancel")}
+            </Button>
+            <Button 
+              onClick={() => {
+                if (selectedPlanId && changePlanClient) {
+                  changeClientPlan.mutate({ userId: changePlanClient.id, planId: parseInt(selectedPlanId) });
+                }
+              }}
+              disabled={!selectedPlanId || changeClientPlan.isPending}
+            >
+              {changeClientPlan.isPending 
+                ? (language === "ar" ? "جاري التغيير..." : "Changing...") 
+                : (language === "ar" ? "تغيير الخطة" : "Change Plan")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingClient} onOpenChange={(open) => !open && setEditingClient(null)}>

@@ -3790,3 +3790,44 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
   - [x] Created 4 vitest tests - all passed (7.17s)
   - [x] Tested username format: U{userId}-{numbers}
   - [x] Tested custom prefix: U{userId}-{prefix}{numbers}
+
+## Investigation: User 80174-mkk9hj7c@VPN Not Showing in Sessions (Feb 11, 2026)
+- [x] Investigate RADIUS session data
+  - [x] Analyzed radacct table structure and queries
+  - [x] Verified session detection logic (acctstoptime IS NULL)
+  - [x] Identified username format: 80174-mkk9hj7c@VPN (old format)
+- [x] Analyze username format conflicts
+  - [x] Old format: {number}-{nanoid}@VPN (e.g., 80174-mkk9hj7c@VPN)
+  - [x] New format: U{userId}-{numbers} (e.g., U17-123456)
+  - [x] @VPN suffix may cause mismatch in filters
+  - [x] No direct collision risk (different prefixes)
+- [x] Check sessions display logic
+  - [x] Found filtering by radiusCards.createdBy and subscribers.createdBy
+  - [x] Sessions only show if username exists in radius_cards OR subscribers
+  - [x] Orphaned sessions (not in cards/subscribers) are hidden
+- [x] Identify all potential issues
+  - [x] Issue #1: Username may not exist in radius_cards/subscribers
+  - [x] Issue #2: createdBy may not match current user
+  - [x] Issue #3: @VPN suffix mismatch
+  - [x] Issue #4: Old format lacks userId prefix (no tenant isolation)
+  - [x] Created comprehensive analysis report: ANALYSIS_REPORT_USERNAME_ISSUE.md
+
+### 🎯 Findings Summary:
+- **Root Cause:** Sessions display filters by ownership (radiusCards.createdBy)
+- **Problem:** User `80174-mkk9hj7c@VPN` likely not in radius_cards OR wrong createdBy
+- **Conflict with New System:** Old format lacks userId prefix, no tenant isolation
+- **Recommendation:** Need to check database to confirm username existence and ownership
+
+## Bug Fix: Admin Page Errors (Feb 11, 2026)
+- [x] Fix DELETE FROM radcheck with empty usernames IN clause
+  - [x] Found 3 locations with DELETE FROM radcheck
+  - [x] Added .filter() to remove empty/null usernames in all 3 locations
+- [x] Fix tbody containing nested div (DOM nesting violation)
+  - [x] Root cause: TableSkeleton from table-skeleton.tsx rendered full <Table> (with <div> wrapper) inside <TableBody>
+  - [x] Fixed table-skeleton.tsx to render only <TableRow>/<TableCell> fragments
+  - [x] Fixed OnlineUsers.tsx which used TableSkeleton outside TableBody
+- [x] Add ability to change client subscription plan from admin panel
+  - [x] Backend: changeClientPlan procedure already exists in usersRouter
+  - [x] UI: Added "تغيير الخطة" option in client dropdown menu
+  - [x] UI: Added Dialog with plan selector (fetches from saasPlans.getAllAdmin)
+  - [x] Shows current plan, allows selecting new plan with price info
