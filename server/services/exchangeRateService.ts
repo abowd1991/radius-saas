@@ -44,10 +44,18 @@ export async function getExchangeRate(from: string, to: string): Promise<number>
     const response = await fetch(apiUrl);
     
     if (!response.ok) {
-      throw new Error(`Exchange Rate API returned ${response.status}: ${response.statusText}`);
+      console.warn(`[Exchange Rate] API returned ${response.status}: ${response.statusText}`);
+      throw new Error(`Exchange Rate API unavailable`);
     }
 
-    const data = await response.json();
+    // Try to parse JSON, handle non-JSON responses
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      console.warn(`[Exchange Rate] Failed to parse API response as JSON`);
+      throw new Error(`Exchange Rate API returned invalid response`);
+    }
     
     // Extract the rate
     const rate = data.rates[to];
