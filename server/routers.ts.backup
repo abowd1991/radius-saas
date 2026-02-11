@@ -272,7 +272,7 @@ const usersRouter = router({
     }),
 
   getMyClients: resellerProcedure.query(async ({ ctx }) => {
-    if (isAdmin(ctx.user.role)) {
+    if (ctx.user.role === 'super_admin') {
       return db.getUsersByRole('client');
     }
     return db.getUsersByResellerId(ctx.user.id);
@@ -538,7 +538,7 @@ const usersRouter = router({
       }
       
       // Only allow promoting to super_admin if current user is super_admin
-      if (input.role === 'super_admin' && !isAdmin(ctx.user.role)) {
+      if (input.role === 'super_admin' && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super admin can promote to super admin' });
       }
       
@@ -622,9 +622,9 @@ const usersRouter = router({
       const user = await db.getUserById(input.userId);
       if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
       
-      // Prevent deleting owner or super_admin
-      if ((user as any).role === 'owner' || (user as any).role === 'super_admin') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot delete admin users' });
+      // Prevent deleting super_admin
+      if ((user as any).role === 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot delete super admin' });
       }
       
       // Prevent self-deletion
@@ -776,7 +776,7 @@ const plansRouter = router({
       // Check ownership for non-super_admin
       const plan = await planDb.getPlanById(input.id);
       if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "Plan not found" });
-      if (!isAdmin(ctx.user.role) && plan.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && plan.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return planDb.deletePlan(input.id);
@@ -955,7 +955,7 @@ const nasRouter = router({
       const nas = await nasDb.getNasById(input.id);
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
       // Check ownership for non-super_admin
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -1187,7 +1187,7 @@ const nasRouter = router({
       // Check ownership for non-super_admin
       const nas = await nasDb.getNasById(input.id);
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       const updatedNas = await nasDb.updateNas(input.id, input);
@@ -1213,7 +1213,7 @@ const nasRouter = router({
       // Check ownership for non-super_admin
       const nasCheck = await nasDb.getNasById(input.id);
       if (!nasCheck) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
-      if (!isAdmin(ctx.user.role) && nasCheck.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nasCheck.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       // Delete NAS and get VPN username for cleanup
@@ -1310,7 +1310,7 @@ const nasRouter = router({
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
       
       // Check ownership for non-super_admin
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -1369,7 +1369,7 @@ const nasRouter = router({
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
       
       // Check ownership for non-super_admin
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -1562,7 +1562,7 @@ const nasRouter = router({
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
       
       // Check ownership for non-super_admin
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -1620,7 +1620,7 @@ const nasRouter = router({
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
       
       // Check ownership for non-super_admin
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -1773,7 +1773,7 @@ const nasRouter = router({
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS device not found" });
       
       // Check ownership
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -1933,7 +1933,7 @@ const nasRouter = router({
       const nas = await nasDb.getNasById(input.nasId);
       if (!nas) throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS not found' });
       
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
       
@@ -1955,7 +1955,7 @@ const nasRouter = router({
       const nas = await nasDb.getNasById(input.nasId);
       if (!nas) throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS not found' });
       
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
       
@@ -1986,7 +1986,7 @@ const nasRouter = router({
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
       
       let devices;
-      if (isAdmin(ctx.user.role)) {
+      if (ctx.user.role === 'super_admin') {
         devices = await db.select().from(nasDevices);
       } else {
         devices = await db.select().from(nasDevices).where(eq(nasDevices.ownerId, ctx.user.id));
@@ -2138,7 +2138,7 @@ const vouchersRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       // Super admin sees all cards
-      if (isAdmin(ctx.user.role)) {
+      if (ctx.user.role === 'super_admin') {
         return cardDb.getAllCards(input);
       }
       // Clients and resellers see only their own cards
@@ -2152,7 +2152,7 @@ const vouchersRouter = router({
       const card = await cardDb.getCardById(input.id);
       if (!card) throw new TRPCError({ code: "NOT_FOUND", message: "Card not found" });
       // Check ownership for non-super_admin
-      if (!isAdmin(ctx.user.role) && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return card;
@@ -2217,7 +2217,7 @@ const vouchersRouter = router({
     .mutation(async ({ ctx, input }) => {
       const card = await cardDb.getCardById(input.cardId);
       if (!card) throw new TRPCError({ code: "NOT_FOUND", message: "Card not found" });
-      if (!isAdmin(ctx.user.role) && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return cardDb.suspendCard(input.cardId);
@@ -2229,14 +2229,14 @@ const vouchersRouter = router({
     .mutation(async ({ ctx, input }) => {
       const card = await cardDb.getCardById(input.cardId);
       if (!card) throw new TRPCError({ code: "NOT_FOUND", message: "Card not found" });
-      if (!isAdmin(ctx.user.role) && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return cardDb.unsuspendCard(input.cardId);
     }),
 
   getBatches: resellerProcedure.query(async ({ ctx }) => {
-    if (isAdmin(ctx.user.role)) {
+    if (ctx.user.role === 'super_admin') {
       return cardDb.getAllBatchesWithStats();
     }
     return cardDb.getBatchesByResellerWithStats(ctx.user.id);
@@ -2249,7 +2249,7 @@ const vouchersRouter = router({
       const batch = await cardDb.getBatchWithStats(input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
       // Check ownership for non-super_admin
-      if (!isAdmin(ctx.user.role) && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return batch;
@@ -2261,7 +2261,7 @@ const vouchersRouter = router({
     .mutation(async ({ ctx, input }) => {
       const batch = await cardDb.getBatchWithStats(input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
-      if (!isAdmin(ctx.user.role) && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return cardDb.enableBatch(input.batchId);
@@ -2274,7 +2274,7 @@ const vouchersRouter = router({
       // Check ownership first
       const batch = await cardDb.getBatchWithStats(input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
-      if (!isAdmin(ctx.user.role) && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       // First, get all cards in the batch to disconnect their sessions
@@ -2312,7 +2312,7 @@ const vouchersRouter = router({
       // Check ownership first
       const batch = await cardDb.getBatchWithStats(input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
-      if (!isAdmin(ctx.user.role) && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       const { batchId, ...data } = input;
@@ -2349,7 +2349,7 @@ const vouchersRouter = router({
       // Check ownership for non-super_admin
       const batches = await cardDb.getAllBatches();
       const batch = batches.find((b: any) => b.batchId === input.batchId);
-      if (batch && !isAdmin(ctx.user.role) && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+      if (batch && ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return cardDb.getCardsByBatch(input.batchId);
@@ -2376,7 +2376,7 @@ const vouchersRouter = router({
       const batch = batches.find((b: any) => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
       // Check ownership for non-super_admin
-      if (!isAdmin(ctx.user.role) && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
 
@@ -2434,7 +2434,7 @@ const vouchersRouter = router({
       const batch = batches.find((b: any) => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
       // Check ownership for non-super_admin
-      if (!isAdmin(ctx.user.role) && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
 
@@ -2520,7 +2520,7 @@ const vouchersRouter = router({
       const batch = batches.find((b: any) => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
       // Check ownership for non-super_admin
-      if (!isAdmin(ctx.user.role) && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
 
@@ -2627,7 +2627,7 @@ const vouchersRouter = router({
       const batches = await cardDb.getAllBatches();
       const batch = batches.find((b: any) => b.batchId === input.batchId);
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
-      if (!isAdmin(ctx.user.role) && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -2667,7 +2667,7 @@ const vouchersRouter = router({
       const cards = await db.select().from(radiusCards).where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`).execute();
       
       // Verify ownership
-      if (!isAdmin(ctx.user.role)) {
+      if (ctx.user.role !== 'super_admin') {
         const unauthorized = cards.some((card: any) => card.createdBy !== ctx.user.id);
         if (unauthorized) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -2690,7 +2690,7 @@ const vouchersRouter = router({
       const cards = await db.select().from(radiusCards).where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`).execute();
       
       // Verify ownership
-      if (!isAdmin(ctx.user.role)) {
+      if (ctx.user.role !== 'super_admin') {
         const unauthorized = cards.some((card: any) => card.createdBy !== ctx.user.id);
         if (unauthorized) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -2713,7 +2713,7 @@ const vouchersRouter = router({
       const cards = await db.select().from(radiusCards).where(sql`id IN (${sql.join(input.ids.map(id => sql`${id}`), sql`, `)})`).execute();
       
       // Verify ownership
-      if (!isAdmin(ctx.user.role)) {
+      if (ctx.user.role !== 'super_admin') {
         const unauthorized = cards.some((card: any) => card.createdBy !== ctx.user.id);
         if (unauthorized) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -2758,7 +2758,7 @@ const invoicesRouter = router({
       const invoice = await invoiceDb.getInvoiceById(input.id);
       if (!invoice) throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found" });
       
-      if (!isAdmin(ctx.user.role) && invoice.userId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && invoice.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -2814,7 +2814,7 @@ const subscriptionsRouter = router({
       const subscription = await subscriptionDb.getSubscriptionById(input.id);
       if (!subscription) throw new TRPCError({ code: "NOT_FOUND", message: "Subscription not found" });
       
-      if (!isAdmin(ctx.user.role) && subscription.usedBy !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && subscription.usedBy !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -2896,7 +2896,7 @@ const ticketsRouter = router({
       const ticket = await ticketDb.getTicketById(input.id);
       if (!ticket) throw new TRPCError({ code: "NOT_FOUND", message: "Ticket not found" });
       
-      if (!isAdmin(ctx.user.role) && ticket.userId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && ticket.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -2916,10 +2916,10 @@ const ticketsRouter = router({
         userId: ctx.user.id,
       });
       
-      // Notify all admins (owner + super_admin) about new ticket
+      // Notify super_admin about new ticket
       const db = await getDb();
       if (db) {
-        const superAdmins = await db.select().from(users).where(sql`role IN ('owner', 'super_admin')`);
+        const superAdmins = await db.select().from(users).where(eq(users.role, 'super_admin'));
         for (const admin of superAdmins) {
           await notificationDb.createNotification({
             userId: admin.id,
@@ -2956,7 +2956,7 @@ const ticketsRouter = router({
       if (!db) return message;
       
       // If sender is super_admin, notify ticket owner
-      if (isAdmin(ctx.user.role) && ticket.userId !== ctx.user.id) {
+      if (ctx.user.role === 'super_admin' && ticket.userId !== ctx.user.id) {
         await notificationDb.createNotification({
           userId: ticket.userId,
           type: 'support',
@@ -2967,9 +2967,9 @@ const ticketsRouter = router({
           data: { ticketId: ticket.id, ticketNumber: ticket.ticketNumber },
         });
       }
-      // If sender is client, notify all admins
-      else if (!isAdmin(ctx.user.role)) {
-        const superAdmins = await db.select().from(users).where(sql`role IN ('owner', 'super_admin')`);
+      // If sender is client, notify super_admin
+      else if (ctx.user.role !== 'super_admin') {
+        const superAdmins = await db.select().from(users).where(eq(users.role, 'super_admin'));
         for (const admin of superAdmins) {
           await notificationDb.createNotification({
             userId: admin.id,
@@ -2993,10 +2993,10 @@ const ticketsRouter = router({
       if (!ticket) throw new TRPCError({ code: "NOT_FOUND", message: "Ticket not found" });
       
       // Allow owner, super_admin, or ticket owner to see messages
-      const userIsAdmin = isAdmin(ctx.user.role);
+      const isAdmin = ctx.user.role === 'owner' || ctx.user.role === 'super_admin';
       const isTicketOwner = ticket.userId === ctx.user.id;
       
-      if (!userIsAdmin && !isTicketOwner) {
+      if (!isAdmin && !isTicketOwner) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       
@@ -3231,7 +3231,7 @@ const notificationsRouter = router({
 const dashboardRouter = router({
   getStats: protectedProcedure.query(async ({ ctx }) => {
     // Owner/Super Admin Dashboard
-    if (ctx.user.role === 'owner' || isAdmin(ctx.user.role)) {
+    if (ctx.user.role === 'owner' || ctx.user.role === 'super_admin') {
       // Super admin sees all stats
       const activeSessionsCount = await subscriptionDb.getActiveSessionsCount();
       const allNasDevices = await nasDb.getAllNasDevices();
@@ -3356,7 +3356,7 @@ const sessionsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     // Super admin sees all sessions (pass null)
     // Others see only their cards/subscribers sessions
-    const ownerId = isAdmin(ctx.user.role) ? null : ctx.user.id;
+    const ownerId = ctx.user.role === 'super_admin' ? null : ctx.user.id;
     return mikrotikApi.getActiveSessionsByOwner(ownerId);
   }),
 
@@ -3366,7 +3366,7 @@ const sessionsRouter = router({
     .query(async ({ ctx, input }) => {
       const sessions = await mikrotikApi.getSessionsByUsername(input.username);
       
-      if (isAdmin(ctx.user.role)) {
+      if (ctx.user.role === 'super_admin') {
         return sessions;
       }
       
@@ -3382,7 +3382,7 @@ const sessionsRouter = router({
       // Check NAS ownership
       const nas = await nasDb.getNasByIp(input.nasIp);
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return mikrotikApi.getSessionsByNas(input.nasIp);
@@ -3398,7 +3398,7 @@ const sessionsRouter = router({
       // Check NAS ownership
       const nas = await nasDb.getNasByIp(input.nasIp);
       if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return mikrotikApi.disconnectSession(input.sessionId, input.nasIp);
@@ -3409,7 +3409,7 @@ const sessionsRouter = router({
     .input(z.object({ username: z.string() }))
     .mutation(async ({ ctx, input }) => {
       // Check if user owns the card
-      if (!isAdmin(ctx.user.role)) {
+      if (ctx.user.role !== 'super_admin') {
         const card = await cardDb.getCardByUsername(input.username);
         if (card && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -3490,7 +3490,7 @@ const sessionsRouter = router({
       if (!nas) {
         throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
       }
       
@@ -3528,7 +3528,7 @@ const sessionsRouter = router({
       if (!card) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
-      if (!isAdmin(ctx.user.role) && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this user" });
       }
       
@@ -3567,7 +3567,7 @@ const sessionsRouter = router({
       if (!nas) {
         throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
       }
       
@@ -3614,7 +3614,7 @@ const sessionsRouter = router({
       if (!card) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
-      if (!isAdmin(ctx.user.role) && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this user" });
       }
       
@@ -3748,7 +3748,7 @@ const sessionsRouter = router({
       if (!nas) {
         throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
       }
       
@@ -3803,7 +3803,7 @@ const sessionsRouter = router({
       if (!nas) {
         throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
       }
       
@@ -3849,7 +3849,7 @@ const sessionsRouter = router({
       if (!nas) {
         throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
       }
       
@@ -3861,7 +3861,7 @@ const sessionsRouter = router({
     .input(z.object({ username: z.string() }))
     .query(async ({ ctx, input }) => {
       // Check card ownership
-      if (!isAdmin(ctx.user.role)) {
+      if (ctx.user.role !== 'super_admin') {
         const card = await cardDb.getCardByUsername(input.username);
         if (card && card.createdBy !== ctx.user.id && card.resellerId !== ctx.user.id) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -3895,7 +3895,7 @@ const sessionsRouter = router({
 const templatesRouter = router({
   // List all templates
   list: resellerProcedure.query(async ({ ctx }) => {
-    if (isAdmin(ctx.user.role)) {
+    if (ctx.user.role === 'super_admin') {
       return templateDb.getTemplates();
     }
     return templateDb.getTemplates(ctx.user.id);
@@ -3912,7 +3912,7 @@ const templatesRouter = router({
   // Get default template
   getDefault: resellerProcedure.query(async ({ ctx }) => {
     let template;
-    if (isAdmin(ctx.user.role)) {
+    if (ctx.user.role === 'super_admin') {
       template = await templateDb.getDefaultTemplate();
     } else {
       template = await templateDb.getDefaultTemplate(ctx.user.id);
@@ -3937,7 +3937,7 @@ const templatesRouter = router({
       // Create template in database
       const id = await templateDb.createTemplate({
         name: input.name,
-        resellerId: isAdmin(ctx.user.role) ? null : ctx.user.id,
+        resellerId: ctx.user.role === 'super_admin' ? null : ctx.user.id,
         imageUrl: url,
         imageKey: fileKey,
       });
@@ -3961,7 +3961,7 @@ const templatesRouter = router({
 
         const id = await templateDb.createTemplate({
           name: template.name,
-          resellerId: isAdmin(ctx.user.role) ? null : ctx.user.id,
+          resellerId: ctx.user.role === 'super_admin' ? null : ctx.user.id,
           imageUrl: url,
           imageKey: fileKey,
         });
@@ -4013,7 +4013,7 @@ const templatesRouter = router({
   setDefault: resellerProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const resellerId = isAdmin(ctx.user.role) ? undefined : ctx.user.id;
+      const resellerId = ctx.user.role === 'super_admin' ? undefined : ctx.user.id;
       await templateDb.setDefaultTemplate(input.id, resellerId);
       return { success: true };
     }),
@@ -4625,7 +4625,7 @@ const subscribersRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
       }
       // Check ownership
-      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && !isAdmin(ctx.user.role)) {
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
       return subscriber;
@@ -4710,7 +4710,7 @@ const subscribersRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
       }
       // Check ownership
-      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && !isAdmin(ctx.user.role)) {
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
 
@@ -4729,7 +4729,7 @@ const subscribersRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
       }
       // Check ownership
-      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && !isAdmin(ctx.user.role)) {
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
 
@@ -4757,7 +4757,7 @@ const subscribersRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
       }
       // Check ownership
-      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && !isAdmin(ctx.user.role)) {
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
 
@@ -4784,7 +4784,7 @@ const subscribersRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
       }
       // Check ownership
-      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && !isAdmin(ctx.user.role)) {
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
 
@@ -4822,7 +4822,7 @@ const subscribersRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
       }
       // Check ownership
-      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && !isAdmin(ctx.user.role)) {
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
 
@@ -4838,7 +4838,7 @@ const subscribersRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
       }
       // Check ownership
-      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && !isAdmin(ctx.user.role)) {
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
 
@@ -4865,7 +4865,7 @@ const subscribersRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'المشترك غير موجود' });
       }
       // Check ownership
-      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && !isAdmin(ctx.user.role)) {
+      if (subscriber.subscriber.ownerId !== ctx.user.id && subscriber.subscriber.createdBy !== ctx.user.id && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
 
@@ -4961,7 +4961,7 @@ const vpnRouter = router({
   // List all VPN connections with status (from SoftEther)
   list: protectedProcedure.query(async ({ ctx }) => {
     // Only owner/super_admin can see VPN connections
-    if (ctx.user.role !== 'owner' && !isAdmin(ctx.user.role)) {
+    if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'Only administrators can view VPN connections' });
     }
     
@@ -5029,7 +5029,7 @@ const vpnRouter = router({
       if (!nas) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -5046,7 +5046,7 @@ const vpnRouter = router({
       if (!nas) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -5062,7 +5062,7 @@ const vpnRouter = router({
       if (!nas) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -5078,7 +5078,7 @@ const vpnRouter = router({
       if (!nas) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -5094,7 +5094,7 @@ const vpnRouter = router({
       if (!nas) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS device not found' });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -5103,7 +5103,7 @@ const vpnRouter = router({
 
   // Sync all VPN statuses
   syncAll: protectedProcedure.mutation(async ({ ctx }) => {
-    const ownerId = isAdmin(ctx.user.role) ? undefined : ctx.user.id;
+    const ownerId = ctx.user.role === 'super_admin' ? undefined : ctx.user.id;
     return vpnConnectionService.syncAllVpnStatuses(ownerId);
   }),
 
@@ -5116,7 +5116,7 @@ const vpnRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       // Only owner/super_admin can see VPN logs
-      if (ctx.user.role !== 'owner' && !isAdmin(ctx.user.role)) {
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Only administrators can view VPN logs' });
       }
       
@@ -5144,7 +5144,7 @@ const vpnRouter = router({
 
   // Get VPN stats
   stats: protectedProcedure.query(async ({ ctx }) => {
-    const ownerId = isAdmin(ctx.user.role) ? undefined : ctx.user.id;
+    const ownerId = ctx.user.role === 'super_admin' ? undefined : ctx.user.id;
     return db.getVpnConnectionStats(ownerId);
   }),
 });
@@ -5175,7 +5175,7 @@ const auditRouter = router({
         offset: input?.offset || 0,
       };
       
-      if (!isAdmin(ctx.user.role)) {
+      if (ctx.user.role !== 'super_admin') {
         filters.userId = ctx.user.id;
       } else if (input?.userId) {
         filters.userId = input.userId;
@@ -5208,7 +5208,7 @@ const auditRouter = router({
       if (!nas) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS not found' });
       }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+      if (ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
       
@@ -5638,7 +5638,7 @@ const saasPlansRouter = router({
   getSubscriptionHistory: protectedProcedure
     .input(z.object({ userId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
-      const userId = isAdmin(ctx.user.role) && input.userId ? input.userId : ctx.user.id;
+      const userId = ctx.user.role === 'super_admin' && input.userId ? input.userId : ctx.user.id;
       return saasPlansDb.getSubscriptionHistory(userId);
     }),
 });

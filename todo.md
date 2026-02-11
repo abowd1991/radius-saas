@@ -3216,3 +3216,23 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Check getMessages API for role-based filtering issues
 - [x] Fix query to allow admin to see all messages (added owner role check)
 - [x] Test with admin account (3/3 tests passed)
+
+
+## Comprehensive Audit - Owner vs Super_Admin Access (Feb 10, 2026)
+- [ ] Search all super_admin role checks in server/routers.ts
+- [ ] Search all super_admin role checks in server/db/*.ts
+- [ ] Search all super_admin role checks in client/src/**/*.tsx
+- [ ] Identify all places where owner should have same access as super_admin
+- [ ] Fix all role checks to include owner where appropriate
+- [ ] Create comprehensive test suite
+- [ ] Document all changes
+
+
+## Comprehensive Audit - Owner & Super_Admin Access Equality (Feb 11, 2026)
+- [x] Search all occurrences of super_admin in server/routers.ts (109 found)
+- [x] Created isAdmin() helper function
+- [x] Replaced 76 occurrences with isAdmin(ctx.user.role)
+- [x] Fixed notifications to include owner + super_admin
+- [x] Fixed delete protection for owner + super_admin
+- [x] Fixed circular reference in getMessages (line 2996)
+- [x] Test all critical paths (7/7 tests passed)
