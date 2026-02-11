@@ -667,17 +667,17 @@ const usersRouter = router({
       
       // 5. Delete user's NAS devices
       await drizzleDb.execute(
-        sql`DELETE FROM nas WHERE owner_id = ${input.userId}`
+        sql`DELETE FROM nas WHERE ownerId = ${input.userId}`
       );
       
       // 6. Delete user's plans
       await drizzleDb.execute(
-        sql`DELETE FROM plans WHERE owner_id = ${input.userId}`
+        sql`DELETE FROM plans WHERE ownerId = ${input.userId}`
       );
       
       // 7. Delete user's audit logs
       await drizzleDb.execute(
-        sql`DELETE FROM audit_logs WHERE user_id = ${input.userId}`
+        sql`DELETE FROM audit_logs WHERE userId = ${input.userId}`
       );
       
       // 8. Finally delete the user
@@ -831,9 +831,9 @@ const usersRouter = router({
         
         // Delete user's data
         await drizzleDb.execute(sql`DELETE FROM radius_cards WHERE createdBy = ${userId}`);
-        await drizzleDb.execute(sql`DELETE FROM nas WHERE owner_id = ${userId}`);
-        await drizzleDb.execute(sql`DELETE FROM plans WHERE owner_id = ${userId}`);
-        await drizzleDb.execute(sql`DELETE FROM audit_logs WHERE user_id = ${userId}`);
+        await drizzleDb.execute(sql`DELETE FROM nas WHERE ownerId = ${userId}`);
+        await drizzleDb.execute(sql`DELETE FROM plans WHERE ownerId = ${userId}`);
+        await drizzleDb.execute(sql`DELETE FROM audit_logs WHERE userId = ${userId}`);
         
         // Delete user
         await drizzleDb.delete(users).where(eq(users.id, userId));
@@ -929,7 +929,7 @@ const usersRouter = router({
       
       // Get audit logs for this user
       const logs = await drizzleDb.execute(
-        sql`SELECT * FROM audit_logs WHERE user_id = ${input.userId} ORDER BY created_at DESC LIMIT ${input.limit}`
+        sql`SELECT * FROM audit_logs WHERE userId = ${input.userId} ORDER BY createdAt DESC LIMIT ${input.limit}`
       );
       
       return { activities: logs };

@@ -3846,3 +3846,11 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
   - [x] Frontend fetches Permission Plans correctly
   - [x] Backend uses permissionPlanId field
   - [x] Ready for user testing
+
+## Bug: DELETE FROM nas WHERE owner_id fails (Feb 11, 2026)
+- [x] Fix column name mismatch in NAS delete query
+  - [x] Fixed 2 DELETE FROM nas WHERE owner_id → ownerId
+  - [x] Fixed 2 DELETE FROM plans WHERE owner_id → ownerId
+  - [x] Fixed 2 DELETE/SELECT FROM audit_logs WHERE user_id → userId
+  - [x] Fixed 1 SELECT FROM audit_logs ORDER BY created_at → createdAt
+  - [x] Total: 7 column name fixes for snake_case → camelCase
