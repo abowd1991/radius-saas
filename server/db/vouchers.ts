@@ -4,6 +4,9 @@ import { radiusCards, cardBatches, radcheck, radreply, radusergroup, plans, Inse
 import { TenantContext, buildTenantFilter } from "../tenant-isolation";
 import { nanoid } from "nanoid";
 
+// Helper function to check if user is admin (owner or super_admin)
+const isAdmin = (role: string) => role === 'owner' || role === 'super_admin';
+
 // Generate random username for RADIUS
 function generateUsername(): string {
   const chars = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -217,7 +220,7 @@ export async function getCardsByTenant(tenantContext: TenantContext, options?: {
   }
   
   // Owner/super_admin see all
-  if (tenantContext.role === 'owner' || tenantContext.role === 'super_admin') {
+  if (isAdmin(tenantContext.role)) {
     conditions = [];
     if (options?.status) {
       conditions.push(eq(radiusCards.status, options.status as any));
@@ -1244,7 +1247,7 @@ export async function getBatchesByTenantWithStats(tenantContext: TenantContext) 
   // Get batches where user is either the reseller or the creator
   let batches;
   
-  if (tenantContext.role === 'owner' || tenantContext.role === 'super_admin') {
+  if (isAdmin(tenantContext.role)) {
     // Owner/super_admin see all batches
     batches = await db.select()
       .from(cardBatches)

@@ -38,7 +38,7 @@ async function checkNasConnection(ip: string, port: number = 8728): Promise<bool
   });
 }
 
-// Get all super admins for notifications
+// Get all admins (owner + super_admin) for notifications
 async function getSuperAdmins(): Promise<number[]> {
   const db = await getDb();
   if (!db) return [];
@@ -47,7 +47,7 @@ async function getSuperAdmins(): Promise<number[]> {
     const admins = await db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.role, "super_admin"));
+      .where(sql`role IN ('owner', 'super_admin')`);
 
     return admins.map((a: any) => a.id);
   } catch (error) {

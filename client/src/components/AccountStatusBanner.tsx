@@ -23,7 +23,7 @@ export function AccountStatusBanner() {
   if (!user) return null;
 
   // Super admin doesn't need status banner
-  if (user.role === "super_admin") return null;
+  if (user.role === "super_admin" || user.role === "owner") return null;
 
   const accountStatus = (user as any).accountStatus || "active";
   const trialEndDate = (user as any).trialEndDate ? new Date((user as any).trialEndDate) : null;
