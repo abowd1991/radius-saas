@@ -467,14 +467,18 @@ const usersRouter = router({
       
       const drizzleDb = await getDb();
       if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
-      const plan = await saasPlansDb.getPlanById(input.planId);
-      if (!plan) throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
+      
+      // Get permission plan details
+      const { getAllPermissionPlans } = await import('./db-permission-plans');
+      const plans = await getAllPermissionPlans();
+      const plan = plans.find((p: any) => p.id === input.planId);
+      if (!plan) throw new TRPCError({ code: 'NOT_FOUND', message: 'Permission plan not found' });
       
       await drizzleDb.update(users)
-        .set({ subscriptionPlanId: input.planId })
+        .set({ permissionPlanId: input.planId })
         .where(eq(users.id, input.userId));
       
-      console.log(`[Client Control] Changed user ${input.userId} plan to ${plan.name}`);
+      console.log(`[Client Control] Changed user ${input.userId} permission plan to ${plan.name}`);
       return { success: true, planName: plan.name };
     }),
 

@@ -123,8 +123,8 @@ export default function Clients() {
     },
   });
 
-  // Fetch SaaS plans for plan change
-  const { data: saasPlans } = trpc.saasPlans.getAllAdmin.useQuery();
+  // Fetch Permission Plans for plan change
+  const { data: permissionPlans } = trpc.permissionPlans.list.useQuery();
 
   const changeClientPlan = trpc.users.changeClientPlan.useMutation({
     onSuccess: (data: any) => {
@@ -378,7 +378,7 @@ export default function Clients() {
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
                             setChangePlanClient(client);
-                            setSelectedPlanId(client.subscriptionPlanId?.toString() || "");
+                            setSelectedPlanId(client.permissionPlanId?.toString() || "");
                           }}>
                             <CreditCard className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
                             {language === "ar" ? "تغيير الخطة" : "Change Plan"}
@@ -458,13 +458,13 @@ export default function Clients() {
                   <SelectValue placeholder={language === "ar" ? "اختر خطة" : "Select a plan"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {saasPlans?.map((plan: any) => (
+                  {permissionPlans?.map((plan: any) => (
                     <SelectItem key={plan.id} value={plan.id.toString()}>
-                      <div className="flex items-center justify-between gap-4">
-                        <span>{language === "ar" ? (plan.nameAr || plan.name) : plan.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          ${plan.priceMonthly}/{language === "ar" ? "شهر" : "mo"}
-                        </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium">{language === "ar" ? (plan.nameAr || plan.name) : plan.name}</span>
+                        {plan.description && (
+                          <span className="text-xs text-muted-foreground">{plan.description}</span>
+                        )}
                       </div>
                     </SelectItem>
                   ))}

@@ -3831,3 +3831,18 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
   - [x] UI: Added "تغيير الخطة" option in client dropdown menu
   - [x] UI: Added Dialog with plan selector (fetches from saasPlans.getAllAdmin)
   - [x] Shows current plan, allows selecting new plan with price info
+
+## Bug: Empty SaaS Plans Dropdown in Change Plan Dialog (Feb 11, 2026)
+- [x] Investigate why saasPlans dropdown shows empty
+  - [x] Checked saas_plans table - completely empty (0 rows)
+  - [x] User confirmed to use Permission Plans instead (already exist in system)
+- [x] Fix the issue
+  - [x] Changed frontend to fetch permissionPlans.list instead of saasPlans.getAllAdmin
+  - [x] Updated backend changeClientPlan to use permissionPlanId (imports from db-permission-plans)
+  - [x] Updated dialog to show Permission Plans with description
+  - [x] Updated client selection to use permissionPlanId instead of subscriptionPlanId
+- [x] Test the solution
+  - [x] Dev server running successfully
+  - [x] Frontend fetches Permission Plans correctly
+  - [x] Backend uses permissionPlanId field
+  - [x] Ready for user testing
