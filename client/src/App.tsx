@@ -49,6 +49,8 @@ import AdminConsole from "./pages/AdminConsole";
 import SiteSettings from "./pages/SiteSettings";
 import SubscriptionPlansManagement from "./pages/SubscriptionPlansManagement";
 import WalletLedger from "./pages/WalletLedger";
+import BankTransferRecharge from "./pages/BankTransferRecharge";
+import BankTransferAdmin from "./pages/BankTransferAdmin";
 import OwnerBillingDashboard from "./pages/OwnerBillingDashboard";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
@@ -89,6 +91,16 @@ function Router() {
       <Route path="/wallet-ledger">
         <DashboardLayout>
           <WalletLedger />
+        </DashboardLayout>
+      </Route>
+      <Route path="/bank-transfer-recharge">
+        <DashboardLayout>
+          <BankTransferRecharge />
+        </DashboardLayout>
+      </Route>
+      <Route path="/bank-transfer-admin">
+        <DashboardLayout>
+          <BankTransferAdmin />
         </DashboardLayout>
       </Route>
       <Route path="/owner-billing">

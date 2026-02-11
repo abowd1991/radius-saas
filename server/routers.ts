@@ -25,7 +25,7 @@ import * as sessionMonitor from "./services/sessionMonitor";
 import * as authService from "./services/authService";
 import { getDb } from "./db";
 import { radcheck, nasDevices, radiusCards, radacct, users } from "../drizzle/schema";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import * as radiusSubscribers from "./db/radiusSubscribers";
 import { logAudit } from "./services/auditLogService";
 import { subAdminRouter } from "./routers-sub-admin";
@@ -5988,6 +5988,199 @@ const vpsManagementRouter = router({
 });
 
 // ============================================================================
+// BANK TRANSFER ROUTER
+// ============================================================================
+const bankTransferRouter = router({
+  submitRequest: protectedProcedure
+    .input(z.object({
+      requestedAmount: z.number().min(1).max(10000),
+      receiptImage: z.object({
+        data: z.string(),
+        filename: z.string(),
+        mimeType: z.string(),
+      }),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      const { bankTransferRequests } = await import('../drizzle/schema');
+      const { storagePut } = await import('./storage');
+      const { extractReceiptData, validateExtractedData } = await import('./services/ocrService');
+      const { getExchangeRate } = await import('./services/exchangeRateService');
+      
+      try {
+        const imageBuffer = Buffer.from(input.receiptImage.data, 'base64');
+        const fileKey = `bank-receipts/${ctx.user.id}/${Date.now()}-${input.receiptImage.filename}`;
+        const { url: receiptImageUrl } = await storagePut(fileKey, imageBuffer, input.receiptImage.mimeType);
+        
+        const ocrData = await extractReceiptData(receiptImageUrl);
+        if (!validateExtractedData(ocrData)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Failed to extract valid data from receipt' });
+        }
+        
+        const existing = await db.select().from(bankTransferRequests)
+          .where(eq(bankTransferRequests.referenceNumber, ocrData.referenceNumber!))
+          .limit(1);
+        if (existing.length > 0) {
+          throw new TRPCError({ code: 'CONFLICT', message: `Reference number already used` });
+        }
+        
+        const currency = ocrData.currency || 'USD';
+        const exchangeRate = await getExchangeRate(currency, 'USD');
+        const transferredAmount = ocrData.amount!;
+        const finalAmountUSD = Math.round(transferredAmount * exchangeRate * 100) / 100;
+        
+        const [result] = await db.insert(bankTransferRequests).values({
+          userId: ctx.user.id,
+          requestedAmount: input.requestedAmount.toString(),
+          transferredAmount: transferredAmount.toString(),
+          transferredCurrency: currency as 'ILS' | 'USD',
+          exchangeRate: exchangeRate.toString(),
+          finalAmountUSD: finalAmountUSD.toString(),
+          receiptImageUrl,
+          referenceNumber: ocrData.referenceNumber!,
+          ocrData: JSON.stringify(ocrData),
+          status: 'pending',
+        });
+        
+        return {
+          success: true,
+          requestId: Number(result.insertId),
+          extractedData: ocrData,
+          finalAmountUSD,
+          exchangeRate,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error instanceof Error ? error.message : 'Failed' });
+      }
+    }),
+    
+  getAll: protectedProcedure
+    .input(z.object({
+      status: z.enum(['all', 'pending', 'approved', 'rejected']).optional().default('all'),
+      limit: z.number().min(1).max(100).optional().default(50),
+    }))
+    .query(async ({ ctx, input }) => {
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      const { bankTransferRequests, users } = await import('../drizzle/schema');
+      
+      const conditions = input.status !== 'all' ? [eq(bankTransferRequests.status, input.status)] : [];
+      const requests = await db.select().from(bankTransferRequests)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(bankTransferRequests.submittedAt))
+        .limit(input.limit);
+      
+      const requestsWithUsers = [];
+      for (const req of requests) {
+        const [user] = await db.select({ id: users.id, name: users.name, email: users.email })
+          .from(users).where(eq(users.id, req.userId)).limit(1);
+        requestsWithUsers.push({ ...req, user: user || null });
+      }
+      
+      return { requests: requestsWithUsers };
+    }),
+    
+  getMy: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      const { bankTransferRequests } = await import('../drizzle/schema');
+      const requests = await db.select().from(bankTransferRequests)
+        .where(eq(bankTransferRequests.userId, ctx.user.id))
+        .orderBy(desc(bankTransferRequests.submittedAt));
+      return { requests };
+    }),
+    
+  approve: protectedProcedure
+    .input(z.object({ requestId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      const { bankTransferRequests, wallets, walletLedger } = await import('../drizzle/schema');
+      
+      const [request] = await db.select().from(bankTransferRequests)
+        .where(eq(bankTransferRequests.id, input.requestId)).limit(1);
+      if (!request || request.status !== 'pending') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid request' });
+      }
+      
+      const [wallet] = await db.select().from(wallets)
+        .where(eq(wallets.userId, request.userId)).limit(1);
+      if (!wallet) throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
+      
+      const currentBalance = parseFloat(wallet.balance);
+      const amountToAdd = parseFloat(request.finalAmountUSD);
+      const newBalance = currentBalance + amountToAdd;
+      
+      await db.update(wallets).set({ balance: newBalance.toFixed(2) })
+        .where(eq(wallets.id, wallet.id));
+      
+      await db.insert(walletLedger).values({
+        userId: request.userId,
+        type: 'credit',
+        amount: amountToAdd.toFixed(2),
+        balanceBefore: currentBalance.toFixed(2),
+        balanceAfter: newBalance.toFixed(2),
+        reason: `Bank transfer approved (Ref: ${request.referenceNumber})`,
+        reasonAr: `تمت الموافقة على التحويل البنكي (المرجع: ${request.referenceNumber})`,
+        relatedEntityType: 'bank_transfer',
+        relatedEntityId: request.id,
+        performedBy: ctx.user.id,
+      });
+      
+      await db.update(bankTransferRequests).set({
+        status: 'approved',
+        reviewedAt: new Date(),
+        reviewedBy: ctx.user.id,
+      }).where(eq(bankTransferRequests.id, input.requestId));
+      
+      return { success: true, newBalance };
+    }),
+    
+  reject: protectedProcedure
+    .input(z.object({ requestId: z.number(), reason: z.string().min(1).max(500) }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      
+      const { bankTransferRequests } = await import('../drizzle/schema');
+      
+      const [request] = await db.select().from(bankTransferRequests)
+        .where(eq(bankTransferRequests.id, input.requestId)).limit(1);
+      if (!request || request.status !== 'pending') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid request' });
+      }
+      
+      await db.update(bankTransferRequests).set({
+        status: 'rejected',
+        reviewedAt: new Date(),
+        reviewedBy: ctx.user.id,
+        adminNotes: input.reason,
+      }).where(eq(bankTransferRequests.id, input.requestId));
+      
+      return { success: true };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -6029,6 +6222,7 @@ export const appRouter = router({
   permissionPlans: permissionPlansRouter,
   userPermissionOverrides: userPermissionOverridesRouter,
   userEffectivePermissions: userEffectivePermissionsRouter,
+  bankTransfer: bankTransferRouter,
 });
 
 export type AppRouter = typeof appRouter;

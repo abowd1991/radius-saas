@@ -3327,3 +3327,110 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Test: Create reseller with default plan (PASSED)
 - [x] Test: Reject duplicate email (PASSED)
 - [x] 4/4 tests passed
+
+
+## Bank Transfer Payment System - Palestine Bank (Feb 11, 2026)
+
+### Phase 1: Database Schema
+- [x] إنشاء جدول `bankTransferRequests` في schema.ts
+  - [x] id, userId, requestedAmount, transferredAmount
+  - [x] transferredCurrency (USD/ILS), exchangeRate, finalAmountUSD
+  - [x] receiptImageUrl, referenceNumber, ocrData (JSON)
+  - [x] status (pending/approved/rejected)
+  - [x] submittedAt, reviewedAt, reviewedBy, adminNotes
+  - [x] Table created in database (17 columns)
+
+### Phase 2: Exchange Rate API Integration
+- [x] إضافة Exchange Rate API service (ExchangeRate-API.com)
+- [x] دالة getExchangeRate(from, to) - جلب سعر التحويل
+- [x] دعم ILS → USD (شيكل إلى دولار)
+- [x] دعم USD → USD (دولار إلى دولار - 1:1)
+- [x] Cache سعر التحويل لمدة ساعة (تقليل API calls)
+- [x] Fallback rates في حال فشل API
+
+### Phase 3: OCR Service Integration
+- [x] تثبيت Tesseract.js في Backend (tesseract.js 7.0.0)
+- [x] إنشاء OCR service لاستخراج البيانات من صورة الإشعار:
+  - [x] الرقم المرجعي (Reference Number) - 3 patterns
+  - [x] المبلغ (Amount) - multiple patterns
+  - [x] العملة (Currency - ILS/USD) - auto-detect
+  - [x] التاريخ (Date) - 2 formats
+- [x] معالجة النصوص العربية والإنجليزية (ara+eng)
+- [x] التحقق من صحة البيانات المستخرجة (validateExtractedData)
+
+### Phase 4: Backend APIs
+- [x] submitRequest mutation
+  - [x] رفع صورة الإشعار إلى S3
+  - [x] تشغيل OCR لاستخراج البيانات
+  - [x] جلب سعر التحويل
+  - [x] حساب المبلغ النهائي بالدولار
+  - [x] حفظ الطلب بحالة pending
+  - [x] التحقق من عدم تكرار الرقم المرجعي
+- [x] getAll query (للمدير)
+  - [x] عرض جميع الطلبات مع فلترة حسب الحالة
+  - [x] ترتيب حسب تاريخ الإرسال
+  - [x] عرض معلومات المستخدم مع كل طلب
+- [x] approve mutation (للمدير)
+  - [x] إضافة المبلغ إلى wallet balance
+  - [x] تغيير الحالة إلى approved
+  - [x] تسجيل في wallet ledger
+  - [ ] إرسال إشعار للعميل (future enhancement)
+- [x] reject mutation (للمدير)
+  - [x] تغيير الحالة إلى rejected
+  - [x] حفظ سبب الرفض في adminNotes
+  - [ ] إرسال إشعار للعميل (future enhancement)
+- [x] getMy query (للعميل)
+  - [x] عرض طلبات العميل فقط
+- [x] bankTransferRouter added to appRouter
+- [x] No TypeScript errors
+
+### Phase 5: Client UI - Wallet Recharge Page
+- [x] إضافة زر "شحن رصيد عبر بنك فلسطين" في Wallet
+- [ ] نموذج طلب شحن:
+  - [ ] اختيار المبلغ ($10, $20, $50, $100, مخصص)
+  - [ ] رفع صورة الإشعار (Image Upload)
+  - [ ] عرض البيانات المستخرجة من OCR (للتأكيد)
+  - [ ] إمكانية تعديل البيانات يدوياً
+  - [ ] عرض سعر التحويل الحالي
+  - [ ] عرض المبلغ النهائي بالدولار
+  - [ ] زر "إرسال الطلب"
+- [ ] قائمة طلبات الشحن السابقة
+  - [ ] عرض الحالة (Pending/Approved/Rejected)
+  - [ ] عرض تفاصيل كل طلب
+  - [ ] إمكانية عرض صورة الإشعار
+
+### Phase 6: Admin UI - Bank Transfer Requests Management
+- [x] إضافة قسم "طلبات الشحن" في Admin Dashboard
+- [x] جدول عرض الطلبات:
+  - [x] اسم العميل، المبلغ، العملة، الرقم المرجعي
+  - [x] تاريخ الإرسال، الحالة
+  - [x] زر "عرض الإشعار" (Image Modal)
+  - [x] عرض البيانات المستخرجة من OCR
+  - [x] أزرار "موافقة" و "رفض"
+- [x] Approve Dialog:
+  - [x] تأكيد المبلغ النهائي
+  - [x] عرض رصيد العميل الحالي والجديد
+  - [x] زر "تأكيد الموافقة"
+- [x] Reject Dialog:
+  - [x] إدخال سبب الرفض (إجباري)
+  - [x] زر "تأكيد الرفض"
+- [ ] فلترة حسب الحالة (All/Pending/Approved/Rejected)
+- [ ] Badge للطلبات الجديدة (Pending count)
+
+### Phase 7: Security & Validation
+- [ ] التحقق من عدم تكرار الرقم المرجعي (Unique constraint)
+- [ ] التحقق من صحة الصورة (Image validation)
+- [ ] حد أقصى لحجم الصورة (5MB)
+- [ ] صيغ مدعومة: JPG, PNG, PDF
+- [ ] Rate limiting لطلبات الشحن (max 5 per day per user)
+- [ ] Audit log لجميع العمليات (submit, approve, reject)
+
+### Phase 8: Testing
+- [ ] Test: Submit bank transfer request with ILS
+- [ ] Test: Submit bank transfer request with USD
+- [ ] Test: OCR extraction accuracy
+- [ ] Test: Exchange rate API integration
+- [ ] Test: Approve request and add balance
+- [ ] Test: Reject request with reason
+- [ ] Test: Duplicate reference number validation
+- [ ] Test: Image upload and S3 storage

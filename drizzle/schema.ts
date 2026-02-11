@@ -1391,3 +1391,57 @@ export const userPermissionOverrides = mysqlTable("user_permission_overrides", {
 
 export type UserPermissionOverride = typeof userPermissionOverrides.$inferSelect;
 export type InsertUserPermissionOverride = typeof userPermissionOverrides.$inferInsert;
+
+// ============================================================================
+// BANK TRANSFER REQUESTS (Palestine Bank Payment System)
+// ============================================================================
+
+export const bankTransferRequests = mysqlTable("bank_transfer_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // User who submitted the request
+  userId: int("userId").notNull(),
+  
+  // Requested amount in USD (what the user wants to add to their wallet)
+  requestedAmount: decimal("requestedAmount", { precision: 12, scale: 2 }).notNull(),
+  
+  // Transferred amount (actual amount sent by user)
+  transferredAmount: decimal("transferredAmount", { precision: 12, scale: 2 }).notNull(),
+  
+  // Currency of the transferred amount (ILS or USD)
+  transferredCurrency: mysqlEnum("transferredCurrency", ["ILS", "USD"]).notNull(),
+  
+  // Exchange rate used for conversion (e.g., 1 ILS = 0.27 USD)
+  exchangeRate: decimal("exchangeRate", { precision: 10, scale: 6 }).notNull(),
+  
+  // Final amount in USD after conversion
+  finalAmountUSD: decimal("finalAmountUSD", { precision: 12, scale: 2 }).notNull(),
+  
+  // Receipt image URL (stored in S3)
+  receiptImageUrl: text("receiptImageUrl").notNull(),
+  
+  // Reference number from the bank receipt (extracted via OCR)
+  referenceNumber: varchar("referenceNumber", { length: 50 }).notNull().unique(),
+  
+  // OCR extracted data (JSON) - stores all extracted information for verification
+  ocrData: json("ocrData"),
+  
+  // Request status
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  
+  // Timestamps
+  submittedAt: timestamp("submittedAt").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewedAt"),
+  
+  // Admin who reviewed the request
+  reviewedBy: int("reviewedBy"),
+  
+  // Admin notes (reason for rejection, etc.)
+  adminNotes: text("adminNotes"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BankTransferRequest = typeof bankTransferRequests.$inferSelect;
+export type InsertBankTransferRequest = typeof bankTransferRequests.$inferInsert;

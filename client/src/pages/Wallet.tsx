@@ -41,8 +41,10 @@ import {
   RefreshCw,
   TrendingUp,
   TrendingDown,
+  DollarSign,
 } from "lucide-react";
 import { useState } from "react";
+import { Link } from "wouter";
 
 export default function Wallet() {
   const { user } = useAuth();
@@ -140,10 +142,18 @@ export default function Wallet() {
             {language === "ar" ? "إدارة رصيدك ومعاملاتك المالية" : "Manage your balance and transactions"}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { refetchWallet(); refetchTransactions(); }}>
-          <RefreshCw className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
-          {language === "ar" ? "تحديث" : "Refresh"}
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/bank-transfer-recharge">
+            <Button size="sm">
+              <DollarSign className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+              {language === "ar" ? "شحن رصيد عبر بنك فلسطين" : "Recharge via Bank"}
+            </Button>
+          </Link>
+          <Button variant="outline" size="sm" onClick={() => { refetchWallet(); refetchTransactions(); }}>
+            <RefreshCw className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
+            {language === "ar" ? "تحديث" : "Refresh"}
+          </Button>
+        </div>
       </div>
 
       {/* Balance Card */}

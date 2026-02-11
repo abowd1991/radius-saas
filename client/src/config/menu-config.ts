@@ -119,6 +119,13 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
         path: "/admin",
         requiredRole: ["super_admin", "owner"]
       },
+      { 
+        icon: Receipt, 
+        label: "Bank Transfer Requests", 
+        labelAr: "طلبات التحويل البنكي", 
+        path: "/bank-transfer-admin",
+        requiredRole: ["super_admin", "owner"]
+      },
     ],
   },
 
