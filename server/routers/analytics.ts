@@ -280,21 +280,21 @@ const analyticsRouter = router({
           SUM(CASE WHEN status = 'used' THEN 1 ELSE 0 END) as sold_cards,
           SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as available_cards,
           SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired_cards
-        FROM radius_cards
-        WHERE created_by = ${ctx.user.id}
+        FROM cards
+        WHERE createdBy = ${ctx.user.id}
       `));
 
       // Sales trend (cards used per day)
       const salesTrendResult = await db.execute(sql.raw(`
         SELECT 
-          DATE(updated_at) as date,
+          DATE(updatedAt) as date,
           COUNT(*) as cards_sold
-        FROM radius_cards
-        WHERE created_by = ${ctx.user.id}
+        FROM cards
+        WHERE createdBy = ${ctx.user.id}
           AND status = 'used'
-          AND updated_at >= '${startDate.toISOString()}'
-          AND updated_at <= '${endDate.toISOString()}'
-        GROUP BY DATE(updated_at)
+          AND updatedAt >= '${startDate.toISOString()}'
+          AND updatedAt <= '${endDate.toISOString()}'
+        GROUP BY DATE(updatedAt)
         ORDER BY date ASC
       `));
 
@@ -302,9 +302,9 @@ const analyticsRouter = router({
       const revenueResult = await db.execute(sql.raw(`
         SELECT 
           COALESCE(SUM(p.price), 0) as total_revenue
-        FROM radius_cards rc
-        LEFT JOIN plans p ON rc.plan_id = p.id
-        WHERE rc.created_by = ${ctx.user.id}
+        FROM cards rc
+        LEFT JOIN plans p ON rc.planId = p.id
+        WHERE rc.createdBy = ${ctx.user.id}
           AND rc.status = 'used'
       `));
 
@@ -314,9 +314,9 @@ const analyticsRouter = router({
           p.name as plan_name,
           COUNT(rc.id) as cards_sold,
           SUM(p.price) as revenue
-        FROM radius_cards rc
-        LEFT JOIN plans p ON rc.plan_id = p.id
-        WHERE rc.created_by = ${ctx.user.id}
+        FROM cards rc
+        LEFT JOIN plans p ON rc.planId = p.id
+        WHERE rc.createdBy = ${ctx.user.id}
           AND rc.status = 'used'
         GROUP BY p.id, p.name
         ORDER BY cards_sold DESC
@@ -330,12 +330,12 @@ const analyticsRouter = router({
           rc.password,
           p.name as plan_name,
           rc.status,
-          rc.updated_at as sold_at
-        FROM radius_cards rc
-        LEFT JOIN plans p ON rc.plan_id = p.id
-        WHERE rc.created_by = ${ctx.user.id}
+          rc.updatedAt as sold_at
+        FROM cards rc
+        LEFT JOIN plans p ON rc.planId = p.id
+        WHERE rc.createdBy = ${ctx.user.id}
           AND rc.status = 'used'
-        ORDER BY rc.updated_at DESC
+        ORDER BY rc.updatedAt DESC
         LIMIT 10
       `));
 

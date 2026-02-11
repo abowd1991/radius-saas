@@ -3746,3 +3746,19 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] Error 3: Fix bulk delete query (added validation for empty IDs array)
 - [x] Error 4: Fix HTML nesting (no errors found - all tables use proper structure)
 - [x] Error 5: Fix NasHealthWidget missing keys (already using unique keys correctly)
+
+
+## Bug Fixes (Feb 11, 2026 - Error Report #3)
+
+- [ ] Error 1: Fix Reference number validation in bank transfers (allow editing same request)
+- [ ] Error 2: Fix radius_cards table name in clientCardSales query (should be `cards`)
+
+## Bug Fixes (Feb 11, 2026 - Evening)
+- [x] Fixed Bank Transfer Reference Number Validation
+  - [x] Allow editing same request without "Reference number already used" error
+  - [x] Improved validation to exclude current request from duplicate check
+  - [x] Changed from single record check to array filtering
+- [x] Fixed Card Sales Query Table Name
+  - [x] Changed `radius_cards` to `cards` in clientCardSales procedure
+  - [x] Updated column names: `created_by` → `createdBy`, `plan_id` → `planId`, `updated_at` → `updatedAt`
+  - [x] Fixed 5 queries in analytics.ts (totalSales, salesTrend, revenue, topPlans, recentSales)
