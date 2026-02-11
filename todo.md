@@ -3444,3 +3444,6 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] إصلاح: JSON parsing error في frontend (client-side) - الخطأ يحدث في bundled code
 - [x] إصلاح: "Unable to transform response from server" - error handler غير متوافق مع tRPC superjson
 - [x] تغيير: رفع صور الإشعارات على السيرفر المحلي بدلاً من S3 مع أسماء ملفات واضحة
+- [x] إصلاح: 503 Service Unavailable ما زال يحدث في submitRequest - يحدث قبل saveReceiptImage
+  - إضافة detailed error handling لكل خطوة (OCR, Storage, Exchange Rate)
+  - الآن سيظهر رسالة خطأ واضحة تحدد المشكلة بالضبط

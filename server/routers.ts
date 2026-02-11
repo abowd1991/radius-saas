@@ -6013,18 +6013,37 @@ const bankTransferRouter = router({
         const imageBuffer = Buffer.from(input.receiptImage.data, 'base64');
         
         // Run OCR on the image buffer directly (before uploading)
-        const ocrData = await extractReceiptData(imageBuffer);
-        if (!validateExtractedData(ocrData)) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Failed to extract valid data from receipt' });
+        let ocrData;
+        try {
+          ocrData = await extractReceiptData(imageBuffer);
+          if (!validateExtractedData(ocrData)) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Failed to extract valid data from receipt' });
+          }
+        } catch (ocrError) {
+          console.error('OCR extraction failed:', ocrError);
+          throw new TRPCError({ 
+            code: 'INTERNAL_SERVER_ERROR', 
+            message: `OCR extraction failed: ${ocrError instanceof Error ? ocrError.message : 'Unknown error'}` 
+          });
         }
         
         // Save to local storage with organized filename
-        const { publicUrl: receiptImageUrl } = await saveReceiptImage(
-          ctx.user.id,
-          ocrData.referenceNumber!,
-          imageBuffer,
-          input.receiptImage.mimeType
-        );
+        let receiptImageUrl;
+        try {
+          const result = await saveReceiptImage(
+            ctx.user.id,
+            ocrData.referenceNumber!,
+            imageBuffer,
+            input.receiptImage.mimeType
+          );
+          receiptImageUrl = result.publicUrl;
+        } catch (storageError) {
+          console.error('File storage failed:', storageError);
+          throw new TRPCError({ 
+            code: 'INTERNAL_SERVER_ERROR', 
+            message: `File storage failed: ${storageError instanceof Error ? storageError.message : 'Unknown error'}` 
+          });
+        }
         
         const existing = await db.select().from(bankTransferRequests)
           .where(eq(bankTransferRequests.referenceNumber, ocrData.referenceNumber!))
@@ -6034,7 +6053,16 @@ const bankTransferRouter = router({
         }
         
         const currency = ocrData.currency || 'USD';
-        const exchangeRate = await getExchangeRate(currency, 'USD');
+        let exchangeRate;
+        try {
+          exchangeRate = await getExchangeRate(currency, 'USD');
+        } catch (exchangeError) {
+          console.error('Exchange rate fetch failed:', exchangeError);
+          throw new TRPCError({ 
+            code: 'INTERNAL_SERVER_ERROR', 
+            message: `Exchange rate fetch failed: ${exchangeError instanceof Error ? exchangeError.message : 'Unknown error'}` 
+          });
+        }
         const transferredAmount = ocrData.amount!;
         const finalAmountUSD = Math.round(transferredAmount * exchangeRate * 100) / 100;
         
