@@ -6011,13 +6011,16 @@ const bankTransferRouter = router({
       
       try {
         const imageBuffer = Buffer.from(input.receiptImage.data, 'base64');
-        const fileKey = `bank-receipts/${ctx.user.id}/${Date.now()}-${input.receiptImage.filename}`;
-        const { url: receiptImageUrl } = await storagePut(fileKey, imageBuffer, input.receiptImage.mimeType);
         
-        const ocrData = await extractReceiptData(receiptImageUrl);
+        // Run OCR on the image buffer directly (before uploading to S3)
+        const ocrData = await extractReceiptData(imageBuffer);
         if (!validateExtractedData(ocrData)) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Failed to extract valid data from receipt' });
         }
+        
+        // Upload to S3 after successful OCR
+        const fileKey = `bank-receipts/${ctx.user.id}/${Date.now()}-${input.receiptImage.filename}`;
+        const { url: receiptImageUrl } = await storagePut(fileKey, imageBuffer, input.receiptImage.mimeType);
         
         const existing = await db.select().from(bankTransferRequests)
           .where(eq(bankTransferRequests.referenceNumber, ocrData.referenceNumber!))

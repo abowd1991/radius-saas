@@ -3438,3 +3438,4 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 ### Bug Report - Bank Transfer
 - [x] إصلاح: عند رفع إشعار التحويل البنكي يبقى "يتم معالجة الأمر" ولا ينتهي
 - [x] إصلاح: OCR extraction failed - ENOENT error عند محاولة فتح URL كملف محلي
+- [x] إصلاح: 403 Forbidden عند تحميل صورة الإشعار من CloudFront للمعالجة بـ OCR

@@ -18,30 +18,33 @@ export interface OCRExtractedData {
 
 /**
  * Extract data from bank transfer receipt image
- * @param imageUrl URL or local path to the receipt image
+ * @param imageSource Buffer or URL of the receipt image
  * @returns Extracted data from the receipt
  */
-export async function extractReceiptData(imageUrl: string): Promise<OCRExtractedData> {
-  console.log(`[OCR] Starting OCR extraction for image: ${imageUrl}`);
+export async function extractReceiptData(imageSource: Buffer | string): Promise<OCRExtractedData> {
+  console.log(`[OCR] Starting OCR extraction...`);
   
   try {
-    // Download image from URL if it's a remote URL
-    let imageSource: string | Buffer = imageUrl;
+    // If imageSource is a string URL, download it
+    let processedImage: string | Buffer = imageSource;
     
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      console.log(`[OCR] Downloading image from URL...`);
-      const response = await fetch(imageUrl);
+    if (typeof imageSource === 'string' && (imageSource.startsWith('http://') || imageSource.startsWith('https://'))) {
+      console.log(`[OCR] Downloading image from URL: ${imageSource}`);
+      const response = await fetch(imageSource);
       if (!response.ok) {
         throw new Error(`Failed to download image: ${response.statusText}`);
       }
       const arrayBuffer = await response.arrayBuffer();
-      imageSource = Buffer.from(arrayBuffer);
-      console.log(`[OCR] Image downloaded successfully (${imageSource.length} bytes)`);
+      processedImage = Buffer.from(arrayBuffer);
+      console.log(`[OCR] Image downloaded successfully (${processedImage.length} bytes)`);
+    } else if (Buffer.isBuffer(imageSource)) {
+      console.log(`[OCR] Processing image buffer (${imageSource.length} bytes)`);
+      processedImage = imageSource;
     }
     
     // Run Tesseract OCR with Arabic and English support
     const result = await Tesseract.recognize(
-      imageSource,
+      processedImage,
       'ara+eng', // Arabic + English
       {
         logger: (m) => {
