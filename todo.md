@@ -3465,3 +3465,5 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] منع تكرار Reference Number
 - [x] حفظ الصور على السيرفر المحلي (uploads/bank-receipts/)
 - [x] إصلاح: exchangeRate.toFixed is not a function في Bank Transfer submitRequest
+- [x] إصلاح: الصورة لا تظهر في صفحة Admin ولا Client - تم إصلاح static middleware لاستخدام مسار مطلق
+- [x] إضافة: رسالة توضيحية للعميل بعد رفع الصورة "تم رفع إشعارك، سيتم المراجعة في أسرع وقت"

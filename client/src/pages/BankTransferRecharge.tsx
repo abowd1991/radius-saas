@@ -67,8 +67,10 @@ export default function BankTransferRecharge() {
         },
       });
 
-      toast.success("تم إرسال طلب الشحن بنجاح!");
-      toast.info(result.message || "سيتم مراجعة طلبك من قبل الإدارة");
+      toast.success("تم رفع إشعارك بنجاح! سيتم المراجعة في أسرع وقت", {
+        duration: 5000,
+        description: "سيتم إشعارك بمجرد الموافقة على طلبك وإضافة الرصيد إلى محفظتك"
+      });
       
       setSelectedFile(null);
       setPreviewUrl(null);

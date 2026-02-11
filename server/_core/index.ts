@@ -16,6 +16,7 @@ import { startCentralAccounting } from "../services/centralAccountingService";
 import { startBillingCron } from "../services/billingCronJob";
 import multer from "multer";
 import { storagePut } from "../storage";
+import path from "path";
 import { sdk } from "./sdk";
 import { COOKIE_NAME } from "@shared/const";
 import cookieParser from "cookie-parser";
@@ -48,7 +49,8 @@ async function startServer() {
   app.use(cookieParser());
   
   // Serve uploaded files (bank receipts, etc.)
-  app.use("/uploads", express.static("uploads"));
+  const uploadsPath = path.join(process.cwd(), "uploads");
+  app.use("/uploads", express.static(uploadsPath));
   // Health check endpoint (for Management API)
   app.get("/health", (req, res) => {
     res.json({
