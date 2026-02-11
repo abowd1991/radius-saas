@@ -42,11 +42,31 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
-      fetch(input, init) {
-        return globalThis.fetch(input, {
+      async fetch(input, init) {
+        const response = await globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
         });
+        
+        // Handle non-JSON responses (e.g., 503 Service Unavailable)
+        if (!response.ok && !response.headers.get("content-type")?.includes("application/json")) {
+          const text = await response.text().catch(() => response.statusText);
+          // Create a proper JSON error response for tRPC
+          return new Response(
+            JSON.stringify({
+              error: {
+                message: `Service error (${response.status}): ${text}`,
+                code: response.status,
+              },
+            }),
+            {
+              status: response.status,
+              headers: { "content-type": "application/json" },
+            }
+          );
+        }
+        
+        return response;
       },
     }),
   ],

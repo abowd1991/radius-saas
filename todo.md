@@ -3441,3 +3441,4 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [x] إصلاح: 403 Forbidden عند تحميل صورة الإشعار من CloudFront للمعالجة بـ OCR
 - [x] إصلاح: Unexpected token 'S', "Service Unavailable" is not valid JSON
 - [x] إصلاح نهائي: Exchange Rate API error ما زال يظهر بعد النشر - "Service Unavailable" JSON parsing
+- [x] إصلاح: JSON parsing error في frontend (client-side) - الخطأ يحدث في bundled code
