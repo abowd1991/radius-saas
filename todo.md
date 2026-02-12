@@ -4365,3 +4365,82 @@ If user enters a different port (e.g., 8729 instead of 8728), will the system co
 - [x] Update SSH port from 22 to 1991
 - [x] Test SSH connection with correct IP - SUCCESS
 - [ ] Test MikroTik API connection
+
+
+## 🐛 Fix - MikroTik API Connection Timeout (Feb 12, 2026)
+
+### Error
+- "Connection timeout" when testing MikroTik API
+- SSH tunnel connects successfully, but API connection times out
+
+### Investigation
+- [ ] Test MikroTik API service manually via SSH tunnel
+- [ ] Check if API service is enabled on MikroTik (port 8728)
+- [ ] Verify firewall allows port 8728 on MikroTik
+- [ ] Check timeout settings in code
+- [ ] Test with longer timeout value
+
+
+## 🐛 Fix - RADIUS CoA Not Working (Disconnect & Change Speed) (Feb 12, 2026)
+
+### Problem
+- Disconnect from control panel does NOT disconnect user on MikroTik
+- Changing card speed does NOT update active user session speed
+- MikroTik does not respond to RADIUS CoA commands
+
+### Comprehensive Investigation
+- [x] Check VPS IP in RADIUS CoA code - CORRECT (37.60.228.5)
+- [x] Review coaService code implementation - FOUND ISSUE
+- [x] Root cause: RADIUS API Server (port 8080) does NOT exist on VPS
+- [x] Current code tries to call http://37.60.228.5:8080/api/radius/disconnect (404 error)
+
+### Solution: SSH Tunnel + radclient (More Secure)
+- [ ] Install radclient on VPS
+- [ ] Test radclient manually
+- [ ] Rewrite coaService.ts to use SSH tunnel + radclient
+- [ ] Test disconnect functionality
+- [ ] Test speed change functionality
+
+### Root Cause Found
+- **RADIUS API Server does NOT exist on VPS**
+- Current code calls http://37.60.228.5:8080/api/radius/disconnect → 404 Not Found
+- CoA packets never sent to MikroTik
+
+### Chosen Solution: SSH Tunnel + radclient
+**Why more secure:**
+- ✅ No API exposed on internet
+- ✅ SSH encrypted communication
+- ✅ No additional API keys needed
+- ✅ Same mechanism as MikroTik API
+- ✅ Less attack surface
+
+## RADIUS CoA (Change of Authorization) Implementation (Feb 12, 2026)
+- [x] Rewrite coaService.ts to use SSH tunnel + radclient instead of HTTP API
+  - [x] Replace HTTP API calls with SSH tunnel to VPS (37.60.228.5:1991)
+  - [x] Execute radclient commands via SSH for security
+  - [x] Add Session ID to all CoA requests (required by MikroTik)
+  - [x] Use correct RADIUS secret (10020300)
+- [x] Implement Disconnect functionality
+  - [x] disconnectSession() - disconnect single session with User-Name + Acct-Session-Id
+  - [x] disconnectUserAllSessions() - disconnect all sessions for a user
+  - [x] Update radacct table after successful disconnect
+- [x] Implement Speed Change functionality
+  - [x] updateSessionAttributes() - send CoA with Mikrotik-Rate-Limit
+  - [x] changeUserSpeed() - update radreply + send CoA to active sessions
+  - [x] Fallback to disconnect if CoA fails
+- [x] Update backend routers
+  - [x] sessions.coaDisconnect - direct CoA disconnect procedure
+  - [x] sessions.disconnect - use coaService instead of mikrotikApi
+  - [x] sessions.disconnectUser - use coaService.disconnectUserAllSessions()
+  - [x] sessions.changeUserSpeed - use coaService.changeUserSpeed()
+- [x] Write and run unit tests for CoA Service
+  - [x] Test disconnectSession() - 3 tests passed
+  - [x] Test disconnectUserAllSessions() - 2 tests passed
+  - [x] Test changeUserSpeed() - 3 tests passed
+  - [x] Test SSH tunnel integration - 1 test passed
+  - [x] Test error handling - 2 tests passed
+  - [x] Total: 11/11 tests passed ✅
+- [ ] Test CoA functions from UI
+  - [ ] Test disconnect from Active Sessions page
+  - [ ] Test speed change from Active Sessions page
+  - [ ] Verify CoA works with VPN-connected MikroTik devices

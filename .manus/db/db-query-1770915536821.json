@@ -1,0 +1,22 @@
+{
+  "query": "SELECT username, attribute, op, value FROM radreply WHERE username = '18038';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT username, attribute, op, value FROM radreply WHERE username = '18038';",
+  "rows": [
+    {
+      "username": "18038",
+      "attribute": "Mikrotik-Rate-Limit",
+      "op": "=",
+      "value": "1000k/1000k"
+    },
+    {
+      "username": "18038",
+      "attribute": "Session-Timeout",
+      "op": "=",
+      "value": "1366"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tattribute\top\tvalue\n18038\tMikrotik-Rate-Limit\t=\t1000k/1000k\n18038\tSession-Timeout\t=\t1366\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}

@@ -1781,7 +1781,7 @@ const nasRouter = router({
                 error: 'TIMEOUT'
               });
             }
-          }, 15000);
+          }, 30000); // Increased timeout for SSH tunnel
           
           conn.on('ready', () => {
             console.log('[MikroTik API Test] SSH connection established');
@@ -4197,11 +4197,13 @@ const sessionsRouter = router({
       return mikrotikApi.getSessionsByNas(input.nasIp);
     }),
 
-  // Disconnect session - check NAS ownership
-  disconnect: protectedProcedure
+  // CoA Disconnect session (direct CoA call)
+  coaDisconnect: protectedProcedure
     .input(z.object({
-      sessionId: z.string(),
+      username: z.string(),
       nasIp: z.string(),
+      sessionId: z.string(),
+      framedIp: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Check NAS ownership
@@ -4210,7 +4212,26 @@ const sessionsRouter = router({
       if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
-      return mikrotikApi.disconnectSession(input.sessionId, input.nasIp);
+      // Use CoA service for disconnect
+      return coaService.disconnectSession(input.username, input.nasIp, input.sessionId, input.framedIp);
+    }),
+
+  // Disconnect session - check NAS ownership
+  disconnect: protectedProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      nasIp: z.string(),
+      username: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Check NAS ownership
+      const nas = await nasDb.getNasByIp(input.nasIp);
+      if (!nas) throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
+      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      // Use CoA service for disconnect
+      return coaService.disconnectSession(input.username, input.nasIp, input.sessionId);
     }),
 
   // Disconnect user - check card ownership
@@ -4224,8 +4245,8 @@ const sessionsRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
       }
-      // Disconnect from RADIUS (MikroTik sessions)
-      const radiusResult = await mikrotikApi.disconnectUserSessions(input.username);
+      // Disconnect from RADIUS (MikroTik sessions) using CoA
+      const radiusResult = await coaService.disconnectUserAllSessions(input.username);
       
       // Also disconnect from VPN (SoftEther sessions)
       try {
@@ -4279,53 +4300,6 @@ const sessionsRouter = router({
     .query(async ({ input }) => {
       const config = mikrotikApi.generateFreeRadiusClientConfig(input);
       return { config };
-    }),
-
-  // ============================================
-  // CoA (Change of Authorization) Endpoints
-  // ============================================
-  
-  // Disconnect a specific session using CoA
-  coaDisconnect: protectedProcedure
-    .input(z.object({
-      username: z.string(),
-      nasIp: z.string(),
-      sessionId: z.string().optional(),
-      framedIp: z.string().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      // Check NAS ownership
-      const nas = await nasDb.getNasByIp(input.nasIp);
-      if (!nas) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "NAS not found" });
-      }
-      if (!isAdmin(ctx.user.role) && nas.ownerId !== ctx.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied to this NAS" });
-      }
-      
-      const result = await coaService.disconnectSession(
-        input.username,
-        input.nasIp,
-        input.sessionId,
-        input.framedIp
-      );
-      
-      // Log audit
-      await logAudit({
-        userId: ctx.user.id,
-        userRole: ctx.user.role,
-        action: 'session_disconnect_coa',
-        targetType: 'session',
-        targetId: input.sessionId || input.username,
-        targetName: input.username,
-        nasId: nas.id,
-        nasIp: input.nasIp,
-        details: { sessionId: input.sessionId, framedIp: input.framedIp },
-        result: result.success ? 'success' : 'failure',
-        errorMessage: result.success ? undefined : result.error,
-      });
-      
-      return result;
     }),
 
   // Disconnect all sessions for a user using CoA
@@ -4449,12 +4423,7 @@ const sessionsRouter = router({
       return result;
     }),
 
-  // Test CoA connectivity to a NAS
-  coaTest: superAdminProcedure
-    .input(z.object({ nasIp: z.string() }))
-    .query(async ({ input }) => {
-      return coaService.testCoAConnection(input.nasIp);
-    }),
+
 
   // ============================================
   // Accounting Endpoints
