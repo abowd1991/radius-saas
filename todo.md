@@ -4322,3 +4322,46 @@ If user enters a different port (e.g., 8729 instead of 8728), will the system co
 - [ ] Test with public IP (47.251.91.249:8728)
 - [ ] Test with custom port (e.g., 8729)
 - [ ] Verify correct error messages for wrong credentials
+
+
+## 🐛 Fix - ssh2 Package Missing (Feb 12, 2026)
+
+### Error
+- "Dynamic require of ssh2 is not supported"
+- ssh2 package not installed in project
+
+### Solution
+- [ ] Install ssh2 package via pnpm
+- [ ] Fix import statement (use static import instead of require)
+- [ ] Restart dev server
+- [ ] Test API connection again
+
+
+## 🐛 Fix - require is not defined in ES modules (Feb 12, 2026)
+
+### Error
+- "require is not defined"
+- Cannot use `require()` in ES modules environment
+- Need to use dynamic `import()` instead
+
+### Solution
+- [ ] Change `require('ssh2')` to `await import('ssh2')`
+- [ ] Test API connection
+
+
+## 🐛 Fix - SSH Authentication Failed (Feb 12, 2026)
+
+### Error
+- "SSH connection failed: All configured authentication methods failed"
+- Cannot connect to VPS server for MikroTik API tunnel
+
+### Root Cause
+- ✅ Found: VPS IP and Port in code were **wrong**
+- Code used: 47.251.91.249:22 (old/incorrect)
+- Correct: 37.60.228.5:1991
+
+### Solution
+- [x] Update VPS IP in testApiConnection code
+- [x] Update SSH port from 22 to 1991
+- [x] Test SSH connection with correct IP - SUCCESS
+- [ ] Test MikroTik API connection

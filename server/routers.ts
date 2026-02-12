@@ -1757,9 +1757,9 @@ const nasRouter = router({
         // Use SSH tunnel for VPN IPs
         console.log(`[MikroTik API Test] Using SSH tunnel for VPN IP: ${connectIp}:${input.apiPort}`);
         
-        return new Promise((resolve) => {
-          const { Client } = require('ssh2');
-          const net = require('net');
+        return new Promise(async (resolve) => {
+          const { Client } = (await import('ssh2')).default;
+          const net = await import('net');
           const conn = new Client();
           let resolved = false;
           let sshStream: any = null;
@@ -1899,8 +1899,8 @@ const nasRouter = router({
           
           // Connect to VPS via SSH
           conn.connect({
-            host: '47.251.91.249',
-            port: 22,
+            host: '37.60.228.5',
+            port: 1991,
             username: 'root',
             password: '2U8@tWz@zYnecb2'
           });
