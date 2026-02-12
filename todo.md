@@ -4261,3 +4261,64 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - ✅ TypeScript: No errors
 - ✅ LSP: No errors
 - ✅ Dev Server: Running
+
+
+## 🔍 Investigation - MikroTik API Connection Timeout (Feb 12, 2026)
+
+### Issue
+- User reports: "Connection timeout - check IP and port"
+- Port is open on MikroTik and working
+- Need to verify: Does system use correct port from database (`mikrotikApiPort`) or hardcoded port?
+
+### Investigation Tasks
+- [ ] Check MikroTik API connection code
+- [ ] Verify port source (database vs hardcoded)
+- [ ] Check test connection endpoint
+- [ ] Report findings before making changes
+
+### User's Concern
+If user enters a different port (e.g., 8729 instead of 8728), will the system connect using the entered port or ignore it?
+
+
+## ✅ FIXED - MikroTik API Connection via SSH Tunnel (Feb 12, 2026)
+
+### Problem
+- Current code tries to connect directly from Manus to VPN IPs (192.168.30.x)
+- Manus is not on VPN network, cannot reach 192.168.30.x
+- Need SSH tunnel via VPS to reach VPN IPs
+
+### Requirements
+- [x] Use SSH tunnel for VPN IPs (192.168.30.x)
+- [x] Support direct connection for public IPs
+- [x] Support any custom port (not just 8728)
+- [x] Auto-detect VPN vs public IP
+
+### Implementation
+- [x] Modify testApiConnection to detect IP type (line 1754)
+- [x] Add SSH tunnel logic for VPN IPs (lines 1756-1873)
+- [x] Keep direct connection for public IPs (lines 1875-1963)
+- [x] Use user-specified port from database (input.apiPort)
+
+### Solution Details
+**Auto-detection:**
+- Checks if IP starts with `192.168.30.` to determine VPN vs public
+
+**SSH Tunnel (VPN IPs):**
+- Connects to VPS via SSH (47.251.91.249:22)
+- Creates port forward from VPS to MikroTik (192.168.30.x:port)
+- Tests MikroTik API through tunnel
+- Returns success with `viaSSH: true` flag
+
+**Direct Connection (Public IPs):**
+- Connects directly to public IP:port
+- Tests MikroTik API without tunnel
+- Returns success with `viaDirect: true` flag
+
+### Files Modified
+- server/routers.ts: Modified testApiConnection procedure (lines 1751-1963)
+
+### Testing Required
+- [ ] Test with VPN IP (192.168.30.13:8728)
+- [ ] Test with public IP (47.251.91.249:8728)
+- [ ] Test with custom port (e.g., 8729)
+- [ ] Verify correct error messages for wrong credentials

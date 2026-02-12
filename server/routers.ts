@@ -1750,41 +1750,199 @@ const nasRouter = router({
       
       console.log(`[MikroTik API Test] Connecting to ${connectIp}:${input.apiPort}`);
       
-      // Create a temporary test connection
-      const net = await import('net');
-      const crypto = await import('crypto');
+      // Determine if we need SSH tunnel (VPN IP) or direct connection (public IP)
+      const isVpnIp = connectIp.startsWith('192.168.30.');
       
-      return new Promise((resolve) => {
-        const socket = new net.Socket();
-        let resolved = false;
+      if (isVpnIp) {
+        // Use SSH tunnel for VPN IPs
+        console.log(`[MikroTik API Test] Using SSH tunnel for VPN IP: ${connectIp}:${input.apiPort}`);
         
-        socket.setTimeout(10000); // 10 second timeout
-        
-        socket.on('timeout', () => {
-          if (!resolved) {
-            resolved = true;
-            socket.destroy();
-            resolve({
-              success: false,
-              message: 'Connection timeout - check IP and port',
-              error: 'TIMEOUT'
-            });
-          }
+        return new Promise((resolve) => {
+          const { Client } = require('ssh2');
+          const net = require('net');
+          const conn = new Client();
+          let resolved = false;
+          let sshStream: any = null;
+          let socket: any = null;
+          
+          const cleanup = () => {
+            if (sshStream) sshStream.end();
+            if (socket) socket.destroy();
+            conn.end();
+          };
+          
+          const timeout = setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              cleanup();
+              resolve({
+                success: false,
+                message: 'Connection timeout - check IP and port',
+                error: 'TIMEOUT'
+              });
+            }
+          }, 15000);
+          
+          conn.on('ready', () => {
+            console.log('[MikroTik API Test] SSH connection established');
+            
+            conn.forwardOut(
+              '127.0.0.1',
+              0,
+              connectIp,
+              input.apiPort,
+              (err: any, stream: any) => {
+                if (err) {
+                  if (!resolved) {
+                    resolved = true;
+                    clearTimeout(timeout);
+                    cleanup();
+                    resolve({
+                      success: false,
+                      message: `SSH tunnel failed: ${err.message}`,
+                      error: 'SSH_TUNNEL_ERROR'
+                    });
+                  }
+                  return;
+                }
+                
+                sshStream = stream;
+                console.log('[MikroTik API Test] SSH tunnel created, testing MikroTik API...');
+                
+                // Now test MikroTik API through the tunnel
+                const encodeWord = (word: string): Buffer => {
+                  const wordBuffer = Buffer.from(word, 'utf8');
+                  const length = wordBuffer.length;
+                  let lengthBuffer: Buffer;
+                  
+                  if (length < 0x80) {
+                    lengthBuffer = Buffer.from([length]);
+                  } else if (length < 0x4000) {
+                    lengthBuffer = Buffer.from([
+                      ((length >> 8) & 0x3F) | 0x80,
+                      length & 0xFF
+                    ]);
+                  } else {
+                    lengthBuffer = Buffer.from([length]);
+                  }
+                  
+                  return Buffer.concat([lengthBuffer, wordBuffer]);
+                };
+                
+                const loginCmd = Buffer.concat([
+                  encodeWord('/login'),
+                  encodeWord(`=name=${input.apiUser}`),
+                  encodeWord(`=password=${input.apiPassword}`),
+                  Buffer.from([0])
+                ]);
+                
+                stream.write(loginCmd);
+                
+                stream.once('data', (data: Buffer) => {
+                  if (!resolved) {
+                    resolved = true;
+                    clearTimeout(timeout);
+                    cleanup();
+                    
+                    const response = data.toString('utf8');
+                    
+                    if (response.includes('!done')) {
+                      resolve({
+                        success: true,
+                        message: 'API connection successful! Credentials are valid.',
+                        data: { connected: true, viaSSH: true }
+                      });
+                    } else if (response.includes('!trap')) {
+                      resolve({
+                        success: false,
+                        message: 'Login failed - invalid username or password',
+                        error: 'AUTH_FAILED'
+                      });
+                    } else {
+                      resolve({
+                        success: true,
+                        message: 'API connection established (legacy auth mode)',
+                        data: { connected: true, legacyAuth: true, viaSSH: true }
+                      });
+                    }
+                  }
+                });
+                
+                stream.on('error', (err: any) => {
+                  if (!resolved) {
+                    resolved = true;
+                    clearTimeout(timeout);
+                    cleanup();
+                    resolve({
+                      success: false,
+                      message: `Stream error: ${err.message}`,
+                      error: 'STREAM_ERROR'
+                    });
+                  }
+                });
+              }
+            );
+          });
+          
+          conn.on('error', (err: any) => {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timeout);
+              cleanup();
+              resolve({
+                success: false,
+                message: `SSH connection failed: ${err.message}`,
+                error: 'SSH_ERROR'
+              });
+            }
+          });
+          
+          // Connect to VPS via SSH
+          conn.connect({
+            host: '47.251.91.249',
+            port: 22,
+            username: 'root',
+            password: '2U8@tWz@zYnecb2'
+          });
         });
+      } else {
+        // Direct connection for public IPs
+        console.log(`[MikroTik API Test] Using direct connection for public IP: ${connectIp}:${input.apiPort}`);
         
-        socket.on('error', (err: any) => {
-          if (!resolved) {
-            resolved = true;
-            socket.destroy();
-            resolve({
-              success: false,
-              message: `Connection failed: ${err.message}`,
-              error: 'CONNECTION_ERROR'
-            });
-          }
-        });
+        const net = await import('net');
+        const crypto = await import('crypto');
         
-        socket.connect(input.apiPort, connectIp, async () => {
+        return new Promise((resolve) => {
+          const socket = new net.Socket();
+          let resolved = false;
+          
+          socket.setTimeout(10000);
+          
+          socket.on('timeout', () => {
+            if (!resolved) {
+              resolved = true;
+              socket.destroy();
+              resolve({
+                success: false,
+                message: 'Connection timeout - check IP and port',
+                error: 'TIMEOUT'
+              });
+            }
+          });
+          
+          socket.on('error', (err: any) => {
+            if (!resolved) {
+              resolved = true;
+              socket.destroy();
+              resolve({
+                success: false,
+                message: `Connection failed: ${err.message}`,
+                error: 'CONNECTION_ERROR'
+              });
+            }
+          });
+          
+          socket.connect(input.apiPort, connectIp, async () => {
           try {
             // Try to login
             const encodeWord = (word: string): Buffer => {
@@ -1815,62 +1973,61 @@ const nasRouter = router({
             
             socket.write(loginCmd);
             
-            socket.once('data', (data: Buffer) => {
-              const response = data.toString('utf8');
-              socket.destroy();
-              
+              socket.once('data', (data: Buffer) => {
+                const response = data.toString('utf8');
+                socket.destroy();
+                
+                if (!resolved) {
+                  resolved = true;
+                  
+                  if (response.includes('!done')) {
+                    resolve({
+                      success: true,
+                      message: 'API connection successful! Credentials are valid.',
+                      data: { connected: true, viaDirect: true }
+                    });
+                  } else if (response.includes('!trap')) {
+                    resolve({
+                      success: false,
+                      message: 'Login failed - invalid username or password',
+                      error: 'AUTH_FAILED'
+                    });
+                  } else {
+                    resolve({
+                      success: true,
+                      message: 'API connection established (legacy auth mode)',
+                      data: { connected: true, legacyAuth: true, viaDirect: true }
+                    });
+                  }
+                }
+              });
+            
+            } catch (error: any) {
               if (!resolved) {
                 resolved = true;
-                
-                if (response.includes('!done')) {
-                  resolve({
-                    success: true,
-                    message: 'API connection successful! Credentials are valid.',
-                    data: { connected: true }
-                  });
-                } else if (response.includes('!trap')) {
-                  resolve({
-                    success: false,
-                    message: 'Login failed - invalid username or password',
-                    error: 'AUTH_FAILED'
-                  });
-                } else {
-                  // Old-style login with challenge - try simplified approach
-                  resolve({
-                    success: true,
-                    message: 'API connection established (legacy auth mode)',
-                    data: { connected: true, legacyAuth: true }
-                  });
-                }
+                socket.destroy();
+                resolve({
+                  success: false,
+                  message: `Login error: ${error.message}`,
+                  error: 'LOGIN_ERROR'
+                });
               }
-            });
-            
-          } catch (error: any) {
+            }
+          });
+          
+          setTimeout(() => {
             if (!resolved) {
               resolved = true;
               socket.destroy();
               resolve({
                 success: false,
-                message: `Login error: ${error.message}`,
-                error: 'LOGIN_ERROR'
+                message: 'Connection timeout',
+                error: 'TIMEOUT'
               });
             }
-          }
+          }, 15000);
         });
-        
-        // Fallback timeout
-        setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            socket.destroy();
-            resolve({
-              success: false,
-              message: 'Connection timeout',
-              error: 'TIMEOUT'
-            });
-          }
-        }, 15000);
-      });
+      }
     }),
 
   // Get VPN status for a NAS device
