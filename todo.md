@@ -4518,3 +4518,26 @@ If user enters a different port (e.g., 8729 instead of 8728), will the system co
 - [x] Test with real scenarios
   - [x] Fixed card 15122 (was 18127s → corrected to 601s)
   - [x] Card 15122 ready for re-testing
+
+
+## Fix Vouchers Permission for Clients (Feb 12, 2026)
+- [x] Investigate current vouchers permissions
+  - [x] Found: vouchers not in Resource type in permissionsService.ts
+  - [x] Added vouchers to Resource type and permission matrix
+- [x] User reports: Previously worked without issues
+  - [x] Error: "You do not have required permission (10002)" when deleting batch
+  - [x] Root cause: vouchers missing from permission matrix for all roles
+- [x] Fix the regression
+  - [x] Added vouchers to Resource type
+  - [x] Added vouchers to resourceLabels (Arabic)
+  - [x] Added vouchers permissions to super_admin: [view, create, edit, delete]
+  - [x] Added vouchers permissions to reseller: [view, create, edit, delete]
+  - [x] Added vouchers permissions to client: [view, create, edit, delete]
+- [x] Fix deleteBatch procedure
+  - [x] Changed from superAdminProcedure to protectedProcedure
+  - [x] Added ownership check for non-admin users
+  - [x] Now clients can delete their own batches
+- [x] Test vouchers page as client
+  - [x] Verified page loads without errors
+  - [x] Verified CRUD operations work correctly (view, create, edit, delete)
+  - [x] Verified delete batch works for client-owned batches ✅

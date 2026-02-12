@@ -14,6 +14,7 @@ export type Resource =
   | "clients"
   | "plans"
   | "cards"
+  | "vouchers"
   | "nas"
   | "sessions"
   | "invoices"
@@ -48,6 +49,7 @@ const permissionMatrix: PermissionMatrix = {
     clients: ["view", "create", "edit", "delete"],
     plans: ["view", "create", "edit", "delete"],
     cards: ["view", "create", "edit", "delete"],
+    vouchers: ["view", "create", "edit", "delete"],
     nas: ["view", "create", "edit", "delete"],
     sessions: ["view", "delete"],
     invoices: ["view", "create", "edit", "delete"],
@@ -66,6 +68,7 @@ const permissionMatrix: PermissionMatrix = {
     clients: ["view", "create", "edit"],
     plans: ["view"],
     cards: ["view", "create"],
+    vouchers: ["view", "create", "edit", "delete"],
     nas: ["view", "create", "edit", "delete"],
     sessions: ["view"],
     invoices: ["view"],
@@ -81,6 +84,7 @@ const permissionMatrix: PermissionMatrix = {
     dashboard: ["view"],
     plans: ["view"],
     cards: ["view"],
+    vouchers: ["view", "create", "edit", "delete"],
     nas: ["view", "create", "edit", "delete"],
     sessions: ["view"],
     invoices: ["view"],
@@ -269,6 +273,7 @@ export const resourceLabels: { [key in Resource]: string } = {
   clients: "العملاء",
   plans: "الخطط",
   cards: "الكروت",
+  vouchers: "الكروت والبطاقات",
   nas: "أجهزة NAS",
   sessions: "الجلسات",
   invoices: "الفواتير",

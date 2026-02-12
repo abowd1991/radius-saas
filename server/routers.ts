@@ -2923,13 +2923,21 @@ const vouchersRouter = router({
       return cardDb.updateBatchProperties(batchId, data);
     }),
 
-  // Delete batch
-  deleteBatch: superAdminProcedure
+  // Delete batch - check ownership
+  deleteBatch: protectedProcedure
     .input(z.object({
       batchId: z.string(),
       deleteCards: z.boolean().default(false),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Check ownership for non-super_admin
+      if (!isAdmin(ctx.user.role)) {
+        const batches = await cardDb.getAllBatches();
+        const batch = batches.find((b: any) => b.batchId === input.batchId);
+        if (!batch || (batch.createdBy !== ctx.user.id && batch.resellerId !== ctx.user.id)) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+      }
       return cardDb.deleteBatch(input.batchId, input.deleteCards);
     }),
 
