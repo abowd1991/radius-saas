@@ -4242,3 +4242,22 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - ✅ Clearer separation between testing and saving
 - ✅ Faster access to Edit/Delete actions (no need to open dropdown)
 - ✅ More intuitive workflow for API configuration
+
+
+## ✅ COMPLETED - Cleanup - Remove Unused DepositHistory Page (Feb 12, 2026)
+
+### Issue
+- TypeScript error: `trpc.wallet.getDepositHistory` does not exist
+- Page `/deposit-history` exists but has no links/navigation to it
+- API endpoint `getDepositHistory` not implemented in walletRouter
+
+### Actions Completed
+- [x] Remove DepositHistory import from App.tsx
+- [x] Remove `/deposit-history` route from App.tsx
+- [x] Delete DepositHistory.tsx file
+- [x] Verify TypeScript errors resolved
+
+### Result
+- ✅ TypeScript: No errors
+- ✅ LSP: No errors
+- ✅ Dev Server: Running
