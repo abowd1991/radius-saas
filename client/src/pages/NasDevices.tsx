@@ -967,33 +967,35 @@ export default function NasDevices() {
               </div>
 
               {/* Buttons */}
-              <div className="flex gap-3 pt-2">
-                {/* Test Button */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleTest}
-                  disabled={isTesting || !apiPassword}
-                  className="flex-1 gap-2"
-                >
-                  {isTesting ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      {language === "ar" ? "جاري..." : "Testing..."}
-                    </>
-                  ) : (
-                    <>
-                      <Wifi className="h-4 w-4" />
-                      {language === "ar" ? "اختبار" : "Test"}
-                    </>
-                  )}
-                </Button>
+              <div className="space-y-3 pt-2">
+                {/* Test Connection Button (Optional) */}
+                {apiEnabled && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleTest}
+                    disabled={isTesting || !apiPassword}
+                    className="w-full gap-2"
+                  >
+                    {isTesting ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        {language === "ar" ? "جاري الاختبار..." : "Testing..."}
+                      </>
+                    ) : (
+                      <>
+                        <Wifi className="h-4 w-4" />
+                        {language === "ar" ? "اختبار الاتصال" : "Test Connection"}
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 {/* Save Button */}
                 <Button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="flex-1 gap-2"
+                  className="w-full gap-2"
                 >
                   {isSaving ? (
                     <>
@@ -1251,17 +1253,40 @@ export default function NasDevices() {
                     <TableCell className="py-3">{getProvisioningStatusBadge((device as any).provisioningStatus, (device as any).connectionType)}</TableCell>
                     <TableCell className="py-3 text-sm text-muted-foreground">{formatDate(device.lastSeen)}</TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditingDevice(device)}>
-                            <Edit className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
-                            {t("common.edit")}
-                          </DropdownMenuItem>
+                      <div className="flex items-center gap-2 justify-center">
+                        {/* Edit Button */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingDevice(device)}
+                          title={t("common.edit")}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* Delete Button */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (confirm(language === "ar" ? "هل أنت متأكد من حذف هذه الشبكة؟" : "Are you sure you want to delete this network?")) {
+                              deleteDevice.mutate({ id: device.id });
+                            }
+                          }}
+                          title={t("common.delete")}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* More Options Dropdown */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
                           {/* VPN Status option - only for VPN connection types */}
                           {((device as any).connectionType === 'vpn_l2tp' || (device as any).connectionType === 'vpn_sstp') && (
                             <DropdownMenuItem onClick={() => setVpnStatusDevice(device)}>
@@ -1285,20 +1310,9 @@ export default function NasDevices() {
                               {language === "ar" ? "إعادة تخصيص IP" : "Re-assign IP"}
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="text-destructive"
-                            onClick={() => {
-                              if (confirm(language === "ar" ? "هل أنت متأكد من حذف هذه الشبكة؟" : "Are you sure you want to delete this network?")) {
-                                deleteDevice.mutate({ id: device.id });
-                              }
-                            }}
-                          >
-                            <Trash2 className={`h-4 w-4 ${direction === "rtl" ? "ml-2" : "mr-2"}`} />
-                            {t("common.delete")}
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                   ))

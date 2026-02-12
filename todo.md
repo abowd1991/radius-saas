@@ -4212,3 +4212,33 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Enter API credentials (Port: 8728, Username, Password)
 - [ ] Click Save (should work without testing)
 - [ ] Verify credentials saved in database
+
+
+## ✅ COMPLETED - UI Improvement - NAS Devices Page (Feb 12, 2026)
+
+### Requirements
+- [x] Remove old "اختبار" (Test) button from API Settings dialog
+- [x] Add new optional "Test Connection" button (not mandatory)
+- [x] Add Edit and Delete action buttons directly in NAS list table
+- [x] Ensure Save button works without testing
+
+### Design Changes Implemented
+1. **API Settings Dialog:**
+   - ✅ Removed old test button at bottom
+   - ✅ Added "Test Connection" button (optional, only shows when API enabled)
+   - ✅ "Save Settings" button works independently without testing
+   - ✅ Changed layout from flex-row to vertical stack (space-y-3)
+
+2. **NAS List Table:**
+   - ✅ Added "Edit" button (✏️) directly in each row
+   - ✅ Added "Delete" button (🗑️) directly in each row with red color
+   - ✅ Kept "More Options" dropdown (⋮) for additional actions (VPN Status, Retry Provisioning, Re-assign IP)
+   - ✅ Removed duplicate Delete option from dropdown menu
+
+### Files Modified
+- client/src/pages/NasDevices.tsx: Updated UI layout and button logic (lines 970-1016, 1255-1316)
+
+### User Experience Improvements
+- ✅ Clearer separation between testing and saving
+- ✅ Faster access to Edit/Delete actions (no need to open dropdown)
+- ✅ More intuitive workflow for API configuration
