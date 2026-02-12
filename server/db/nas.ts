@@ -217,9 +217,16 @@ export async function updateNas(id: number, data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
+  // Get current NAS to check if nasname is changing
+  const currentNas = await getNasById(id);
+  if (!currentNas) throw new Error("NAS not found");
+  
   const updateData: any = {};
   if (data.name) updateData.shortname = data.name;
-  if (data.ipAddress) updateData.nasname = data.ipAddress;
+  // Only update nasname if it's different from current value (avoid UNIQUE constraint error)
+  if (data.ipAddress && data.ipAddress !== currentNas.nasname) {
+    updateData.nasname = data.ipAddress;
+  }
   if (data.secret) updateData.secret = data.secret;
   if (data.type) updateData.type = data.type;
   if (data.description !== undefined) updateData.description = data.description;

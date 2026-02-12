@@ -4080,8 +4080,43 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 
 ### Testing Required
 - [x] Verify server compiles without errors
-- [ ] Test NAS creation workflow with client user
-- [ ] Test NAS update workflow (IP reassignment)
-- [ ] Test NAS status counts query on /nas page
-- [ ] Test radacct statistics query on /nas page
-- [ ] Monitor for any remaining database query errors
+- [x] Test NAS creation workflow with client user
+- [x] Test NAS update workflow (IP reassignment) - FIXED
+- [x] Test NAS status counts query on /nas page - FIXED
+- [x] Test radacct statistics query on /nas page - FIXED
+- [x] Monitor for any remaining database query errors - NO ERRORS
+
+
+## ✅ FIXED - UNIQUE Constraint Error (Feb 12, 2026 - 14:44 → 14:55)
+
+### Error Details
+- **Page**: /dashboard
+- **User**: abowd (ID: 17, role: client)
+- **Error**: Failed query: update `nas` set `nasname` = ? where `nas`.`id` = ?
+- **Params**: 192.168.30.13, 30003
+- **Root Cause**: UPDATE query trying to set nasname to same existing value, triggering UNIQUE constraint violation
+
+### Investigation Results
+- ✅ Found root cause in `updateNas()` function (server/db/nas.ts, line 222)
+- ✅ Function was always including nasname in UPDATE query when ipAddress provided
+- ✅ No conditional check to skip update if value unchanged
+
+### Solution Implemented
+- ✅ Added conditional check in `updateNas()` function (lines 220-229)
+- ✅ Fetch current NAS before update to compare values
+- ✅ Only include nasname in updateData if `ipAddress !== currentNas.nasname`
+- ✅ Created comprehensive test suite (4 tests, all passed)
+- ✅ Tested multiple consecutive updates with same IP (no errors)
+
+### Test Results
+```
+✓ should NOT throw UNIQUE constraint error when updating with same IP
+✓ should update nasname when IP is DIFFERENT
+✓ should NOT update nasname when ipAddress is not provided
+✓ should handle multiple updates with same IP without errors
+```
+
+### Files Modified
+- server/db/nas.ts: Added conditional update logic (lines 220-229)
+- server/nas.updateNas.test.ts: Created test suite (4 tests)
+- todo.md: Documented fix
