@@ -4541,3 +4541,51 @@ If user enters a different port (e.g., 8729 instead of 8728), will the system co
   - [x] Verified page loads without errors
   - [x] Verified CRUD operations work correctly (view, create, edit, delete)
   - [x] Verified delete batch works for client-owned batches ✅
+
+
+## CRITICAL: Card 14679 Premature Expiration (Feb 12, 2026 - URGENT)
+- [ ] Check timezone settings
+  - [ ] Check server timezone (date, timedatectl)
+  - [ ] Check database timezone (SELECT @@global.time_zone, @@session.time_zone)
+  - [ ] Check Node.js timezone (process.env.TZ, new Date())
+  - [ ] Verify all timestamps are in same timezone
+- [ ] Analyze card 14679 data
+  - [ ] Check radius_cards table (totalSessionTime, status, usageBudgetSeconds)
+  - [ ] Check radacct sessions (acctstarttime, acctstoptime, acctsessiontime)
+  - [ ] Calculate actual used time vs database value
+  - [ ] Check if centralAccountingService logs show incorrect calculations
+- [ ] Identify root cause
+  - [ ] Was it the safety check (>24 hours) that caused the issue?
+  - [ ] Is elapsedTime calculation still incorrect?
+  - [ ] Is there a timezone mismatch causing wrong time calculations?
+  - [ ] Review recent code changes in last 4 days
+- [ ] Implement permanent fix
+  - [ ] Fix the root cause (not a temporary workaround)
+  - [ ] Ensure fix works for all users (scalable solution)
+  - [ ] Add comprehensive tests
+  - [ ] Verify fix doesn't break existing functionality
+
+
+## 🔴 CRITICAL BUG DISCOVERED - 2026-02-12
+
+### Problem:
+Cards are being disabled after only 15 minutes of usage despite having hours remaining.
+
+### Root Cause:
+**String concatenation bug in `getUsedTimeFromRadacct()`**
+
+MySQL returns `SUM(acctsessiontime)` as a **STRING**, not a number.
+When adding string + number in JavaScript: `"333" + 0 = "3330"` (concatenation instead of addition!)
+
+This causes `totalSessionTime` to grow exponentially:
+- Actual usage: 303s (5 minutes)
+- Saved in DB: 3330s (55 minutes) - 10× wrong!
+- After multiple updates: 64106s (1068 minutes) - 200× wrong!
+
+### Solution:
+Convert MySQL SUM result to number using `Number()` or `parseInt()` before arithmetic operations.
+
+### Files to Fix:
+- [x] server/services/centralAccountingService.ts - Fix getUsedTimeFromRadacct()
+- [ ] Test with real card to verify fix
+- [ ] Reset affected cards (29333, 10867, etc.)

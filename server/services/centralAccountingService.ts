@@ -140,7 +140,9 @@ async function getUsedTimeFromRadacct(username: string): Promise<{
       sql`${radacct.acctstoptime} IS NOT NULL`
     ));
     
-    const completedSessionsTime = completedResult?.total || 0;
+    // CRITICAL FIX: MySQL returns SUM() as STRING, must convert to number!
+    // Without this, "333" + 0 = "3330" (string concatenation instead of addition)
+    const completedSessionsTime = Number(completedResult?.total) || 0;
     
     // Get current active session time
     const [activeResult] = await db.select({
@@ -165,6 +167,14 @@ async function getUsedTimeFromRadacct(username: string): Promise<{
         ? Math.floor((Date.now() - activeResult.startTime.getTime()) / 1000)
         : 0;
       
+      // DIAGNOSTIC LOGGING
+      console.log(`[CentralAccounting] [DIAGNOSTIC] Active session for ${username}:`);
+      console.log(`  Start time (DB): ${activeResult.startTime}`);
+      console.log(`  Start time (ms): ${activeResult.startTime?.getTime()}`);
+      console.log(`  Now (ms): ${Date.now()}`);
+      console.log(`  Reported time: ${reportedTime}s`);
+      console.log(`  Elapsed time: ${elapsedTime}s`);
+      
       // Safety check: If elapsed time is unreasonably large (>24 hours), ignore it
       // This prevents bugs when acctstarttime is very old or stale
       const MAX_REASONABLE_SESSION_TIME = 24 * 3600; // 24 hours
@@ -176,6 +186,7 @@ async function getUsedTimeFromRadacct(username: string): Promise<{
       } else {
         // Use the larger of reported time or elapsed time (normal case)
         currentSessionTime = Math.max(reportedTime, elapsedTime);
+        console.log(`  Using max(reported, elapsed): ${currentSessionTime}s`);
       }
     }
     
@@ -446,6 +457,12 @@ async function syncCardUsageFromRadacct(username: string): Promise<void> {
   
   try {
     const usageInfo = await getUsedTimeFromRadacct(username);
+    
+    // DIAGNOSTIC LOGGING
+    console.log(`[CentralAccounting] [DIAGNOSTIC] Syncing card ${username}:`);
+    console.log(`  Completed sessions time: ${usageInfo.completedSessionsTime}s`);
+    console.log(`  Current session time: ${usageInfo.currentSessionTime}s`);
+    console.log(`  TOTAL to be saved: ${usageInfo.totalUsedTime}s (${Math.floor(usageInfo.totalUsedTime / 60)}m)`);
     
     await db.update(radiusCards)
       .set({
