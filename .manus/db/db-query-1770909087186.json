@@ -1,0 +1,100 @@
+{
+  "query": "SELECT rc.username, rc.attribute, rc.op, rc.value, cards.status, cards.createdBy, cards.planId\nFROM radcheck rc\nLEFT JOIN radius_cards cards ON rc.username = cards.username\nWHERE cards.createdBy = 17\nORDER BY cards.id DESC\nLIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT rc.username, rc.attribute, rc.op, rc.value, cards.status, cards.createdBy, cards.planId\nFROM radcheck rc\nLEFT JOIN radius_cards cards ON rc.username = cards.username\nWHERE cards.createdBy = 17\nORDER BY cards.id DESC\nLIMIT 10;",
+  "rows": [
+    {
+      "username": "10265",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "8241",
+      "status": "unused",
+      "createdBy": "17",
+      "planId": "2"
+    },
+    {
+      "username": "10265",
+      "attribute": "Simultaneous-Use",
+      "op": ":=",
+      "value": "1",
+      "status": "unused",
+      "createdBy": "17",
+      "planId": "2"
+    },
+    {
+      "username": "10265",
+      "attribute": "Auth-Type",
+      "op": ":=",
+      "value": "Accept",
+      "status": "unused",
+      "createdBy": "17",
+      "planId": "2"
+    },
+    {
+      "username": "10265",
+      "attribute": "Expiration",
+      "op": ":=",
+      "value": "Jan 01 2099 00:00:00",
+      "status": "unused",
+      "createdBy": "17",
+      "planId": "2"
+    },
+    {
+      "username": "16090",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "6508",
+      "status": "unused",
+      "createdBy": "17",
+      "planId": "2"
+    },
+    {
+      "username": "16090",
+      "attribute": "Simultaneous-Use",
+      "op": ":=",
+      "value": "1",
+      "status": "unused",
+      "createdBy": "17",
+      "planId": "2"
+    },
+    {
+      "username": "16090",
+      "attribute": "Auth-Type",
+      "op": ":=",
+      "value": "Accept",
+      "status": "unused",
+      "createdBy": "17",
+      "planId": "2"
+    },
+    {
+      "username": "16090",
+      "attribute": "Expiration",
+      "op": ":=",
+      "value": "Jan 01 2099 00:00:00",
+      "status": "unused",
+      "createdBy": "17",
+      "planId": "2"
+    },
+    {
+      "username": "16574",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "3513",
+      "status": "unused",
+      "createdBy": "17",
+      "planId": "2"
+    },
+    {
+      "username": "16574",
+      "attribute": "Simultaneous-Use",
+      "op": ":=",
+      "value": "1",
+      "status": "unused",
+      "createdBy": "17",
+      "planId": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tattribute\top\tvalue\tstatus\tcreatedBy\tplanId\n10265\tCleartext-Password\t:=\t8241\tunused\t17\t2\n10265\tSimultaneous-Use\t:=\t1\tunused\t17\t2\n10265\tAuth-Type\t:=\tAccept\tunused\t17\t2\n10265\tExpiration\t:=\tJan 01 2099 00:00:00\tunused\t17\t2\n16090\tCleartext-Password\t:=\t6508\tunused\t17\t2\n16090\tSimultaneous-Use\t:=\t1\tunused\t17\t2\n16090\tAuth-Type\t:=\tAccept\tunused\t17\t2\n16090\tExpiration\t:=\tJan 01 2099 00:00:00\tunused\t17\t2\n16574\tCleartext-Password\t:=\t3513\tunused\t17\t2\n16574\tSimultaneous-Use\t:=\t1\tunused\t17\t2\n",
+  "stderr": "",
+  "execution_time_ms": 410
+}

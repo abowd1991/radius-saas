@@ -834,10 +834,11 @@ export default function NasDevices() {
         toast.error(language === "ar" ? "يرجى اختيار شبكة" : "Please select a network");
         return;
       }
-      if (apiEnabled && !connectionTested) {
-        toast.error(language === "ar" ? "يرجى اختبار الاتصال أولاً" : "Please test the connection first");
-        return;
-      }
+      // Allow saving API credentials without testing
+      // if (apiEnabled && !connectionTested) {
+      //   toast.error(language === "ar" ? "يرجى اختبار الاتصال أولاً" : "Please test the connection first");
+      //   return;
+      // }
       setIsSaving(true);
       saveApiSettings.mutate({
         id: selectedNasId,
@@ -991,7 +992,7 @@ export default function NasDevices() {
                 {/* Save Button */}
                 <Button
                   onClick={handleSave}
-                  disabled={isSaving || (apiEnabled && !connectionTested)}
+                  disabled={isSaving}
                   className="flex-1 gap-2"
                 >
                   {isSaving ? (
@@ -1026,15 +1027,7 @@ export default function NasDevices() {
                 </div>
               )}
 
-              {/* Info about test requirement */}
-              {apiEnabled && !connectionTested && (
-                <p className="text-xs text-amber-600 text-center">
-                  {language === "ar" 
-                    ? "يجب اختبار الاتصال بنجاح قبل الحفظ"
-                    : "Connection must be tested successfully before saving"
-                  }
-                </p>
-              )}
+              {/* Info about test requirement - removed to allow saving without testing */}
             </>
           )}
 

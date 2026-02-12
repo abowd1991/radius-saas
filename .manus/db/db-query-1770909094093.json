@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, username, password, status, planId, createdAt\nFROM radius_cards\nWHERE createdBy = 17\nORDER BY id DESC\nLIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, username, password, status, planId, createdAt\nFROM radius_cards\nWHERE createdBy = 17\nORDER BY id DESC\nLIMIT 5;",
+  "rows": [
+    {
+      "id": "30025",
+      "username": "10265",
+      "password": "8241",
+      "status": "unused",
+      "planId": "2",
+      "createdAt": "2026-02-11 21:35:13"
+    },
+    {
+      "id": "30024",
+      "username": "16090",
+      "password": "6508",
+      "status": "unused",
+      "planId": "2",
+      "createdAt": "2026-02-11 21:35:13"
+    },
+    {
+      "id": "30023",
+      "username": "16574",
+      "password": "3513",
+      "status": "unused",
+      "planId": "2",
+      "createdAt": "2026-02-11 21:35:13"
+    },
+    {
+      "id": "30022",
+      "username": "15453",
+      "password": "6103",
+      "status": "unused",
+      "planId": "2",
+      "createdAt": "2026-02-11 21:35:13"
+    },
+    {
+      "id": "30021",
+      "username": "10418",
+      "password": "5748",
+      "status": "unused",
+      "planId": "2",
+      "createdAt": "2026-02-11 21:35:13"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tpassword\tstatus\tplanId\tcreatedAt\n30025\t10265\t8241\tunused\t2\t2026-02-11 21:35:13\n30024\t16090\t6508\tunused\t2\t2026-02-11 21:35:13\n30023\t16574\t3513\tunused\t2\t2026-02-11 21:35:13\n30022\t15453\t6103\tunused\t2\t2026-02-11 21:35:13\n30021\t10418\t5748\tunused\t2\t2026-02-11 21:35:13\n",
+  "stderr": "",
+  "execution_time_ms": 359
+}

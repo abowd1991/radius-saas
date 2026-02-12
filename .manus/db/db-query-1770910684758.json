@@ -1,0 +1,32 @@
+{
+  "query": "SELECT id, nasname, shortname, apiEnabled, mikrotikApiPort, mikrotikApiUser, mikrotikApiPassword, connectionType, status\nFROM nas\nWHERE ownerId = 17;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, apiEnabled, mikrotikApiPort, mikrotikApiUser, mikrotikApiPassword, connectionType, status\nFROM nas\nWHERE ownerId = 17;",
+  "rows": [
+    {
+      "id": "3",
+      "nasname": "192.168.30.13",
+      "shortname": "abowdNet",
+      "apiEnabled": "0",
+      "mikrotikApiPort": "8728",
+      "mikrotikApiUser": "admin",
+      "mikrotikApiPassword": "022963385",
+      "connectionType": "vpn_l2tp",
+      "status": "active"
+    },
+    {
+      "id": "30003",
+      "nasname": "pending",
+      "shortname": "dsfdf",
+      "apiEnabled": "0",
+      "mikrotikApiPort": "8728",
+      "mikrotikApiUser": "NULL",
+      "mikrotikApiPassword": "NULL",
+      "connectionType": "vpn_sstp",
+      "status": "inactive"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tapiEnabled\tmikrotikApiPort\tmikrotikApiUser\tmikrotikApiPassword\tconnectionType\tstatus\n3\t192.168.30.13\tabowdNet\t0\t8728\tadmin\t022963385\tvpn_l2tp\tactive\n30003\tpending\tdsfdf\t0\t8728\tNULL\tNULL\tvpn_sstp\tinactive\n",
+  "stderr": "",
+  "execution_time_ms": 343
+}

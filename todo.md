@@ -4120,3 +4120,95 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - server/db/nas.ts: Added conditional update logic (lines 220-229)
 - server/nas.updateNas.test.ts: Created test suite (4 tests)
 - todo.md: Documented fix
+
+
+## 🔍 Active Investigation - PPPoE Connection Failure (Feb 12, 2026)
+
+### Issue Report
+- **User**: abowd (ID: 17)
+- **Problem**: Created PPPoE user but connection fails
+- **Protocol**: PPPoE
+- **Status**: Investigating
+
+### Diagnostic Checklist
+- [ ] Check radcheck table for user credentials
+- [ ] Check radreply table for user attributes (speed limits, etc.)
+- [ ] Verify user is not disabled/suspended
+- [ ] Check NAS device status (active/inactive)
+- [ ] Verify NAS device IP is correct in database
+- [ ] Check FreeRADIUS logs on VPS (37.60.228.5) for authentication errors
+- [ ] Verify MikroTik PPP Profile configuration
+- [ ] Verify MikroTik RADIUS server configuration
+- [ ] Check if RADIUS secret matches between NAS and MikroTik
+- [ ] Test RADIUS authentication with radtest command
+
+### Possible Root Causes
+- [ ] User credentials not in radcheck table
+- [ ] User has Auth-Type := Reject (suspended)
+- [ ] NAS device is inactive
+- [ ] RADIUS secret mismatch
+- [ ] MikroTik not configured to use RADIUS
+- [ ] Network connectivity issue between MikroTik and RADIUS server
+- [ ] FreeRADIUS service not running
+
+
+## 🔍 Active Investigation - Speed Limit Bug for Subscribers (Feb 12, 2026)
+
+### Issue Report
+- **User**: abowd (ID: 17)
+- **Problem**: Subscriber configured with 1 Mbps but RADIUS sends 1 Gbps (1000000k/1000000k)
+- **Expected**: MT-Rate-Limit = "1000k/1000k" (1 Mbps)
+- **Actual**: MT-Rate-Limit = "1000000k/1000000k" (1 Gbps)
+- **Status**: Investigation only - NO CHANGES to be made yet
+
+### Investigation Checklist
+- [ ] Check subscriber's planId and plan details (download/upload speed)
+- [ ] Check radreply table for MT-Rate-Limit value stored in database
+- [ ] Review subscriber creation code (server/routers.ts or server/db/)
+- [ ] Identify where speed is converted from Mbps to kbps
+- [ ] Check if bug is in:
+  - [ ] Plan definition (wrong speed stored)
+  - [ ] Subscriber creation logic (wrong calculation)
+  - [ ] radreply insertion (wrong value format)
+  - [ ] Speed unit conversion (Mbps → kbps)
+
+### Possible Root Causes
+- [ ] Speed stored in wrong unit (Gbps instead of Mbps)
+- [ ] Missing multiplication by 1000 (Mbps to kbps)
+- [ ] Extra multiplication by 1000 (1 Mbps → 1000 Mbps → 1000000 kbps)
+- [ ] Wrong plan selected during subscriber creation
+- [ ] Hardcoded default speed value
+
+### Next Steps
+- [ ] Report findings to user
+- [ ] Wait for user approval before making any changes
+
+
+## ✅ FIXED - MikroTik API Configuration (Feb 12, 2026)
+
+### Issue Report
+- **User**: abowd (ID: 17)
+- **Problem**: Unable to save MikroTik API credentials without testing connection
+- **Root Cause**: Frontend enforced mandatory connection test before saving
+
+### Investigation Results
+- ✅ Found mandatory test requirement in NasDevices.tsx (lines 837-840, 994, 1030-1035)
+- ✅ Backend accepts API credentials without testing (nas.update procedure)
+- ✅ API fields properly defined in schema (apiEnabled, mikrotikApiPort, mikrotikApiUser, mikrotikApiPassword)
+
+### Solution Implemented
+- ✅ Removed mandatory connection test from handleSave() function
+- ✅ Removed disabled state from Save button when API enabled
+- ✅ Removed warning message about required testing
+- ✅ Verified Backend properly saves API credentials
+
+### Files Modified
+- client/src/pages/NasDevices.tsx: Removed mandatory test checks (3 locations)
+
+### Testing Required
+- [ ] Open NAS Devices page
+- [ ] Select a network
+- [ ] Enable API toggle
+- [ ] Enter API credentials (Port: 8728, Username, Password)
+- [ ] Click Save (should work without testing)
+- [ ] Verify credentials saved in database

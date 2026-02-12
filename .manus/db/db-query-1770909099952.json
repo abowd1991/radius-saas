@@ -1,0 +1,52 @@
+{
+  "query": "SELECT 'radcheck' as table_name, username, attribute, op, value\nFROM radcheck\nWHERE username IN (SELECT username FROM radius_cards WHERE createdBy = 17 ORDER BY id DESC LIMIT 1)\nUNION ALL\nSELECT 'radreply' as table_name, username, attribute, op, value\nFROM radreply\nWHERE username IN (SELECT username FROM radius_cards WHERE createdBy = 17 ORDER BY id DESC LIMIT 1);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT 'radcheck' as table_name, username, attribute, op, value\nFROM radcheck\nWHERE username IN (SELECT username FROM radius_cards WHERE createdBy = 17 ORDER BY id DESC LIMIT 1)\nUNION ALL\nSELECT 'radreply' as table_name, username, attribute, op, value\nFROM radreply\nWHERE username IN (SELECT username FROM radius_cards WHERE createdBy = 17 ORDER BY id DESC LIMIT 1);",
+  "rows": [
+    {
+      "table_name": "radreply",
+      "username": "10265",
+      "attribute": "Mikrotik-Rate-Limit",
+      "op": "=",
+      "value": "1000k/1000k"
+    },
+    {
+      "table_name": "radreply",
+      "username": "10265",
+      "attribute": "Session-Timeout",
+      "op": "=",
+      "value": "3600"
+    },
+    {
+      "table_name": "radcheck",
+      "username": "10265",
+      "attribute": "Cleartext-Password",
+      "op": ":=",
+      "value": "8241"
+    },
+    {
+      "table_name": "radcheck",
+      "username": "10265",
+      "attribute": "Simultaneous-Use",
+      "op": ":=",
+      "value": "1"
+    },
+    {
+      "table_name": "radcheck",
+      "username": "10265",
+      "attribute": "Auth-Type",
+      "op": ":=",
+      "value": "Accept"
+    },
+    {
+      "table_name": "radcheck",
+      "username": "10265",
+      "attribute": "Expiration",
+      "op": ":=",
+      "value": "Jan 01 2099 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "table_name\tusername\tattribute\top\tvalue\nradreply\t10265\tMikrotik-Rate-Limit\t=\t1000k/1000k\nradreply\t10265\tSession-Timeout\t=\t3600\nradcheck\t10265\tCleartext-Password\t:=\t8241\nradcheck\t10265\tSimultaneous-Use\t:=\t1\nradcheck\t10265\tAuth-Type\t:=\tAccept\nradcheck\t10265\tExpiration\t:=\tJan 01 2099 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 374
+}

@@ -1,0 +1,16 @@
+{
+  "query": "SELECT username, attribute, op, value\nFROM radreply\nWHERE username IN (SELECT username FROM subscribers WHERE createdBy = 17 ORDER BY id DESC LIMIT 1)\nAND attribute = 'Mikrotik-Rate-Limit';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT username, attribute, op, value\nFROM radreply\nWHERE username IN (SELECT username FROM subscribers WHERE createdBy = 17 ORDER BY id DESC LIMIT 1)\nAND attribute = 'Mikrotik-Rate-Limit';",
+  "rows": [
+    {
+      "username": "abowd",
+      "attribute": "Mikrotik-Rate-Limit",
+      "op": "=",
+      "value": "1000000k/1000000k"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tattribute\top\tvalue\nabowd\tMikrotik-Rate-Limit\t=\t1000000k/1000000k\n",
+  "stderr": "",
+  "execution_time_ms": 341
+}

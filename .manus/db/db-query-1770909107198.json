@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, nasname, shortname, secret, status, connectionType, provisioningStatus, ownerId\nFROM nas\nWHERE ownerId = 17;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret, status, connectionType, provisioningStatus, ownerId\nFROM nas\nWHERE ownerId = 17;",
+  "rows": [
+    {
+      "id": "3",
+      "nasname": "192.168.30.13",
+      "shortname": "abowdNet",
+      "secret": "10020300",
+      "status": "active",
+      "connectionType": "vpn_l2tp",
+      "provisioningStatus": "ready",
+      "ownerId": "17"
+    },
+    {
+      "id": "30003",
+      "nasname": "pending",
+      "shortname": "dsfdf",
+      "secret": "21523156",
+      "status": "inactive",
+      "connectionType": "vpn_sstp",
+      "provisioningStatus": "error",
+      "ownerId": "17"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\tstatus\tconnectionType\tprovisioningStatus\townerId\n3\t192.168.30.13\tabowdNet\t10020300\tactive\tvpn_l2tp\tready\t17\n30003\tpending\tdsfdf\t21523156\tinactive\tvpn_sstp\terror\t17\n",
+  "stderr": "",
+  "execution_time_ms": 348
+}

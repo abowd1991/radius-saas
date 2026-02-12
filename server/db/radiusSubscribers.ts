@@ -84,9 +84,9 @@ export async function createSubscriberRadiusEntries(
       value: plan.mikrotikRateLimit,
     });
   } else if (plan.downloadSpeed || plan.uploadSpeed) {
-    // Convert Mbps to kbps
-    const download = plan.downloadSpeed ? `${plan.downloadSpeed * 1000}k` : '0';
-    const upload = plan.uploadSpeed ? `${plan.uploadSpeed * 1000}k` : '0';
+    // Speed is already stored in Kbps in the plans table
+    const download = plan.downloadSpeed ? `${plan.downloadSpeed}k` : '0';
+    const upload = plan.uploadSpeed ? `${plan.uploadSpeed}k` : '0';
     radreplyValues.push({
       username,
       attribute: 'Mikrotik-Rate-Limit',
