@@ -4444,3 +4444,15 @@ If user enters a different port (e.g., 8729 instead of 8728), will the system co
   - [ ] Test disconnect from Active Sessions page
   - [ ] Test speed change from Active Sessions page
   - [ ] Verify CoA works with VPN-connected MikroTik devices
+
+## CoA Service Fixes (Feb 12, 2026 - User Request)
+- [x] Fix CoA Service to use dynamic RADIUS secrets per NAS
+  - [x] Verify getNasByIp() is called correctly
+  - [x] Ensure secret is read from database (nas.secret)
+  - [x] Remove hardcoded secret fallback
+- [x] Fix disconnect buttons in Active Sessions UI
+  - [x] Check Sessions.tsx disconnect button implementation
+  - [x] Fixed: Use sessionId (acctsessionid) instead of id (UUID)
+  - [x] Added sessionId field to ActiveSession interface
+  - [x] Updated all getActiveSessions functions to include sessionId
+  - [x] Test disconnect with real active session - SUCCESS ✅

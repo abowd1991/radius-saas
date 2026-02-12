@@ -22,7 +22,8 @@ interface MikroTikResponse {
 
 // Active session interface
 interface ActiveSession {
-  id: string;
+  id: string; // acctuniqueid (UUID)
+  sessionId: string; // acctsessionid (for CoA)
   username: string;
   nasIpAddress: string;
   nasName?: string;
@@ -78,6 +79,7 @@ export async function getActiveSessions(): Promise<ActiveSession[]> {
   
   return sessions.map((session: any) => ({
     id: session.acctuniqueid,
+    sessionId: session.acctsessionid, // For CoA
     username: session.username,
     nasIpAddress: session.nasipaddress,
     nasName: nasMap.get(session.nasipaddress) || session.nasipaddress,
@@ -106,6 +108,7 @@ export async function getSessionsByUsername(username: string): Promise<ActiveSes
   
   return sessions.map((session: any) => ({
     id: session.acctuniqueid,
+    sessionId: session.acctsessionid, // For CoA
     username: session.username,
     nasIpAddress: session.nasipaddress,
     framedIpAddress: session.framedipaddress || undefined,
@@ -133,6 +136,7 @@ export async function getSessionsByNas(nasIp: string): Promise<ActiveSession[]> 
   
   return sessions.map((session: any) => ({
     id: session.acctuniqueid,
+    sessionId: session.acctsessionid, // For CoA
     username: session.username,
     nasIpAddress: session.nasipaddress,
     framedIpAddress: session.framedipaddress || undefined,
@@ -242,6 +246,7 @@ export async function getActiveSessionsByOwner(ownerId: number | null): Promise<
     
     return sessions.map((session: any) => ({
       id: session.acctuniqueid,
+      sessionId: session.acctsessionid, // For CoA
       username: session.username,
       nasIpAddress: session.nasipaddress,
       nasName: nasMap.get(session.nasipaddress) || session.nasipaddress,
@@ -283,6 +288,7 @@ export async function getActiveSessionsByOwner(ownerId: number | null): Promise<
   
   return filteredSessions.map((session: any) => ({
     id: session.acctuniqueid,
+    sessionId: session.acctsessionid, // For CoA
     username: session.username,
     nasIpAddress: session.nasipaddress,
     nasName: nasMap.get(session.nasipaddress) || session.nasipaddress,

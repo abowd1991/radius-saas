@@ -232,7 +232,7 @@ export default function Sessions() {
       coaDisconnect.mutate({
         username: selectedSession.username,
         nasIp: selectedSession.nasIpAddress,
-        sessionId: selectedSession.id,
+        sessionId: selectedSession.sessionId, // Use acctsessionid, not UUID
         framedIp: selectedSession.framedIpAddress,
       });
     }

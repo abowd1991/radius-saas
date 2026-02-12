@@ -109,7 +109,14 @@ export async function disconnectSession(
 ): Promise<CoAResponse> {
   try {
     const nas = await getNasByIp(nasIp);
-    const secret = nas?.secret || '10020300';
+    if (!nas) {
+      return {
+        success: false,
+        message: `NAS device not found for IP: ${nasIp}`,
+        error: 'NAS_NOT_FOUND'
+      };
+    }
+    const secret = nas.secret;
     
     console.log(`Sending CoA Disconnect to ${nasIp}:3799 for user ${username}`);
     
@@ -274,7 +281,14 @@ export async function updateSessionAttributes(
 ): Promise<CoAResponse> {
   try {
     const nas = await getNasByIp(nasIp);
-    const secret = nas?.secret || '10020300';
+    if (!nas) {
+      return {
+        success: false,
+        message: `NAS device not found for IP: ${nasIp}`,
+        error: 'NAS_NOT_FOUND'
+      };
+    }
+    const secret = nas.secret;
     
     console.log(`Sending CoA Update to ${nasIp}:3799 for user ${username}`);
     
