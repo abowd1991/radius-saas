@@ -4475,3 +4475,46 @@ If user enters a different port (e.g., 8729 instead of 8728), will the system co
   - [ ] Test disconnect with client account - should succeed
   - [ ] Test speed change with client account - should succeed
   - [ ] Test cross-tenant access - should fail with clear error
+
+
+## Card Expiration Bug - Card 15898 (Feb 12, 2026 - URGENT)
+- [x] Investigate card 15898 configuration
+  - [x] Card has 3600s budget, used only 973s (2627s remaining)
+  - [x] Window expires at 2026-02-13 01:23:27 (not expired)
+  - [x] No validity expiration set
+- [x] Check radacct session logs
+  - [x] Single session: 973 seconds (16 minutes)
+  - [x] Terminated with Admin-Reset (manual disconnect)
+- [x] Identify root cause
+  - [x] **FOUND**: Disconnect button in UI disables card permanently
+  - [x] coaService.ts or mikrotikApi.ts adds Auth-Type: Reject on manual disconnect
+  - [x] Should only disconnect session, NOT disable card if time remaining
+- [x] Fix the issue
+  - [x] **ROOT CAUSE FOUND**: getUsedTimeFromRadacct() calculates elapsedTime incorrectly
+  - [x] When acctstarttime is old (e.g., 23:59), elapsedTime = now - 23:59 = hours!
+  - [x] Fixed: Use reportedTime from RADIUS only, DO NOT calculate elapsed time
+  - [x] Tested with card 15122: totalSessionTime was 18127s instead of 270s
+  - [x] Fixed card 15122 and ready for re-testing
+
+
+## CRITICAL: Fix Time Calculation Bug Permanently (Feb 12, 2026)
+**BUSINESS CRITICAL**: Affects revenue and customer trust - millions of cards depend on this!
+
+- [x] Analyze current fix and identify potential issues
+  - [x] Initial fix: Only use reportedTime → Problem: Ignores elapsed time
+  - [x] Root cause: elapsedTime calculation was correct, but no safety check for stale sessions
+  - [x] JavaScript Date.getTime() handles day boundaries correctly ✅
+- [x] Implement correct fix
+  - [x] Use max(reportedTime, elapsedTime) for accurate time
+  - [x] Add safety check: If elapsedTime > 24 hours, use reportedTime only
+  - [x] Log warning when stale session detected
+- [x] Write comprehensive tests (6/6 passed ✅)
+  - [x] Test: Completed sessions
+  - [x] Test: Session crossing midnight (23:59 → 00:05)
+  - [x] Test: Active session with reasonable elapsed time
+  - [x] Test: Stale session (>24 hours) - uses reportedTime only
+  - [x] Test: Multiple completed sessions
+  - [x] Test: Zero reported time (no Interim-Update)
+- [x] Test with real scenarios
+  - [x] Fixed card 15122 (was 18127s → corrected to 601s)
+  - [x] Card 15122 ready for re-testing

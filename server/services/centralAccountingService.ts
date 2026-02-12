@@ -157,12 +157,26 @@ async function getUsedTimeFromRadacct(username: string): Promise<{
     
     let currentSessionTime = 0;
     if (activeResult) {
-      // Use the larger of: reported time OR calculated elapsed time
+      // Use reported time from RADIUS (MikroTik updates this via Interim-Update)
       const reportedTime = activeResult.sessionTime || 0;
+      
+      // Calculate elapsed time as fallback (in case Interim-Update is delayed)
       const elapsedTime = activeResult.startTime 
         ? Math.floor((Date.now() - activeResult.startTime.getTime()) / 1000)
         : 0;
-      currentSessionTime = Math.max(reportedTime, elapsedTime);
+      
+      // Safety check: If elapsed time is unreasonably large (>24 hours), ignore it
+      // This prevents bugs when acctstarttime is very old or stale
+      const MAX_REASONABLE_SESSION_TIME = 24 * 3600; // 24 hours
+      
+      if (elapsedTime > MAX_REASONABLE_SESSION_TIME) {
+        // Session is stale or acctstarttime is wrong, use reported time only
+        currentSessionTime = reportedTime;
+        console.warn(`[CentralAccounting] Session for ${username} has unreasonable elapsed time (${elapsedTime}s), using reported time only`);
+      } else {
+        // Use the larger of reported time or elapsed time (normal case)
+        currentSessionTime = Math.max(reportedTime, elapsedTime);
+      }
     }
     
     return {
