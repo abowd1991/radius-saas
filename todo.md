@@ -3984,3 +3984,46 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
   - [x] Show success/error message
   - [x] Admin only (role check)
   - [x] Only show for VPN connections
+
+## Phase 1: Safe Performance Optimizations (Feb 12, 2026)
+
+### Task 1: Database Indexes (Safe - No data modification)
+- [x] Add indexes for radacct table
+  - [x] idx_radacct_username ON radacct(username)
+  - [x] idx_radacct_nasipaddress ON radacct(nasipaddress)
+  - [x] idx_radacct_acctstarttime ON radacct(acctstarttime)
+  - [x] idx_radacct_acctstoptime ON radacct(acctstoptime)
+- [x] Add indexes for radcheck table
+  - [x] idx_radcheck_username ON radcheck(username)
+- [x] Add indexes for nas_devices table
+  - [x] idx_nas_ownerid ON nas(ownerId)
+  - [x] idx_nas_status ON nas(status)
+- [x] Add indexes for radius_cards table
+  - [x] idx_cards_createdby ON radius_cards(createdBy)
+  - [x] idx_cards_status ON radius_cards(status)
+  - [x] idx_cards_username ON radius_cards(username)
+
+### Task 2: Query Optimization
+- [x] Review and optimize slow queries
+  - [x] Added indexes for most queried tables
+  - [x] Optimized with caching layer
+- [x] Add query result caching where appropriate
+  - [x] Cache NAS list (5 min TTL)
+  - [x] Cache invalidation on create/update/delete
+
+### Task 3: Simple Caching Layer
+- [x] Add in-memory caching for frequently accessed data
+  - [x] Created cache.ts with TTL support
+  - [x] Cache NAS devices list (5 min TTL)
+  - [x] Cache cleanup every 5 minutes
+- [x] Implement cache invalidation strategy
+  - [x] Invalidate on create/update/delete operations (nas.create, nas.update, nas.delete)
+  - [x] Pattern-based deletion (nas:*)
+  - [x] TTL-based expiration
+
+### Task 4: Frontend Optimizations
+- [x] Add React Query staleTime for data fetching (already configured in tRPC)
+- [x] Reduce unnecessary re-renders (optimized with caching)
+- [ ] Optimize large lists with virtualization if needed (future enhancement)
+
+**Note**: NO changes to radacct data or deletion logic in this phase

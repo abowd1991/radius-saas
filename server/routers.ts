@@ -1050,10 +1050,26 @@ const plansRouter = router({
 // NAS DEVICES ROUTER
 // ============================================================================
 const nasRouter = router({
-  // List NAS devices - with tenant isolation
+  // List NAS devices - with tenant isolation + caching
   list: protectedProcedure.query(async ({ ctx }) => {
+    const { cache, cacheKeys, cacheTTL } = await import('./_core/cache.js');
     const tenantContext = getTenantContext(ctx.user);
-    return nasDb.getNasDevicesByTenant(tenantContext);
+    const effectiveOwnerId = getEffectiveOwnerId(tenantContext);
+    
+    // Try cache first
+    const cacheKey = canSeeAllData(tenantContext) 
+      ? cacheKeys.nasListAll() 
+      : cacheKeys.nasList(effectiveOwnerId);
+    
+    const cached = cache.get<any[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
+    // Cache miss - fetch from DB
+    const devices = await nasDb.getNasDevicesByTenant(tenantContext);
+    cache.set(cacheKey, devices, cacheTTL.nasList);
+    return devices;
   }),
 
   // Get NAS by ID - check ownership with tenant isolation
@@ -1167,6 +1183,10 @@ const nasRouter = router({
       // For public_ip: nasname=actual IP, status='active', provisioningStatus='ready'
       const nasInput = { ...input, ownerId };
       const newNas = await nasDb.createNas(nasInput);
+      
+      // Invalidate cache
+      const { cache, cacheKeys } = await import('./_core/cache.js');
+      cache.deletePattern('nas:*');
       
       console.log(`[Phase 1] NAS created: ID=${newNas.id}, status=${newNas.status}, provisioningStatus=${newNas.provisioningStatus}`);
       
@@ -1474,6 +1494,10 @@ const nasRouter = router({
       
       const updatedNas = await nasDb.updateNas(input.id, input);
       
+      // Invalidate cache
+      const { cache } = await import('./_core/cache.js');
+      cache.deletePattern('nas:*');
+      
       // Reload FreeRADIUS to pick up NAS changes
       freeradiusService.reloadFreeRADIUS().then(result => {
         if (result.success) {
@@ -1577,6 +1601,10 @@ const nasRouter = router({
           console.error('[NAS Delete] Failed to release allocated VPN IP:', error);
         }
       }
+      
+       // Invalidate cache
+      const { cache } = await import('./_core/cache.js');
+      cache.deletePattern('nas:*');
       
       // Reload FreeRADIUS to remove deleted NAS client
       freeradiusService.reloadFreeRADIUS().then(reloadResult => {

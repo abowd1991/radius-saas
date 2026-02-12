@@ -1,0 +1,8 @@
+{
+  "query": "CREATE INDEX IF NOT EXISTS idx_cards_owner_id ON radius_cards(owner_id);\nCREATE INDEX IF NOT EXISTS idx_cards_status ON radius_cards(status);\nCREATE INDEX IF NOT EXISTS idx_cards_username ON radius_cards(username);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute CREATE INDEX IF NOT EXISTS idx_cards_owner_id ON radius_cards(owner_id);\nCREATE INDEX IF NOT EXISTS idx_cards_status ON radius_cards(status);\nCREATE INDEX IF NOT EXISTS idx_cards_username ON radius_cards(username);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1072 (42000) at line 1: column does not exist: owner_id"
+  ]
+}
