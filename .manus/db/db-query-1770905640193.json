@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, nasname, shortname, ownerId, status, provisioningStatus FROM nas WHERE nasname = '192.168.30.13';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, ownerId, status, provisioningStatus FROM nas WHERE nasname = '192.168.30.13';",
+  "rows": [
+    {
+      "id": "3",
+      "nasname": "192.168.30.13",
+      "shortname": "abowdNet",
+      "ownerId": "17",
+      "status": "active",
+      "provisioningStatus": "ready"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\townerId\tstatus\tprovisioningStatus\n3\t192.168.30.13\tabowdNet\t17\tactive\tready\n",
+  "stderr": "",
+  "execution_time_ms": 352
+}

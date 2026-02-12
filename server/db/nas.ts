@@ -140,17 +140,24 @@ export async function finalizeNasProvisioning(
   }
   
   // Update NAS with actual IP and activate it
+  // Only update nasname if it's different (avoid UNIQUE constraint error)
+  const updateData: any = {
+    status: 'active',
+    provisioningStatus: 'ready',
+    allocatedIp: actualIp,
+    lastMac: macAddress,
+    vpnTunnelIp: actualIp,
+    provisionedAt: new Date(),
+    provisioningError: null,
+  };
+  
+  // Only update nasname if it's different
+  if (nas.nasname !== actualIp) {
+    updateData.nasname = actualIp;
+  }
+  
   await db.update(nasDevices)
-    .set({
-      nasname: actualIp,
-      status: 'active',
-      provisioningStatus: 'ready',
-      allocatedIp: actualIp,
-      lastMac: macAddress,
-      vpnTunnelIp: actualIp,
-      provisionedAt: new Date(),
-      provisioningError: null,
-    })
+    .set(updateData)
     .where(eq(nasDevices.id, nasId));
   
   console.log(`[NAS Provisioning] NAS ${nasId} finalized: nasname=${actualIp}, MAC=${macAddress}`);

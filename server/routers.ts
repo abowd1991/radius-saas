@@ -370,7 +370,7 @@ const usersRouter = router({
       
       // Enable all NAS devices
       await drizzleDb.execute(
-        sql`UPDATE nas SET is_active = 1 WHERE owner_id = ${input.userId}`
+        sql`UPDATE nas SET is_active = 1 WHERE ownerId = ${input.userId}`
       );
       
       // Activate daily billing
@@ -400,13 +400,13 @@ const usersRouter = router({
       
       // Disable all NAS devices
       await drizzleDb.execute(
-        sql`UPDATE nas SET is_active = 0 WHERE owner_id = ${input.userId}`
+        sql`UPDATE nas SET is_active = 0 WHERE ownerId = ${input.userId}`
       );
       
       // Block all cards (add Auth-Type := Reject)
       // Get user's cards and block them
       const userCardsResult = await drizzleDb.execute(
-        sql`SELECT username FROM radius_cards WHERE owner_id = ${input.userId}`
+        sql`SELECT username FROM radius_cards WHERE createdBy = ${input.userId}`
       );
       const userCards = (userCardsResult as any)[0] || [];
       for (const card of userCards) {
@@ -448,7 +448,7 @@ const usersRouter = router({
       
       // Re-enable NAS devices
       await drizzleDb.execute(
-        sql`UPDATE nas SET is_active = 1 WHERE owner_id = ${input.userId}`
+        sql`UPDATE nas SET is_active = 1 WHERE ownerId = ${input.userId}`
       );
       
       console.log(`[Client Control] Extended user ${input.userId} subscription by ${input.days} days`);
@@ -499,13 +499,13 @@ const usersRouter = router({
       
       // Get cards count - use raw SQL for simplicity
       const cardsResult = await drizzleDb.execute(
-        sql`SELECT COUNT(*) as count FROM radius_cards WHERE owner_id = ${input.userId}`
+        sql`SELECT COUNT(*) as count FROM radius_cards WHERE createdBy = ${input.userId}`
       );
       const cardsCount = (cardsResult as any)[0]?.[0]?.count || 0;
       
       // Get active sessions
       const sessionsResult = await drizzleDb.execute(
-        sql`SELECT COUNT(*) as count FROM radacct WHERE acctstoptime IS NULL AND username IN (SELECT username FROM radius_cards WHERE owner_id = ${input.userId})`
+        sql`SELECT COUNT(*) as count FROM radacct WHERE acctstoptime IS NULL AND username IN (SELECT username FROM radius_cards WHERE createdBy = ${input.userId})`
       );
       const sessionsCount = (sessionsResult as any)[0]?.[0]?.count || 0;
       

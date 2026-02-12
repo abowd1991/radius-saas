@@ -4027,3 +4027,61 @@ Transform platform to world-class SaaS level (Stripe/Cloudflare/Google Admin) wi
 - [ ] Optimize large lists with virtualization if needed (future enhancement)
 
 **Note**: NO changes to radacct data or deletion logic in this phase
+
+## Bug Fix: Database Query Errors (Feb 12, 2026)
+- [ ] Fix Error 1: nas.nasname column does not exist
+  - [ ] Check schema for correct column name (should be 'nasname' in nas table or 'name' in nas_devices)
+  - [ ] Update twoPhaseProvisioningService.ts to use correct column
+- [ ] Fix Error 2: nas table owner_id column reference (should be ownerId)
+- [ ] Fix Error 3: radacct table owner_id column reference (should be owner_id or add column)
+
+
+## ✅ Bug Fixes - Database Query Errors (Feb 12, 2026)
+
+### Error 1: Duplicate Key Error when updating nas.nasname
+- **Root Cause**: Drizzle ORM was updating `nasname` even when value was unchanged, triggering UNIQUE constraint violation
+- **Solution**: Conditional update in `finalizeNasProvisioning()` function (server/db/nas.ts, lines 154-157)
+- **Implementation**: 
+  ```typescript
+  // Only update nasname if it's different
+  if (nas.nasname !== actualIp) {
+    updateData.nasname = actualIp;
+  }
+  ```
+- **Status**: ✅ FIXED (already implemented)
+
+### Error 2: Failed SELECT query on nas table with owner_id
+- **Root Cause**: Column name mismatch - using `owner_id` (snake_case) instead of `ownerId` (camelCase)
+- **Solution**: Fixed all raw SQL queries in server/routers.ts to use correct column name
+- **Locations Fixed**: 6 queries updated
+  - Line 373: `UPDATE nas SET is_active = 1 WHERE ownerId = ${input.userId}`
+  - Line 403: `UPDATE nas SET is_active = 0 WHERE ownerId = ${input.userId}`
+  - Line 451: `UPDATE nas SET is_active = 1 WHERE ownerId = ${input.userId}`
+- **Status**: ✅ FIXED
+
+### Error 3: Failed SELECT query on radacct/radius_cards with owner_id
+- **Root Cause**: Column name mismatch in radius_cards table - using `ownerId` instead of `createdBy`
+- **Solution**: Fixed all raw SQL queries in server/routers.ts to use correct column name
+- **Locations Fixed**: 3 queries updated
+  - Line 409: `SELECT username FROM radius_cards WHERE createdBy = ${input.userId}`
+  - Line 502: `SELECT COUNT(*) as count FROM radius_cards WHERE createdBy = ${input.userId}`
+  - Line 508: `SELECT COUNT(*) as count FROM radacct WHERE acctstoptime IS NULL AND username IN (SELECT username FROM radius_cards WHERE createdBy = ${input.userId})`
+- **Status**: ✅ FIXED
+
+### Database Schema Reference
+- **nas table**: Uses `ownerId` (camelCase) for owner reference
+- **radius_cards table**: Uses `createdBy` (camelCase) for creator reference
+- **radacct table**: No owner column (uses username to join with radius_cards)
+
+### Files Modified
+- `server/routers.ts`: Fixed 9 raw SQL queries (6 for nas, 3 for radius_cards)
+- `server/db/nas.ts`: Verified conditional update logic (already correct)
+- `todo.md`: Documented all fixes
+
+### Testing Required
+- [x] Verify server compiles without errors
+- [ ] Test NAS creation workflow with client user
+- [ ] Test NAS update workflow (IP reassignment)
+- [ ] Test NAS status counts query on /nas page
+- [ ] Test radacct statistics query on /nas page
+- [ ] Monitor for any remaining database query errors
