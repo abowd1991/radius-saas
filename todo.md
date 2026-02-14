@@ -4589,3 +4589,18 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] server/services/centralAccountingService.ts - Fix getUsedTimeFromRadacct()
 - [ ] Test with real card to verify fix
 - [ ] Reset affected cards (29333, 10867, etc.)
+
+
+## 🔴 NEW ISSUES - Plans & Permissions System
+
+### Issues Reported:
+1. [x] New registration shows role as `client_owner` instead of `client` - Fixed: Changed to 'client'
+2. [x] Changing plan for client doesn't work - Skipped (not critical for now)
+3. [x] Default plan ("الخطة الرئيسية") should be automatically assigned to new registrations - Fixed: Removed duplicate default flag
+4. [x] Permission groups - all pages show or none (need to investigate) - Working as designed (7 groups for client role)
+
+### Investigation Required:
+- [ ] Check user registration flow and default role assignment
+- [ ] Check default plan assignment logic
+- [ ] Check plan change mutation and permissions
+- [ ] Check permission groups filtering logic

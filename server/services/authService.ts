@@ -120,7 +120,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
       name: input.name || input.username,
       phone: input.phone,
       loginMethod: "traditional",
-      role: "client_owner", // New users are client owners (can create sub-admins)
+      role: "client", // New users are regular clients
       status: "active",
       accountStatus: "trial", // Start with trial
       trialStartDate,
