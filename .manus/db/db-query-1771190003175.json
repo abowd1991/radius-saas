@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE radreply ADD UNIQUE INDEX idx_radreply_username_attribute (username, attribute)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute ALTER TABLE radreply ADD UNIQUE INDEX idx_radreply_username_attribute (username, attribute)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1137
+}
