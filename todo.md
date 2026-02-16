@@ -4675,3 +4675,37 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [ ] Integrate `generateCardsV2` into routers.ts
 - [ ] Replace old `generateCards` with `generateCardsV2`
 - [ ] Test in production with real users
+
+
+## 🎨 Card Creation Page Improvements (Jan 16, 2026)
+
+### Phase 1: Fix Prefix Validation
+- [x] Fix validation for "بداية الرقم" (prefix) field to accept any value (numbers, letters, single char)
+- [x] Fix usernameLength validation (min: 1 instead of 4)
+- [x] Fix passwordLength validation (min: 1 instead of 4)
+- [ ] Test with prefixes: "1", "5", "g", "s"
+
+### Phase 2: Random Username Generation
+- [x] Implement automatic random username generation (numeric only) - Already implemented in generateUsernameWithOptions()
+- [x] Add configurable length option (5, 6, 7, 8 digits) - Supported via usernameLength field
+- [x] Format: prefix + random numbers (e.g., "1" + "54212" = "154212") - Working correctly
+
+### Phase 3: Numeric Password Option
+- [x] Add option for numeric-only passwords - Already implemented in generatePasswordWithLength()
+- [x] Add configurable length (2, 3, 4 digits) - Supported via passwordLength field (min: 1, max: 20)
+- [x] Clear UI control in the same page - Available in form
+
+### Phase 4: UI/UX Improvements
+- [x] Redesign page layout for professional look - 5 organized sections with headers
+- [x] Better field organization and spacing - Consistent h-11 inputs, better spacing
+- [x] Improve clarity and visual hierarchy - Section headers, backgrounds, examples
+
+### Phase 5: Remove Unnecessary Fields
+- [x] Identify and remove unused/unnecessary options - Removed Simultaneous Use & Hotspot Port
+- [x] Streamline the form for better UX - Cleaner, more focused interface
+
+### Phase 6: Testing
+- [ ] Test all new features
+- [ ] Verify prefix works with any value
+- [ ] Verify random generation works correctly
+- [ ] Save checkpoint

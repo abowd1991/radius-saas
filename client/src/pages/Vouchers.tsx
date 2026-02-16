@@ -116,11 +116,9 @@ export default function Vouchers() {
     // Card Settings
     usernameLength: "5",
     passwordLength: "4",
-    simultaneousUse: "1",
     // Service & Group
     planId: "",
     subscriberGroup: "Default group",
-    hotspotPort: "",
     // Time Budget System
     usageHours: "1",
     usageMinutes: "0",
@@ -398,11 +396,9 @@ export default function Vouchers() {
       // Card Settings
       usernameLength: "5",
       passwordLength: "4",
-      simultaneousUse: "1",
       // Service & Group
       planId: "",
       subscriberGroup: "Default group",
-      hotspotPort: "",
       // Time Budget System
       usageHours: "1",
       usageMinutes: "0",
@@ -436,11 +432,11 @@ export default function Vouchers() {
       batchName: generateForm.batchName || undefined,
       cardPrice: parseFloat(generateForm.cardPrice) || 0,
       prefix: generateForm.prefix || undefined,
-      simultaneousUse: parseInt(generateForm.simultaneousUse) || 1,
+      simultaneousUse: 1, // Default value from plan
       usernameLength: parseInt(generateForm.usernameLength) || 5,
       passwordLength: parseInt(generateForm.passwordLength) || 4,
       subscriberGroup: generateForm.subscriberGroup || 'Default group',
-      hotspotPort: generateForm.hotspotPort || undefined,
+      hotspotPort: undefined, // Not used
       // Legacy fields - set to 0 for backward compatibility
       internetTimeValue: 0,
       internetTimeUnit: 'hours',
@@ -618,233 +614,255 @@ export default function Vouchers() {
                     </DialogDescription>
                   </DialogHeader>
                   
-                  <div className="space-y-6 py-4">
-                    {/* Row 1: Quantity, Price, Prefix */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'كمية' : 'Quantity'}</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="1000"
-                          value={generateForm.quantity}
-                          onChange={(e) => setGenerateForm(prev => ({ ...prev, quantity: e.target.value }))}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'سعر الكرت' : 'Card Price'}</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={generateForm.cardPrice}
-                          onChange={(e) => setGenerateForm(prev => ({ ...prev, cardPrice: e.target.value }))}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'حرف او رقم يبدأ الكرت به' : 'Card Prefix'}</Label>
-                        <Input
-                          maxLength={10}
-                          placeholder=""
-                          value={generateForm.prefix}
-                          onChange={(e) => setGenerateForm(prev => ({ ...prev, prefix: e.target.value }))}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Row 2: Simultaneous Use, Username Length, Password Length */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'عدد الأجهزة التي يمكنها الاتصال' : 'Simultaneous Connections'}</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={generateForm.simultaneousUse}
-                          onChange={(e) => setGenerateForm(prev => ({ ...prev, simultaneousUse: e.target.value }))}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'طول رقم الكرت' : 'Username Length'}</Label>
-                        <Select 
-                          value={generateForm.usernameLength} 
-                          onValueChange={(v) => setGenerateForm(prev => ({ ...prev, usernameLength: v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[4, 5, 6, 7, 8, 9, 10, 12, 14, 16].map(n => (
-                              <SelectItem key={n} value={String(n)}>{n}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'طول كلمة السر' : 'Password Length'}</Label>
-                        <Select 
-                          value={generateForm.passwordLength} 
-                          onValueChange={(v) => setGenerateForm(prev => ({ ...prev, passwordLength: v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[4, 5, 6, 7, 8, 9, 10, 12, 14, 16].map(n => (
-                              <SelectItem key={n} value={String(n)}>{n}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                  <div className="space-y-8 py-4">
+                    {/* Section 1: Basic Settings */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        {language === 'ar' ? 'الإعدادات الأساسية' : 'Basic Settings'}
+                      </h3>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{language === 'ar' ? 'الكمية' : 'Quantity'}</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="5000"
+                            value={generateForm.quantity}
+                            onChange={(e) => setGenerateForm(prev => ({ ...prev, quantity: e.target.value }))}
+                            className="h-11"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{language === 'ar' ? 'السعر' : 'Price'}</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={generateForm.cardPrice}
+                            onChange={(e) => setGenerateForm(prev => ({ ...prev, cardPrice: e.target.value }))}
+                            className="h-11"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{language === 'ar' ? 'بداية الرقم' : 'Prefix'}</Label>
+                          <Input
+                            maxLength={10}
+                            placeholder={language === 'ar' ? 'مثال: 5 أو g' : 'e.g., 5 or g'}
+                            value={generateForm.prefix}
+                            onChange={(e) => setGenerateForm(prev => ({ ...prev, prefix: e.target.value }))}
+                            className="h-11"
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Row 3: Plan and Subscriber Group */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'الخدمة المرتبطة بالكرت' : 'Service Plan'}</Label>
-                        <Select 
-                          value={generateForm.planId} 
-                          onValueChange={(v) => setGenerateForm(prev => ({ ...prev, planId: v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={language === 'ar' ? 'اختر الخدمة...' : 'Select plan...'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {plans?.map((plan: any) => (
-                              <SelectItem key={plan.id} value={String(plan.id)}>
-                                {language === 'ar' && plan.nameAr ? plan.nameAr : plan.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    {/* Section 2: Card Format */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        {language === 'ar' ? 'تنسيق الكرت' : 'Card Format'}
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{language === 'ar' ? 'طول رقم الكرت' : 'Username Length'}</Label>
+                          <Select 
+                            value={generateForm.usernameLength} 
+                            onValueChange={(v) => setGenerateForm(prev => ({ ...prev, usernameLength: v }))}
+                          >
+                            <SelectTrigger className="h-11">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[2, 3, 4, 5, 6, 7, 8].map(n => (
+                                <SelectItem key={n} value={String(n)}>{n} {language === 'ar' ? 'أرقام' : 'digits'}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{language === 'ar' ? 'طول كلمة السر' : 'Password Length'}</Label>
+                          <Select 
+                            value={generateForm.passwordLength} 
+                            onValueChange={(v) => setGenerateForm(prev => ({ ...prev, passwordLength: v }))}
+                          >
+                            <SelectTrigger className="h-11">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[2, 3, 4, 5, 6].map(n => (
+                                <SelectItem key={n} value={String(n)}>{n} {language === 'ar' ? 'أرقام' : 'digits'}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'مجموعة المشتركين' : 'Subscriber Group'}</Label>
-                        <Select 
-                          value={generateForm.subscriberGroup} 
-                          onValueChange={(v) => setGenerateForm(prev => ({ ...prev, subscriberGroup: v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(subscriberGroups || ['Default group']).map((group: string) => (
-                              <SelectItem key={group} value={group}>{group}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {/* Row 4: Hotspot Port */}
-                    <div className="space-y-2">
-                      <Label>{language === 'ar' ? 'تحديد منفذ هوتسبوت' : 'Hotspot Port Restriction'}</Label>
-                      <Input
-                        placeholder={language === 'ar' ? 'فارغ = السماح للجميع' : 'Empty = Allow all'}
-                        value={generateForm.hotspotPort}
-                        onChange={(e) => setGenerateForm(prev => ({ ...prev, hotspotPort: e.target.value }))}
-                      />
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
                         {language === 'ar' 
-                          ? 'مثال: hs-LAN 5, hs-LAN 1, hs-LAN 2'
-                          : 'Example: hs-LAN 5, hs-LAN 1, hs-LAN 2'
+                          ? 'مثال: بداية "5" + طول 5 = 554212 | كلمة سر 4 أرقام = 1234'
+                          : 'Example: Prefix "5" + Length 5 = 554212 | Password 4 digits = 1234'
                         }
                       </p>
                     </div>
 
-                    {/* Row 5: Usage Time (actual time deducted while connected) */}
-                    <div className="space-y-2">
-                      <Label className="font-medium">
-                        {language === 'ar' ? 'وقت الاستخدام الفعلي (يُخصم أثناء الاتصال)' : 'Usage Time (deducted while connected)'}
-                      </Label>
-                      <div className="flex gap-2 items-center">
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'ساعات' : 'Hours'}</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={generateForm.usageHours}
-                            onChange={(e) => setGenerateForm(prev => ({ ...prev, usageHours: e.target.value }))}
-                          />
+                    {/* Section 3: Service & Group */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        {language === 'ar' ? 'الخدمة والمجموعة' : 'Service & Group'}
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{language === 'ar' ? 'الخدمة' : 'Service Plan'}</Label>
+                          <Select 
+                            value={generateForm.planId} 
+                            onValueChange={(v) => setGenerateForm(prev => ({ ...prev, planId: v }))}
+                          >
+                            <SelectTrigger className="h-11">
+                              <SelectValue placeholder={language === 'ar' ? 'اختر الخدمة...' : 'Select plan...'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {plans?.map((plan: any) => (
+                                <SelectItem key={plan.id} value={String(plan.id)}>
+                                  {language === 'ar' && plan.nameAr ? plan.nameAr : plan.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <span className="mt-5">:</span>
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'دقائق' : 'Minutes'}</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="59"
-                            value={generateForm.usageMinutes}
-                            onChange={(e) => setGenerateForm(prev => ({ ...prev, usageMinutes: e.target.value }))}
-                          />
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{language === 'ar' ? 'المجموعة' : 'Group'}</Label>
+                          <Select 
+                            value={generateForm.subscriberGroup} 
+                            onValueChange={(v) => setGenerateForm(prev => ({ ...prev, subscriberGroup: v }))}
+                          >
+                            <SelectTrigger className="h-11">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(subscriberGroups || ['Default group']).map((group: string) => (
+                                <SelectItem key={group} value={group}>{group}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>
 
-                    {/* Row 6: Window Time (validity period from first use) */}
-                    <div className="space-y-2">
-                      <Label className="font-medium">
-                        {language === 'ar' ? 'مدة السماح/النافذة (من أول استخدام)' : 'Validity Window (from first use)'}
-                      </Label>
-                      <div className="flex gap-2 items-center">
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'ساعات' : 'Hours'}</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={generateForm.windowHours}
-                            onChange={(e) => setGenerateForm(prev => ({ ...prev, windowHours: e.target.value }))}
-                          />
+                    {/* Section 4: Time Budget */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        {language === 'ar' ? 'إعدادات الوقت' : 'Time Settings'}
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">
+                            {language === 'ar' ? 'وقت الاستخدام' : 'Usage Time'}
+                          </Label>
+                          <div className="flex gap-2 items-center">
+                            <div className="flex-1">
+                              <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'ساعات' : 'Hours'}</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={generateForm.usageHours}
+                                onChange={(e) => setGenerateForm(prev => ({ ...prev, usageHours: e.target.value }))}
+                                className="h-11"
+                              />
+                            </div>
+                            <span className="mt-5 text-muted-foreground">:</span>
+                            <div className="flex-1">
+                              <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'دقائق' : 'Minutes'}</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="59"
+                                value={generateForm.usageMinutes}
+                                onChange={(e) => setGenerateForm(prev => ({ ...prev, usageMinutes: e.target.value }))}
+                                className="h-11"
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <span className="mt-5">:</span>
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'دقائق' : 'Minutes'}</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="59"
-                            value={generateForm.windowMinutes}
-                            onChange={(e) => setGenerateForm(prev => ({ ...prev, windowMinutes: e.target.value }))}
-                          />
+
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">
+                            {language === 'ar' ? 'مدة الصلاحية' : 'Validity Window'}
+                          </Label>
+                          <div className="flex gap-2 items-center">
+                            <div className="flex-1">
+                              <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'ساعات' : 'Hours'}</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={generateForm.windowHours}
+                                onChange={(e) => setGenerateForm(prev => ({ ...prev, windowHours: e.target.value }))}
+                                className="h-11"
+                              />
+                            </div>
+                            <span className="mt-5 text-muted-foreground">:</span>
+                            <div className="flex-1">
+                              <Label className="text-xs text-muted-foreground">{language === 'ar' ? 'دقائق' : 'Minutes'}</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="59"
+                                value={generateForm.windowMinutes}
+                                onChange={(e) => setGenerateForm(prev => ({ ...prev, windowMinutes: e.target.value }))}
+                                className="h-11"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
+                            {language === 'ar' 
+                              ? 'ينتهي عند استهلاك وقت الاستخدام أو انتهاء مدة الصلاحية' 
+                              : 'Expires when usage time is depleted OR validity window ends'}
+                          </p>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {language === 'ar' 
-                          ? 'الكرت ينتهي عند استهلاك وقت الاستخدام أو انتهاء مدة النافذة (أيهما أولاً)' 
-                          : 'Card expires when usage time is depleted OR window period ends (whichever comes first)'}
-                      </p>
                     </div>
 
-                    {/* Row 6: Switches */}
-                    <div className="flex flex-wrap gap-6">
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={generateForm.timeFromActivation}
-                          onCheckedChange={(checked) => setGenerateForm(prev => ({ ...prev, timeFromActivation: checked }))}
-                        />
-                        <Label className="cursor-pointer">
-                          {language === 'ar' ? 'تحسب من تفعيل الكرت' : 'Count from activation'}
-                        </Label>
+                    {/* Section 5: Options */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        {language === 'ar' ? 'خيارات إضافية' : 'Additional Options'}
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                          <div className="space-y-0.5">
+                            <Label className="text-sm font-medium cursor-pointer">
+                              {language === 'ar' ? 'تحسب من تفعيل الكرت' : 'Count from activation'}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              {language === 'ar' ? 'الوقت يبدأ من أول استخدام' : 'Time starts from first use'}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={generateForm.timeFromActivation}
+                            onCheckedChange={(checked) => setGenerateForm(prev => ({ ...prev, timeFromActivation: checked }))}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                          <div className="space-y-0.5">
+                            <Label className="text-sm font-medium cursor-pointer">
+                              {language === 'ar' ? 'عدم ربط الماك' : 'No MAC binding'}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              {language === 'ar' ? 'السماح باستخدام أجهزة مختلفة' : 'Allow usage on different devices'}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={generateForm.macBinding}
+                            onCheckedChange={(checked) => setGenerateForm(prev => ({ ...prev, macBinding: checked }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{language === 'ar' ? 'اسم الدفعة (اختياري)' : 'Batch Name (Optional)'}</Label>
+                          <Input
+                            placeholder={language === 'ar' ? 'مثال: دفعة يناير 2026' : 'e.g., January 2026 Batch'}
+                            value={generateForm.batchName}
+                            onChange={(e) => setGenerateForm(prev => ({ ...prev, batchName: e.target.value }))}
+                            className="h-11"
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={generateForm.macBinding}
-                          onCheckedChange={(checked) => setGenerateForm(prev => ({ ...prev, macBinding: checked }))}
-                        />
-                        <Label className="cursor-pointer">
-                          {language === 'ar' ? 'عدم ربط الماك' : 'No MAC binding'}
-                        </Label>
-                      </div>
-                    </div>
-
-                    {/* Row 7: Batch Name */}
-                    <div className="space-y-2">
-                      <Label>{language === 'ar' ? 'اسم الدفعة (اختياري)' : 'Batch Name (Optional)'}</Label>
-                      <Input
-                        placeholder={language === 'ar' ? 'مثال: دفعة يناير 2026' : 'e.g., January 2026 Batch'}
-                        value={generateForm.batchName}
-                        onChange={(e) => setGenerateForm(prev => ({ ...prev, batchName: e.target.value }))}
-                      />
                     </div>
                   </div>
 

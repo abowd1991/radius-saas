@@ -2766,8 +2766,8 @@ const vouchersRouter = router({
       cardTimeUnit: z.enum(['hours', 'days']).default('hours'),
       macBinding: z.boolean().default(false),
       prefix: z.string().max(10).optional(),
-      usernameLength: z.number().min(4).max(20).default(6),
-      passwordLength: z.number().min(4).max(20).default(4),
+      usernameLength: z.number().min(1).max(20).default(6),
+      passwordLength: z.number().min(1).max(20).default(4),
       subscriberGroup: z.string().default('Default group'),
       cardPrice: z.number().default(0),
       // New Time Budget System
