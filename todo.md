@@ -4709,3 +4709,14 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [ ] Verify prefix works with any value
 - [ ] Verify random generation works correctly
 - [ ] Save checkpoint
+
+## Bug Fixes - Card Generation Errors (Feb 16, 2026)
+
+### Error 1: Validation Max Quantity Mismatch
+- [x] Fix backend validation to allow max 5000 cards (currently limited to 1000)
+- [x] Update routers.ts validation schema for generateCards procedure
+
+### Error 2: Bulk Insert Failure
+- [x] Fix bulk insert failing with 100 rows in radcheck table
+- [x] Reduce batch size from 100 to 25 (25 cards × 4 rows = 100 rows per query)
+- [x] Updated 5 locations in vouchers.ts

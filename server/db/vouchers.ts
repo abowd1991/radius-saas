@@ -534,8 +534,9 @@ export async function generateCards(data: {
     generatedCards.push({ serialNumber, username, password });
   }
   
-  // BULK INSERT in batches of 100 for better performance
-  const BATCH_SIZE = 100;
+  // BULK INSERT in batches of 25 for better performance
+  // Each card has 4 radcheck entries, so 25 cards = 100 rows per query
+  const BATCH_SIZE = 25;
   
   // Insert radcheck in batches
   for (let i = 0; i < allRadcheckValues.length; i += BATCH_SIZE) {
@@ -888,8 +889,8 @@ export async function disableBatch(batchId: string) {
     value: "Reject",
   }));
   
-  // Insert in batches of 100 to avoid query size limits
-  const BATCH_SIZE = 100;
+  // Insert in batches of 25 to avoid query size limits
+  const BATCH_SIZE = 25;
   for (let i = 0; i < rejectEntries.length; i += BATCH_SIZE) {
     const batch = rejectEntries.slice(i, i + BATCH_SIZE);
     await db.insert(radcheck).values(batch);
@@ -986,7 +987,7 @@ export async function updateBatchTime(batchId: string, data: {
       value: String(sessionTimeout),
     }));
     
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = 25;
     for (let i = 0; i < timeoutEntries.length; i += BATCH_SIZE) {
       const batchEntries = timeoutEntries.slice(i, i + BATCH_SIZE);
       await db.insert(radreply).values(batchEntries);
@@ -1010,7 +1011,7 @@ export async function updateBatchTime(batchId: string, data: {
       value: formatExpirationDate(expiresAt!),
     }));
     
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = 25;
     for (let i = 0; i < expirationEntries.length; i += BATCH_SIZE) {
       const batchEntries = expirationEntries.slice(i, i + BATCH_SIZE);
       await db.insert(radcheck).values(batchEntries);
@@ -1071,7 +1072,7 @@ export async function updateBatchProperties(batchId: string, data: {
   
   const usernames = cards.map((c: any) => c.username);
   const cardIds = cards.map((c: any) => c.id);
-  const BATCH_SIZE = 100;
+  const BATCH_SIZE = 25;
   
   // Get plan if changing
   let plan = null;

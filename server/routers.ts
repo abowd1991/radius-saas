@@ -2752,7 +2752,7 @@ const vouchersRouter = router({
   generate: activeSubscriptionProcedure
     .input(z.object({
       planId: z.number(),
-      quantity: z.number().min(1).max(1000),
+      quantity: z.number().min(1).max(5000),
       batchName: z.string().optional(),
       purchasePrice: z.number().optional(),
       salePrice: z.number().optional(),
