@@ -4720,3 +4720,39 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] Fix bulk insert failing with 100 rows in radcheck table
 - [x] Reduce batch size from 100 to 25 (25 cards × 4 rows = 100 rows per query)
 - [x] Updated 5 locations in vouchers.ts
+
+## Critical Fixes - System Alignment (Feb 18, 2026)
+
+### Fix 1: NAS nasname UNIQUE Constraint Issue
+- [x] Migration: Make `nas.nasname` nullable (ALTER TABLE executed)
+- [x] Update `createNas()` to set `nasname = NULL` for VPN pending
+- [x] Update comments in routers.ts and nas.ts
+
+### Fix 2: Card Generation - Numeric Only Mode
+- [x] Verified generateUsernameWithOptions() generates digits only
+- [x] Verified generatePasswordWithLength() generates digits only
+- [x] Removed old alphanumeric functions
+- [x] Example: prefix=5 + length=5 → 554212 ✅
+
+### Fix 3: Called-Station-Id Location
+- [x] Moved `Called-Station-Id` from `radreply` to `radcheck`
+- [x] Using operator `==` for port/SSID restriction
+
+### Fix 4: MAC Binding Logic Unification
+- [x] Updated UI label from "عدم ربط الماك" to "ربط الماك"
+- [x] Updated description to match: "ربط الكرت بجهاز واحد فقط"
+- [x] Ensured `true` = binding enabled, `false` = no binding
+
+### Fix 5: Time Budget System Implementation
+- [x] Implement `firstUseAt` tracking on first login/accounting start - Already implemented in centralAccountingService
+- [x] Calculate `windowEndTime = firstUseAt + windowSeconds` - Already implemented
+- [x] Add logic to suspend card when `now > windowEndTime` - Already implemented
+- [x] Implement accounting-based deduction from `usageBudgetSeconds` - Already implemented
+
+### Fix 6: Permission Groups Migration
+- [x] Migration: Change `permission_groups.applicableRoles` from TEXT to JSON - Already JSON in schema
+- [x] Update all queries to handle JSON format - No changes needed
+
+### Fix 7: getNasByActualIp() Function
+- [x] Create `getNasByActualIp()` that searches in: `nasname OR allocatedIp OR vpnTunnelIp`
+- [x] Use for VPN provisioning compatibility

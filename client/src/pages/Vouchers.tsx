@@ -839,13 +839,13 @@ export default function Vouchers() {
                             onCheckedChange={(checked) => setGenerateForm(prev => ({ ...prev, timeFromActivation: checked }))}
                           />
                         </div>
-                        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                          <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                           <div className="space-y-0.5">
                             <Label className="text-sm font-medium cursor-pointer">
-                              {language === 'ar' ? 'عدم ربط الماك' : 'No MAC binding'}
+                              {language === 'ar' ? 'ربط الماك' : 'MAC Binding'}
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                              {language === 'ar' ? 'السماح باستخدام أجهزة مختلفة' : 'Allow usage on different devices'}
+                              {language === 'ar' ? 'ربط الكرت بجهاز واحد فقط' : 'Bind card to a single device only'}
                             </p>
                           </div>
                           <Switch

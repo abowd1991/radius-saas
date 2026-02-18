@@ -1,4 +1,4 @@
-import { eq, desc, and, or, sql, ne } from "drizzle-orm";
+import { eq, desc, and, isNotNull, isNull, or, ne } from "drizzle-orm";
 import { getDb } from "../db";
 import { nasDevices, InsertNasDevice, radcheck, radreply } from "../../drizzle/schema";
 import { TenantContext, buildTenantFilter } from "../tenant-isolation";
@@ -60,6 +60,27 @@ export async function getNasByVpnUsername(vpnUsername: string) {
   const db = await getDb();
   if (!db) return null;
   const result = await db.select().from(nasDevices).where(eq(nasDevices.vpnUsername, vpnUsername)).limit(1);
+  return result[0] || null;
+}
+
+// Get NAS by actual IP (searches in nasname, allocatedIp, or vpnTunnelIp)
+// Useful for VPN provisioning where IP may be in different fields
+export async function getNasByActualIp(ipAddress: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // Search in nasname, allocatedIp, or vpnTunnelIp
+  const result = await db.select()
+    .from(nasDevices)
+    .where(
+      or(
+        eq(nasDevices.nasname, ipAddress),
+        eq(nasDevices.allocatedIp, ipAddress),
+        eq(nasDevices.vpnTunnelIp, ipAddress)
+      )
+    )
+    .limit(1);
+  
   return result[0] || null;
 }
 
