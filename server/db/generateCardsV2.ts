@@ -10,7 +10,7 @@
  */
 
 import { ulid } from 'ulid';
-import { getDb } from '.';
+import { getDb } from '../db';
 import { plans, cardBatches, radiusCards, radcheck, radreply, radusergroup } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
@@ -358,7 +358,7 @@ export async function generateCardsV2(data: GenerateCardsInput) {
       generatedCards = cardsData.generatedCards;
 
       // Single Transaction - All-or-Nothing
-      await db.transaction(async (tx) => {
+      await db.transaction(async (tx: any) => {
         // 1. Create batch record
         await tx.insert(cardBatches).values({
           batchId,
