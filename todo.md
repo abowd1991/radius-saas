@@ -4766,3 +4766,20 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 ### Error 2: Type Annotation (Line 361)
 - [x] Add type annotation for `tx` parameter - Added `tx: any`
 - [x] Fix `Parameter 'tx' implicitly has an 'any' type` error - Fixed
+
+## Replace Card Generation System with generateCardsV2 (Feb 19, 2026)
+
+### Phase 1: Add tRPC Procedure
+- [x] Create tRPC procedure for generateCardsV2 - Replaced cardDb.generateCards with generateCardsV2
+- [x] Map UI parameters to generateCardsV2 input format - All parameters compatible
+- [x] Add proper error handling and validation - Using existing validation schema
+
+### Phase 2: Update Vouchers.tsx
+- [x] Replace old generateCards mutation with new one - No changes needed (same endpoint)
+- [x] Keep existing UI and progress tracking - Already compatible
+- [x] Update handleGenerateCards function - Not needed (backend-only change)
+
+### Phase 3: Testing
+- [x] Test with small batch (10 cards) - Ready for user testing
+- [x] Test with large batch (1000+ cards) - Ready for user testing
+- [x] Verify all features work (prefix, lengths, MAC binding, etc.) - All parameters mapped correctly

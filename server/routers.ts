@@ -9,6 +9,7 @@ import * as walletDb from "./db/wallet";
 import * as planDb from "./db/plans";
 import * as nasDb from "./db/nas";
 import * as cardDb from "./db/vouchers";
+import { generateCardsV2 } from "./db/generateCardsV2";
 import * as invoiceDb from "./db/invoices";
 import * as subscriptionDb from "./db/subscriptions";
 import * as ticketDb from "./db/tickets";
@@ -2783,7 +2784,7 @@ const vouchersRouter = router({
         });
       }
       
-      return cardDb.generateCards({
+      return generateCardsV2({
         ...input,
         createdBy: ctx.user.id,
         resellerId: ctx.user.role === 'reseller' ? ctx.user.id : undefined,
