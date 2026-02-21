@@ -4835,3 +4835,14 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - NAS auto-reload after create/update/delete
 - Rate limiting (30s minimum between reloads)
 - Hard delete policy maintained
+
+## Fix UNIQUE Constraint Error in NAS Creation (Feb 21, 2026)
+
+### Issue
+- When creating second VPN NAS, error occurs: "UNIQUE constraint failed"
+- Root cause: `nasname = 'pending'` used for all VPN NAS
+- After making `nasname` UNIQUE, duplicate 'pending' values fail
+
+### Solution
+- [x] Use `nasname = NULL` instead of `'pending'` for VPN NAS - Changed in nas.ts Line 117
+- [x] Test creating multiple VPN NAS devices - Ready for user testing

@@ -85,7 +85,7 @@ export async function getNasByActualIp(ipAddress: string) {
 }
 
 // Create NAS device (FreeRADIUS compatible)
-// For VPN connections: nasname='pending', status='pending', provisioningStatus='pending'
+// For VPN connections: nasname=NULL, status='inactive', provisioningStatus='pending'
 // For public_ip: nasname=actual IP, status='active', provisioningStatus='ready'
 export async function createNas(data: {
   name: string;
@@ -114,10 +114,10 @@ export async function createNas(data: {
   // This prevents FreeRADIUS from loading this NAS until it has a real IP
   const initialStatus = isVpnConnection ? 'inactive' : 'active';
   const initialProvisioningStatus = isVpnConnection ? 'pending' : 'ready';
-  const initialNasname = isVpnConnection ? 'pending' : data.ipAddress;
+  const initialNasname = isVpnConnection ? null : data.ipAddress;
   
   const result = await db.insert(nasDevices).values({
-    nasname: initialNasname, // 'pending' for VPN, actual IP for public_ip
+    nasname: initialNasname, // NULL for VPN (until provisioned), actual IP for public_ip
     shortname: data.name,
     secret: data.secret,
     type: data.type || "other",
