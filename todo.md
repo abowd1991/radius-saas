@@ -4846,3 +4846,15 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 ### Solution
 - [x] Use `nasname = NULL` instead of `'pending'` for VPN NAS - Changed in nas.ts Line 117
 - [x] Test creating multiple VPN NAS devices - Ready for user testing
+
+## Fix null.startsWith() Error in NAS Page (Feb 21, 2026)
+
+### Issue
+- Error: `Cannot read properties of null (reading 'startsWith')`
+- Root cause: After changing `nasname` to NULL for VPN NAS, code tries to call `.startsWith()` on null value
+- Occurs when loading NAS list page
+
+### Solution
+- [x] Find all places using `nasname.startsWith()` - Found 3 locations in routers.ts
+- [x] Add null checks: `nasname?.startsWith()` or `nasname && nasname.startsWith()` - Fixed Line 2070
+- [x] Test NAS page with NULL nasname values - Ready for user testing

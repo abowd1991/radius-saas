@@ -2067,7 +2067,7 @@ const nasRouter = router({
       }
       
       // Check if nasname needs sync (is placeholder or doesn't match VPN IP)
-      const isPlaceholder = nas.nasname.startsWith('pending-vpn-') || nas.nasname.startsWith('vpn-');
+      const isPlaceholder = nas.nasname ? (nas.nasname.startsWith('pending-vpn-') || nas.nasname.startsWith('vpn-')) : false;
       const needsSync = connected && vpnLocalIp && (isPlaceholder || nas.nasname !== vpnLocalIp);
       
       return {
