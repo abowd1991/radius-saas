@@ -4880,3 +4880,25 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] Auto-update status = active - Added (Line 297)
 - [x] Auto-update provisioningStatus = ready - Already working (Line 296)
 - [x] Include 'error' status in cron job - Added (Line 346-348)
+
+## Fix Card Generation - Remove ULID, Use Digits Only
+
+### Problem
+- Cards are generated with ULID format (letters + numbers): `101kj5cneqkcsavgs6dmxs7yej4_j65`
+- User expects: **Digits only** with optional prefix
+- Example: Prefix=`5` + Length=5 → `554212`
+- Example: No prefix + Length=6 → `123456`
+
+### Investigation
+- [x] Check generateCardsV2.ts - why ULID?
+- [x] Check if it uses generateUsernameWithOptions() or ULID generator
+- [x] Verify generateUsernameWithOptions() generates digits only
+
+### Solution
+- [x] Replace ULID generation with generateUsernameWithOptions()
+- [x] Ensure prefix + digits format
+- [x] Add usernameLength parameter to config object
+- [x] Add usernameLength variable extraction from data.usernameLength
+- [x] Pass usernameLength to generateCardsData function
+- [x] Fix TypeScript errors (all 0 errors now)
+- [x] Test with different prefix values (number, letter, empty)

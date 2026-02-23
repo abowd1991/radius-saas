@@ -52,32 +52,25 @@ const MAX_RETRIES = 3;
 const BULK_INSERT_BATCH_SIZE = 1000; // Insert 1000 rows at a time
 
 /**
- * Generate username using ULID + random suffix for 100% uniqueness
- * Format: {prefix}{ulid}_{random}
- * Example: "card_01jcxyz123abc_a7f"
- * 
- * Why random suffix?
- * - ULID has millisecond precision
- * - Generating 5000+ usernames in < 1ms can cause collisions
- * - Random suffix (3 chars, 46656 combinations) ensures uniqueness
+ * Generate username with digits only + optional prefix
+ * Format: {prefix}{digits}
+ * Example: prefix="5" + length=5 → "554212"
+ * Example: prefix="" + length=6 → "123456"
  */
-function generateUsername(prefix: string = ''): string {
-  const id = ulid().toLowerCase();
-  // Add 3-char random suffix (a-z0-9, 36^3 = 46656 combinations)
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let suffix = '';
-  for (let i = 0; i < 3; i++) {
-    suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+function generateUsername(length: number = 6, prefix: string = ''): string {
+  const chars = '0123456789';
+  let result = prefix;
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  const username = `${id}_${suffix}`;
-  return prefix ? `${prefix}${username}` : username;
+  return result;
 }
 
 /**
- * Generate random password
+ * Generate password with digits only
  */
-function generatePassword(length: number = 8): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+function generatePassword(length: number = 4): string {
+  const chars = '0123456789';
   let result = '';
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -114,6 +107,7 @@ function generateCardsData(
   plan: any,
   config: {
     prefix: string;
+    usernameLength: number;
     passwordLength: number;
     simultaneousUse: number;
     subscriberGroup: string;
@@ -135,7 +129,7 @@ function generateCardsData(
   const allCardValues: any[] = [];
 
   for (let i = 0; i < quantity; i++) {
-    const username = generateUsername(config.prefix);
+    const username = generateUsername(config.usernameLength, config.prefix);
     const password = generatePassword(config.passwordLength);
     const serialNumber = generateSerialNumber();
 
@@ -278,6 +272,7 @@ export async function generateCardsV2(data: GenerateCardsInput) {
   // Configuration
   const batchId = nanoid(10);
   const passwordLength = data.passwordLength || 8;
+  const usernameLength = data.usernameLength || 6;
   const prefix = data.prefix || '';
   const simultaneousUse = data.simultaneousUse || 1;
   const subscriberGroup = data.subscriberGroup || 'Default group';
@@ -340,6 +335,7 @@ export async function generateCardsV2(data: GenerateCardsInput) {
         plan,
         {
           prefix,
+          usernameLength,
           passwordLength,
           simultaneousUse,
           subscriberGroup,
