@@ -4858,3 +4858,25 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] Find all places using `nasname.startsWith()` - Found 3 locations in routers.ts
 - [x] Add null checks: `nasname?.startsWith()` or `nasname && nasname.startsWith()` - Fixed Line 2070
 - [x] Test NAS page with NULL nasname values - Ready for user testing
+
+## Fix NAS Auto-Update After VPN Connection
+
+### Problem
+- VPN connects successfully and gets IP (192.168.30.13)
+- RADIUS works correctly
+- But `status` stays `inactive` (should be `active`)
+- And `provisioningStatus` stays `error` (should be `active`)
+- System doesn't auto-update nasname and status after VPN connection
+
+### Investigation
+- [x] Check provisioning service logic - Found in provisioningService.ts
+- [x] Check VPN connection detection mechanism - Working correctly
+- [x] Check auto-update for nasname and status - Missing status update!
+- [x] Verify cron job frequency and logic - Runs every 30s, but doesn't check 'error' status
+
+### Solution
+- [x] Fix provisioning service to detect connected VPN - Already working
+- [x] Auto-update nasname = VPN IP - Already working (Line 299)
+- [x] Auto-update status = active - Added (Line 297)
+- [x] Auto-update provisioningStatus = ready - Already working (Line 296)
+- [x] Include 'error' status in cron job - Added (Line 346-348)

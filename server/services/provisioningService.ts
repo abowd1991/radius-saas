@@ -294,6 +294,7 @@ export async function provisionNas(nasId: number): Promise<ProvisioningResult> {
     await db.update(nasDevices)
       .set({ 
         provisioningStatus: 'ready',
+        status: 'active',  // Mark NAS as active after successful provisioning
         provisionedAt: new Date(),
         nasname: finalIp,
         allocatedIp: finalIp,
@@ -333,7 +334,7 @@ export async function checkAndProvisionPendingNas(): Promise<void> {
   const db = await getDb();
   if (!db) return;
   
-  // Get all pending/provisioning VPN NAS devices
+  // Get all pending/provisioning/error VPN NAS devices
   const pendingNas = await db.select()
     .from(nasDevices)
     .where(eq(nasDevices.provisioningStatus, 'pending'));
@@ -342,7 +343,11 @@ export async function checkAndProvisionPendingNas(): Promise<void> {
     .from(nasDevices)
     .where(eq(nasDevices.provisioningStatus, 'provisioning'));
   
-  const allPending = [...pendingNas, ...provisioningNas].filter(
+  const errorNas = await db.select()
+    .from(nasDevices)
+    .where(eq(nasDevices.provisioningStatus, 'error'));
+  
+  const allPending = [...pendingNas, ...provisioningNas, ...errorNas].filter(
     nas => nas.connectionType !== 'public_ip'
   );
   
