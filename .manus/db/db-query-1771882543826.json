@@ -1,0 +1,38 @@
+{
+  "query": "SELECT id, nasname, shortname, secret, server, status, connectionType, allocatedIp, vpnTunnelIp, vpnUsername, vpnPassword, location FROM nas ORDER BY id DESC LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret, server, status, connectionType, allocatedIp, vpnTunnelIp, vpnUsername, vpnPassword, location FROM nas ORDER BY id DESC LIMIT 3;",
+  "rows": [
+    {
+      "id": "30019",
+      "nasname": "192.168.30.10",
+      "shortname": "abwowd",
+      "secret": "90603050",
+      "server": "NULL",
+      "status": "active",
+      "connectionType": "vpn_l2tp",
+      "allocatedIp": "192.168.30.10",
+      "vpnTunnelIp": "NULL",
+      "vpnUsername": "abwowd-mlzolzhe",
+      "vpnPassword": "6mr8n2sgog3w8x7nsmjmj",
+      "location": "NULL"
+    },
+    {
+      "id": "30018",
+      "nasname": "192.168.30.13",
+      "shortname": "real",
+      "secret": "200307050",
+      "server": "NULL",
+      "status": "active",
+      "connectionType": "vpn_l2tp",
+      "allocatedIp": "192.168.30.13",
+      "vpnTunnelIp": "192.168.30.13",
+      "vpnUsername": "real-mlz7zrob",
+      "vpnPassword": "vp8nyqqy2vswpcl8j5acy",
+      "location": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\tserver\tstatus\tconnectionType\tallocatedIp\tvpnTunnelIp\tvpnUsername\tvpnPassword\tlocation\n30019\t192.168.30.10\tabwowd\t90603050\tNULL\tactive\tvpn_l2tp\t192.168.30.10\tNULL\tabwowd-mlzolzhe\t6mr8n2sgog3w8x7nsmjmj\tNULL\n30018\t192.168.30.13\treal\t200307050\tNULL\tactive\tvpn_l2tp\t192.168.30.13\t192.168.30.13\treal-mlz7zrob\tvp8nyqqy2vswpcl8j5acy\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 361
+}

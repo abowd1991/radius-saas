@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, nasname, shortname, secret, server, status, connectionType, allocatedIp FROM nas ORDER BY id DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, nasname, shortname, secret, server, status, connectionType, allocatedIp FROM nas ORDER BY id DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "30019",
+      "nasname": "192.168.30.10",
+      "shortname": "abwowd",
+      "secret": "90603050",
+      "server": "NULL",
+      "status": "active",
+      "connectionType": "vpn_l2tp",
+      "allocatedIp": "192.168.30.10"
+    },
+    {
+      "id": "30018",
+      "nasname": "192.168.30.13",
+      "shortname": "real",
+      "secret": "200307050",
+      "server": "NULL",
+      "status": "active",
+      "connectionType": "vpn_l2tp",
+      "allocatedIp": "192.168.30.13"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnasname\tshortname\tsecret\tserver\tstatus\tconnectionType\tallocatedIp\n30019\t192.168.30.10\tabwowd\t90603050\tNULL\tactive\tvpn_l2tp\t192.168.30.10\n30018\t192.168.30.13\treal\t200307050\tNULL\tactive\tvpn_l2tp\t192.168.30.13\n",
+  "stderr": "",
+  "execution_time_ms": 384
+}

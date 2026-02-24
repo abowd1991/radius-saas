@@ -1,0 +1,22 @@
+{
+  "query": "SELECT `key`, `value` FROM system_settings WHERE `key` IN ('radius_server_public_ip', 'radius_server_vpn_ip', 'vpn_server_address');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT `key`, `value` FROM system_settings WHERE `key` IN ('radius_server_public_ip', 'radius_server_vpn_ip', 'vpn_server_address');",
+  "rows": [
+    {
+      "key": "radius_server_public_ip",
+      "value": "37.60.228.5"
+    },
+    {
+      "key": "radius_server_vpn_ip",
+      "value": "192.168.30.1"
+    },
+    {
+      "key": "vpn_server_address",
+      "value": "37.60.228.5"
+    }
+  ],
+  "messages": [],
+  "stdout": "key\tvalue\nradius_server_public_ip\t37.60.228.5\nradius_server_vpn_ip\t192.168.30.1\nvpn_server_address\t37.60.228.5\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}

@@ -49,7 +49,7 @@ interface GeneratedCard {
 
 // Constants
 const MAX_RETRIES = 3;
-const BULK_INSERT_BATCH_SIZE = 1000; // Insert 1000 rows at a time
+const BULK_INSERT_BATCH_SIZE = 25; // Insert 25 rows at a time (safe for large batches)
 
 /**
  * Generate username with digits only + optional prefix

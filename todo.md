@@ -4902,3 +4902,53 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] Pass usernameLength to generateCardsData function
 - [x] Fix TypeScript errors (all 0 errors now)
 - [x] Test with different prefix values (number, letter, empty)
+
+
+## RADIUS Server Not Responding Issue (Feb 23, 2026)
+
+### Problem
+- [ ] User reports "RADIUS server is not responding" error on login page
+- [ ] Need to diagnose why FreeRADIUS is not responding
+- [ ] Need to check VPS network configuration
+- [ ] Need to verify NAS configuration in database
+- [ ] Need to ensure new NAS devices work immediately
+
+### Investigation Tasks
+- [ ] Check FreeRADIUS service status on VPS (37.60.228.5)
+- [ ] Check network interfaces and IP addresses on VPS
+- [ ] Verify which IPs are active and working
+- [ ] Check FreeRADIUS listening ports (1812/1813)
+- [ ] Check NAS configuration in database
+- [ ] Test RADIUS connection from platform
+- [ ] Verify auto-reload works for new NAS devices
+
+### Expected Outcome
+- [ ] FreeRADIUS responds to authentication requests
+- [ ] New NAS devices work immediately after creation
+- [ ] Clear documentation of network configuration
+
+
+## Card Creation Limit Issue (Feb 23, 2026) - URGENT
+
+### Problem
+- [x] Cannot create more than 10 cards
+- [x] System should support up to 5000 cards per batch
+- [x] After recent numeric-only generation changes, card creation is limited
+
+### Root Cause
+- [x] BULK_INSERT_BATCH_SIZE was set to 1000 rows per batch
+- [x] Each card = 4 rows in radcheck (Cleartext-Password, Simultaneous-Use, Auth-Type, Expiration)
+- [x] 20 cards × 4 rows = 80 rows, but query was trying to insert 1000 rows at once
+- [x] This exceeded MySQL query size limit
+
+### Solution
+- [x] Changed BULK_INSERT_BATCH_SIZE from 1000 to 25 in generateCardsV2.ts
+- [x] Now: 25 rows per batch = safe for any number of cards
+- [x] Backend validation: max=5000 ✓
+- [x] Frontend validation: max=5000 ✓
+- [x] usernameLength parameter working correctly ✓
+
+### Expected Result
+- [x] Successfully create up to 5000 cards in one batch
+- [x] No errors during bulk creation
+- [x] All cards have numeric-only username/password
