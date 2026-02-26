@@ -407,34 +407,22 @@ export default function Wallet() {
               </Dialog>
             </div>
             
-            {/* Trial & Balance Duration Progress Bars */}
-            {user?.accountStatus === 'trial' && user?.trialEndDate && (
+            {/* Balance Duration Progress Bar */}
+            {false && (
               <div className="mt-6 space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
                     {language === "ar" ? "الفترة التجريبية" : "Trial Period"}
                   </span>
                   <span className="font-medium">
-                    {(() => {
-                      const now = new Date();
-                      const trialEnd = new Date(user.trialEndDate);
-                      const daysLeft = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-                      return language === "ar" ? `${daysLeft} أيام متبقية` : `${daysLeft} days left`;
-                    })()}
+                    {language === "ar" ? "0 أيام متبقية" : "0 days left"}
                   </span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-blue-500 transition-all" 
                     style={{
-                      width: `${(() => {
-                        const now = new Date();
-                        const trialStart = new Date(user.trialStartDate || now);
-                        const trialEnd = new Date(user.trialEndDate);
-                        const totalDays = Math.max(1, (trialEnd.getTime() - trialStart.getTime()) / (1000 * 60 * 60 * 24));
-                        const daysLeft = Math.max(0, (trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                        return Math.max(0, Math.min(100, (daysLeft / totalDays) * 100));
-                      })()}%`
+                      width: `0%`
                     }}
                   />
                 </div>
@@ -442,7 +430,7 @@ export default function Wallet() {
             )}
             
             {/* Balance Duration Estimate */}
-            {user?.accountStatus !== 'trial' && wallet && parseFloat(wallet.balance) > 0 && (
+            {wallet && parseFloat(wallet.balance) > 0 && (
               <div className="mt-6 space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">

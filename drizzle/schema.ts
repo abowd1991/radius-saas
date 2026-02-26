@@ -19,12 +19,7 @@ export const users = mysqlTable("users", {
   resellerId: int("resellerId"), // For clients: their reseller ID
   tenantId: int("tenantId"), // For sub-admins: their parent client_owner ID
   status: mysqlEnum("status", ["active", "suspended", "inactive"]).default("active").notNull(),
-  accountStatus: mysqlEnum("accountStatus", ["trial", "active", "expired", "suspended"]).default("trial").notNull(),
-  trialStartDate: timestamp("trialStartDate"),
-  trialEndDate: timestamp("trialEndDate"),
-  subscriptionPlanId: int("subscriptionPlanId"), // Reference to saasPlans
-  subscriptionStartDate: timestamp("subscriptionStartDate"),
-  subscriptionEndDate: timestamp("subscriptionEndDate"),
+  // Removed old subscription system - now using balance-only system
   // Permission Plan (for global permission management)
   permissionPlanId: int("permissionPlanId"), // Reference to permission_plans
   // SaaS Billing (Daily - $0.33 per NAS per day)
@@ -385,6 +380,10 @@ export const wallets = mysqlTable("wallets", {
   userId: int("userId").notNull().unique(),
   balance: decimal("balance", { precision: 12, scale: 2 }).default("0.00").notNull(),
   currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+  // Credit System (Overdraft)
+  creditBalance: decimal("creditBalance", { precision: 12, scale: 2 }).default("0.00").notNull(), // Current debt
+  maxCreditLimit: decimal("maxCreditLimit", { precision: 12, scale: 2 }).default("2.00").notNull(), // Max $2 overdraft
+  creditActivatedAt: timestamp("creditActivatedAt"), // When credit was first used
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

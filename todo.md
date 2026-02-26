@@ -4952,3 +4952,45 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] Successfully create up to 5000 cards in one batch
 - [x] No errors during bulk creation
 - [x] All cards have numeric-only username/password
+
+
+## Remove Old Subscription System & Implement Balance-Only System (Feb 24, 2026) - CRITICAL
+
+### Problem
+- [ ] System mixing two subscription models: Days-based (old) + Balance-based (new)
+- [ ] Users with balance but expired subscription (inactive)
+- [ ] Users with active subscription but different systems
+- [ ] Old system: Free subscriptions with days (3632 days, 18 days, etc.)
+- [ ] New system: Balance-based ($39.00 wallet)
+
+### Requirements
+1. **Remove Old System:**
+   - [ ] Remove `subscriptionPlanId`, `subscriptionStartDate`, `subscriptionEndDate` from users table
+   - [ ] Remove `trialEndDate` from users table
+   - [ ] Remove `subscription_plans` table
+   - [ ] Remove all days-based subscription logic
+
+2. **New System (Balance-Only):**
+   - [ ] `walletBalance > 0` = Active subscription
+   - [ ] `walletBalance = 0` = Expired subscription
+   - [ ] Daily deduction from balance
+
+3. **Credit System ($2 Overdraft):**
+   - [ ] Add `creditBalance` field (current debt)
+   - [ ] Add `maxCreditLimit` field (max $2)
+   - [ ] Add `creditActivatedAt` field (timestamp)
+   - [ ] Show "Activate $2 Credit" button when balance = 0
+   - [ ] When user pays, deduct credit first: Payment $10 - Credit $2 = Balance $8
+
+### Implementation Steps
+- [x] Update schema.ts (remove old fields, add credit fields)
+- [x] Run SQL migration (removed old columns, added credit fields)
+- [x] Update routers.ts (remove old subscription logic)
+- [x] Remove old services (trialNotificationService, subscriptionNotifier, subscriptionEnforcer)
+- [x] Update Dashboard.tsx (removed trial days left card)
+- [x] Update Profile.tsx (removed status badge)
+- [x] Update Wallet.tsx (removed trial period progress bar)
+- [x] Fix all TypeScript errors (0 errors now)
+- [ ] Add credit activation button in UI
+- [ ] Update billing cron job (deduct from balance + credit)
+- [ ] Test with multiple users

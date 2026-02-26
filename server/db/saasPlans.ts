@@ -214,14 +214,11 @@ export async function createSubscription(data: {
     })
     .$returningId();
 
-  // Update user's subscription info
+  // Balance-based subscription (no more subscription fields in users table)
   await db
     .update(users)
     .set({
-      accountStatus: "active",
-      subscriptionPlanId: data.planId,
-      subscriptionStartDate: startDate,
-      subscriptionEndDate: endDate,
+      status: "active",
     })
     .where(eq(users.id, data.userId));
 
@@ -247,15 +244,11 @@ export async function getUserAccountInfo(userId: number) {
   const db = await getDb();
   if (!db) return null;
 
+  // Balance-based subscription
   const [user] = await db
     .select({
       id: users.id,
-      accountStatus: users.accountStatus,
-      trialStartDate: users.trialStartDate,
-      trialEndDate: users.trialEndDate,
-      subscriptionPlanId: users.subscriptionPlanId,
-      subscriptionStartDate: users.subscriptionStartDate,
-      subscriptionEndDate: users.subscriptionEndDate,
+      status: users.status,
     })
     .from(users)
     .where(eq(users.id, userId))
@@ -263,29 +256,24 @@ export async function getUserAccountInfo(userId: number) {
 
   if (!user) return null;
 
-  // Get plan info if subscribed
-  let plan = null;
-  if (user.subscriptionPlanId) {
-    plan = await getPlanById(user.subscriptionPlanId);
-  }
+  // Get wallet balance
+  const { wallets } = await import("../../drizzle/schema");
+  const [wallet] = await db
+    .select()
+    .from(wallets)
+    .where(eq(wallets.userId, userId))
+    .limit(1);
 
-  // Calculate days remaining
-  let daysRemaining = 0;
-  let endDate: Date | null = null;
-
-  if (user.accountStatus === "trial" && user.trialEndDate) {
-    endDate = new Date(user.trialEndDate);
-    daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
-  } else if (user.accountStatus === "active" && user.subscriptionEndDate) {
-    endDate = new Date(user.subscriptionEndDate);
-    daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
-  }
+  const balance = wallet?.balance || '0.00';
+  const accountStatus = parseFloat(balance) > 0 ? 'active' : 'expired';
 
   return {
-    ...user,
-    plan,
-    daysRemaining,
-    endDate,
+    id: user.id,
+    accountStatus,
+    balance,
+    plan: null,
+    daysRemaining: 0,
+    endDate: null,
   };
 }
 

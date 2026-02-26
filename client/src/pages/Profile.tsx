@@ -134,7 +134,7 @@ export default function Profile() {
   }
 
   const roleBadge = getRoleBadge(user.role);
-  const statusBadge = getStatusBadge(user.accountStatus);
+  // Balance-based subscription (no more accountStatus)
 
   return (
     <div className="container max-w-4xl py-8">
@@ -176,12 +176,7 @@ export default function Profile() {
                   <Badge variant={roleBadge.variant}>{roleBadge.label}</Badge>
                 </div>
               </div>
-              <div>
-                <Label className="text-muted-foreground">الحالة</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
-                </div>
-              </div>
+              {/* Balance-based subscription (no more status badge) */}
               <div>
                 <Label className="text-muted-foreground">تاريخ الإنشاء</Label>
                 <div className="flex items-center gap-2 mt-1">

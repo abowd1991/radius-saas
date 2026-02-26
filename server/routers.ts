@@ -84,13 +84,7 @@ const authRouter = router({
       permissions,
       canSeeFinancials,
       isAdmin,
-      // SaaS account status fields
-      accountStatus: (opts.ctx.user as any).accountStatus || 'active',
-      trialStartDate: (opts.ctx.user as any).trialStartDate || null,
-      trialEndDate: (opts.ctx.user as any).trialEndDate || null,
-      subscriptionStartDate: (opts.ctx.user as any).subscriptionStartDate || null,
-      subscriptionEndDate: (opts.ctx.user as any).subscriptionEndDate || null,
-      subscriptionPlanId: (opts.ctx.user as any).subscriptionPlanId || null,
+      // Balance-based subscription (no more trial/subscription dates)
     };
   }),
   
@@ -322,11 +316,7 @@ const usersRouter = router({
       const clientsWithPlan = clients.map((c: any) => ({
         ...c,
         planName: c.subscriptionPlanId ? planMap.get(c.subscriptionPlanId) : null,
-        daysRemaining: c.trialEndDate 
-          ? Math.max(0, Math.ceil((new Date(c.trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-          : c.subscriptionEndDate
-            ? Math.max(0, Math.ceil((new Date(c.subscriptionEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-            : null,
+        // Balance-based subscription (no more daysRemaining)
       }));
       
       // Pagination
@@ -359,13 +349,10 @@ const usersRouter = router({
       const now = new Date();
       const endDate = new Date(now.getTime() + input.durationDays * 24 * 60 * 60 * 1000);
       
-      // Update user status
+      // Update user status (balance-based subscription)
       await drizzleDb.update(users)
         .set({
-          accountStatus: 'active',
-          subscriptionStartDate: now,
-          subscriptionEndDate: endDate,
-          subscriptionPlanId: input.planId || null,
+          status: 'active',
         })
         .where(eq(users.id, input.userId));
       
@@ -430,30 +417,9 @@ const usersRouter = router({
       const user = await db.getUserById(input.userId);
       if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
       
-      const drizzleDb = await getDb();
-      if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
-      const currentEnd = (user as any).subscriptionEndDate 
-        ? new Date((user as any).subscriptionEndDate) 
-        : (user as any).trialEndDate 
-          ? new Date((user as any).trialEndDate)
-          : new Date();
-      
-      const newEnd = new Date(Math.max(currentEnd.getTime(), Date.now()) + input.days * 24 * 60 * 60 * 1000);
-      
-      await drizzleDb.update(users)
-        .set({
-          accountStatus: 'active',
-          subscriptionEndDate: newEnd,
-        })
-        .where(eq(users.id, input.userId));
-      
-      // Re-enable NAS devices
-      await drizzleDb.execute(
-        sql`UPDATE nas SET is_active = 1 WHERE ownerId = ${input.userId}`
-      );
-      
-      console.log(`[Client Control] Extended user ${input.userId} subscription by ${input.days} days`);
-      return { success: true, newEndDate: newEnd };
+      // Balance-based subscription: no more subscription extension by days
+      // Use wallet balance instead
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Subscription extension is no longer supported. Please add balance to wallet instead.' });
     }),
 
   // Change client plan
@@ -718,21 +684,13 @@ const usersRouter = router({
       const permissionDb = await import('./db-permission-plans');
       const defaultPlan = await permissionDb.getDefaultPlanForRole(input.role);
       
-      // Create trial dates
-      const trialStartDate = new Date();
-      const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 days trial
-      
-      // Create user
+      // Create user (balance-based subscription)
       const result = await drizzleDb.insert(users).values({
         name: input.name,
         email: input.email,
         username,
         password: hashedPassword,
         role: input.role,
-        accountStatus: 'trial',
-        trialStartDate,
-        trialEndDate,
         permissionPlanId: defaultPlan?.id || null,
         emailVerified: true, // Admin-created users are pre-verified
       });
@@ -3877,27 +3835,15 @@ const dashboardRouter = router({
       );
     const monthlyRevenue = monthlyRevenueResult[0]?.total || '0.00';
     
-    // Active Users (accountStatus = 'active')
+    // Active Users (balance > 0)
     const activeUsersResult = await database
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(users)
-      .where(sql`${users.accountStatus} = 'active'`);
+      .select({ count: sql<number>`COUNT(DISTINCT ${wallets.userId})` })
+      .from(wallets)
+      .where(sql`${wallets.balance} > 0`);
     const activeUsers = activeUsersResult[0]?.count || 0;
     
-    // Expiring Soon (subscriptionEndDate within 7 days)
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-    const expiringSoonResult = await database
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(users)
-      .where(
-        and(
-          sql`${users.subscriptionEndDate} IS NOT NULL`,
-          sql`${users.subscriptionEndDate} <= ${sevenDaysFromNow.toISOString()}`,
-          sql`${users.subscriptionEndDate} >= ${new Date().toISOString()}`
-        )
-      );
-    const expiringSoon = expiringSoonResult[0]?.count || 0;
+    // Expiring Soon (balance-based subscription - no more expiration dates)
+    const expiringSoon = 0;
     
     // New Users This Month
     const newUsersResult = await database
@@ -3936,16 +3882,6 @@ const dashboardRouter = router({
       .from(wallets)
       .where(eq(wallets.userId, userId));
     const currentBalance = wallet?.balance || '0.00';
-    
-    // Trial Days Remaining
-    let trialDaysLeft = 0;
-    if (ctx.user.trialEndDate) {
-      const trialEnd = new Date(ctx.user.trialEndDate);
-      const now = new Date();
-      const diffTime = trialEnd.getTime() - now.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      trialDaysLeft = Math.max(0, diffDays);
-    }
     
     // Active NAS Devices Count
     const tenantContext = getTenantContext(ctx.user);
@@ -4021,7 +3957,6 @@ const dashboardRouter = router({
     
     return {
       currentBalance,
-      trialDaysLeft,
       activeNasCount,
       estimatedMonthlyCost,
       balanceDuration,

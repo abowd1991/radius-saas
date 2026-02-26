@@ -8,9 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startMonitor } from "../services/sessionMonitor";
-import { startSubscriptionNotifier } from "../services/subscriptionNotifier";
 import { startAlertMonitor } from "../services/alertMonitor";
-import { startSubscriptionEnforcer } from "../services/subscriptionEnforcer";
 import { startProvisioningMonitor } from "../services/provisioningService";
 import { startCentralAccounting } from "../services/centralAccountingService";
 import { startBillingCron } from "../services/billingCronJob";
@@ -176,17 +174,9 @@ async function startServer() {
     startMonitor(30000);
     console.log('[SessionMonitor] Started - checking for expired sessions every 30 seconds');
     
-    // Start subscription expiration notifier (check every 6 hours)
-    startSubscriptionNotifier();
-    console.log('[SubscriptionNotifier] Started - checking for expiring subscriptions every 6 hours');
-    
     // Start alert monitor for card expiration and NAS connection
     startAlertMonitor();
     console.log('[AlertMonitor] Started - checking for alerts every 5 minutes');
-    
-    // Start subscription enforcer for expired trials/subscriptions
-    startSubscriptionEnforcer();
-    console.log('[SubscriptionEnforcer] Started - checking for expired accounts every 5 minutes');
     
     // Start provisioning monitor for VPN NAS devices
     startProvisioningMonitor();
