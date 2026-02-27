@@ -4991,6 +4991,27 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] Update Profile.tsx (removed status badge)
 - [x] Update Wallet.tsx (removed trial period progress bar)
 - [x] Fix all TypeScript errors (0 errors now)
-- [ ] Add credit activation button in UI
-- [ ] Update billing cron job (deduct from balance + credit)
+- [x] Add credit activation button in UI (shows when balance = 0)
+- [x] Auto-deduct debt from next top-up (in deposit function)
+- [x] Credit system: $2 limit, activateCredit + getCreditStatus procedures
 - [ ] Test with multiple users
+
+
+## CRITICAL: Failed Query Error After Removing Old Subscription Fields (Feb 26, 2026)
+
+### Problem
+- [ ] Cannot login to system - "Failed query" error
+- [ ] Error: SELECT query trying to read deleted fields: `accountStatus`, `trialStartDate`, `trialEndDate`, `subscriptionPlanId`, `subscriptionStartDate`, `subscriptionEndDate`
+- [ ] These fields were removed from users table but code still trying to read them
+
+### Root Cause
+- [ ] Not all files updated to remove old subscription fields
+- [ ] Some file still has SELECT query with old fields
+- [ ] Need to find and fix ALL files reading from users table
+
+### Solution
+- [x] Found all files with SELECT queries on users table
+- [x] Remove old subscription fields from: authService.ts, billingService.ts, saasPlans.ts, routers.ts, db.ts, radiusSubscribers.ts
+- [x] Fix TypeScript errors (0 errors)
+- [ ] Test login functionality (need user to verify)
+- [ ] Verify no more "Failed query" errors

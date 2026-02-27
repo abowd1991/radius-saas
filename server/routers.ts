@@ -294,10 +294,7 @@ const usersRouter = router({
       const allUsers = await db.getAllUsers();
       let clients = allUsers.filter((u: any) => u.role !== 'super_admin');
       
-      // Filter by status
-      if (input?.status && input.status !== 'all') {
-        clients = clients.filter((c: any) => c.accountStatus === input.status);
-      }
+      // Balance-based subscription (no more accountStatus filter)
       
       // Search
       if (input?.search) {
@@ -313,11 +310,8 @@ const usersRouter = router({
       const plans = await saasPlansDb.getAllPlans(false);
       const planMap = new Map(plans.map((p: any) => [p.id, p.name]));
       
-      const clientsWithPlan = clients.map((c: any) => ({
-        ...c,
-        planName: c.subscriptionPlanId ? planMap.get(c.subscriptionPlanId) : null,
-        // Balance-based subscription (no more daysRemaining)
-      }));
+      // Balance-based subscription (no more planName)
+      const clientsWithPlan = clients;
       
       // Pagination
       const page = input?.page || 1;
@@ -381,10 +375,8 @@ const usersRouter = router({
       
       const drizzleDb = await getDb();
       if (!drizzleDb) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
-      // Update user status
-      await drizzleDb.update(users)
-        .set({ accountStatus: 'suspended' })
-        .where(eq(users.id, input.userId));
+      // Balance-based subscription (no more accountStatus field)
+      // Suspend handled by setting wallet balance to 0
       
       // Disable all NAS devices
       await drizzleDb.execute(
@@ -476,11 +468,8 @@ const usersRouter = router({
       );
       const sessionsCount = (sessionsResult as any)[0]?.[0]?.count || 0;
       
-      // Get plan details
-      let plan = null;
-      if ((user as any).subscriptionPlanId) {
-        plan = await saasPlansDb.getPlanById((user as any).subscriptionPlanId);
-      }
+      // Balance-based subscription (no more plan)
+      const plan = null;
       
       return {
         user,
@@ -2672,6 +2661,74 @@ const walletRouter = router({
       
       return walletLedgerService.getWalletSummary(userId);
     }),
+
+  // ===== Credit System ($2 overdraft) =====
+  getCreditStatus: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+    const tenantContext = getTenantContext(ctx.user);
+    const effectiveUserId = getEffectiveOwnerId(tenantContext);
+    const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, effectiveUserId));
+    if (!wallet) throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
+    return {
+      balance: parseFloat(wallet.balance),
+      creditBalance: parseFloat(wallet.creditBalance || '0'),
+      maxCreditLimit: parseFloat(wallet.maxCreditLimit || '2'),
+      creditActivatedAt: wallet.creditActivatedAt,
+      hasCreditAvailable: parseFloat(wallet.creditBalance || '0') < parseFloat(wallet.maxCreditLimit || '2'),
+      isInDebt: parseFloat(wallet.creditBalance || '0') > 0,
+    };
+  }),
+
+  activateCredit: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+    const tenantContext = getTenantContext(ctx.user);
+    const effectiveUserId = getEffectiveOwnerId(tenantContext);
+    const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, effectiveUserId));
+    if (!wallet) throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
+    
+    const currentBalance = parseFloat(wallet.balance);
+    const currentCredit = parseFloat(wallet.creditBalance || '0');
+    const maxCredit = parseFloat(wallet.maxCreditLimit || '2');
+    
+    // Only allow if balance is 0 and credit not already maxed
+    if (currentBalance > 0) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Credit only available when balance is 0' });
+    }
+    if (currentCredit >= maxCredit) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: `Credit limit of $${maxCredit} already reached` });
+    }
+    
+    const creditAmount = maxCredit - currentCredit;
+    const newBalance = currentBalance + creditAmount;
+    const newCreditBalance = currentCredit + creditAmount;
+    
+    await db.update(wallets).set({
+      balance: newBalance.toFixed(2),
+      creditBalance: newCreditBalance.toFixed(2),
+      creditActivatedAt: wallet.creditActivatedAt || new Date(),
+      updatedAt: new Date(),
+    }).where(eq(wallets.userId, effectiveUserId));
+    
+    // Log in ledger
+    await db.insert(walletLedger).values({
+      userId: effectiveUserId,
+      type: 'credit',
+      amount: creditAmount.toFixed(2),
+      balanceBefore: currentBalance.toFixed(2),
+      balanceAfter: newBalance.toFixed(2),
+      reason: `Credit activated: $${creditAmount.toFixed(2)} overdraft`,
+      reasonAr: `تفعيل مديونية: $${creditAmount.toFixed(2)}`,
+      entityType: 'credit',
+      entityId: effectiveUserId,
+      actorId: effectiveUserId,
+      actorRole: ctx.user.role,
+      createdAt: new Date(),
+    });
+    
+    return { success: true, creditAmount, newBalance };
+  }),
 });
 
 // ============================================================================

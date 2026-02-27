@@ -73,11 +73,28 @@ export async function deposit(userId: number, amount: string, description?: stri
   
   const currentBalance = parseFloat(wallet.balance as string);
   const depositAmount = parseFloat(amount);
-  const newBalance = (currentBalance + depositAmount).toFixed(2);
+  const currentCredit = parseFloat((wallet as any).creditBalance || '0');
   
-  // Update wallet balance
+  // Deduct outstanding debt from deposit first
+  let actualDeposit = depositAmount;
+  let debtDeducted = 0;
+  let newCreditBalance = currentCredit;
+  
+  if (currentCredit > 0) {
+    debtDeducted = Math.min(currentCredit, depositAmount);
+    actualDeposit = depositAmount - debtDeducted;
+    newCreditBalance = currentCredit - debtDeducted;
+  }
+  
+  const newBalance = (currentBalance + actualDeposit).toFixed(2);
+  
+  // Update wallet balance and credit
   await db.update(wallets)
-    .set({ balance: newBalance })
+    .set({
+      balance: newBalance,
+      ...(currentCredit > 0 ? { creditBalance: newCreditBalance.toFixed(2) } : {}),
+      updatedAt: new Date(),
+    })
     .where(eq(wallets.userId, userId));
   
   // Create transaction record
@@ -88,11 +105,13 @@ export async function deposit(userId: number, amount: string, description?: stri
     amount,
     balanceBefore: wallet.balance as string,
     balanceAfter: newBalance,
-    description: description || "Deposit",
+    description: debtDeducted > 0
+      ? `${description || 'Deposit'} (خصم مديونية $${debtDeducted.toFixed(2)})`
+      : (description || "Deposit"),
     status: "completed",
   });
   
-  return { success: true, newBalance };
+  return { success: true, newBalance, debtDeducted };
 }
 
 export async function withdraw(userId: number, amount: string, type: "withdrawal" | "card_purchase" | "subscription", description?: string, referenceType?: string, referenceId?: number) {

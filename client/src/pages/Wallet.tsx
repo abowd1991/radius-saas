@@ -61,8 +61,21 @@ export default function Wallet() {
   const { data: transactions, isLoading: transactionsLoading, refetch: refetchTransactions } = trpc.wallet.getTransactions.useQuery({
     limit: 20,
   });
+  const { data: creditStatus, refetch: refetchCredit } = trpc.wallet.getCreditStatus.useQuery();
 
   // Mutations
+  const activateCredit = trpc.wallet.activateCredit.useMutation({
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تفعيل المديونية بنجاح! رصيدك الآن $2.00' : 'Credit activated! Your balance is now $2.00');
+      refetchWallet();
+      refetchCredit();
+      refetchTransactions();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const deposit = trpc.wallet.deposit.useMutation({
     onSuccess: () => {
       toast.success(language === "ar" ? "تم إضافة الرصيد بنجاح" : "Deposit successful");
@@ -251,7 +264,39 @@ export default function Wallet() {
                 <p className="text-sm text-muted-foreground mt-1">
                   {language === "ar" ? "الرصيد المتاح" : "Available balance"}
                 </p>
+                {/* Debt indicator */}
+                {creditStatus && creditStatus.isInDebt && (
+                  <p className="text-sm text-red-500 mt-1 font-medium">
+                    {language === "ar"
+                      ? `مديونية مستحقة: $${creditStatus.creditBalance.toFixed(2)}`
+                      : `Outstanding debt: $${creditStatus.creditBalance.toFixed(2)}`}
+                  </p>
+                )}
               </div>
+              <div className="flex flex-col gap-2 items-end">
+                {/* Credit activation button - show when balance is 0 and credit available */}
+                {creditStatus && parseFloat(wallet?.balance || '0') <= 0 && creditStatus.hasCreditAvailable && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950"
+                    onClick={() => activateCredit.mutate()}
+                    disabled={activateCredit.isPending}
+                  >
+                    {activateCredit.isPending ? (
+                      language === 'ar' ? 'جاري...' : 'Processing...'
+                    ) : (
+                      language === 'ar' ? 'تفعيل مديونية $2' : 'Activate $2 Credit'
+                    )}
+                  </Button>
+                )}
+                {creditStatus && creditStatus.isInDebt && (
+                  <p className="text-xs text-amber-600 text-center">
+                    {language === 'ar'
+                      ? 'سيتم خصم المديونية من أول شحن'
+                      : 'Debt will be deducted from next top-up'}
+                  </p>
+                )}
               <Dialog open={isDepositDialogOpen} onOpenChange={setIsDepositDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="lg">
@@ -405,6 +450,7 @@ export default function Wallet() {
                   </form>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
             
             {/* Balance Duration Progress Bar */}

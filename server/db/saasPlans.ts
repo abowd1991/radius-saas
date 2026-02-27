@@ -305,10 +305,8 @@ export async function suspendUser(userId: number) {
   const db = await getDb();
   if (!db) return false;
 
-  await db
-    .update(users)
-    .set({ accountStatus: "suspended" })
-    .where(eq(users.id, userId));
+  // Balance-based subscription (no more accountStatus field)
+  // Suspend handled by setting wallet balance to 0
 
   // Also suspend any active subscriptions
   await db
@@ -329,18 +327,8 @@ export async function reactivateUser(userId: number) {
   // Check if user has valid subscription
   const subscription = await getUserSubscription(userId);
   
-  if (subscription && new Date(subscription.endDate) > new Date()) {
-    await db
-      .update(users)
-      .set({ accountStatus: "active" })
-      .where(eq(users.id, userId));
-  } else {
-    // No valid subscription, set to expired
-    await db
-      .update(users)
-      .set({ accountStatus: "expired" })
-      .where(eq(users.id, userId));
-  }
+  // Balance-based subscription (no more accountStatus field)
+  // Reactivation handled by adding balance to wallet
 
   return true;
 }

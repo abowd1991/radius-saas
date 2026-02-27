@@ -93,11 +93,6 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
   const verificationExpires = new Date();
   verificationExpires.setMinutes(verificationExpires.getMinutes() + CODE_EXPIRY_MINUTES);
 
-  // Calculate trial dates (7 days)
-  const trialStartDate = new Date();
-  const trialEndDate = new Date();
-  trialEndDate.setDate(trialEndDate.getDate() + 7);
-
   // Get default permission plan for client role
   const [defaultPlan] = await db
     .select()
@@ -122,9 +117,6 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
       loginMethod: "traditional",
       role: "client", // New users are regular clients
       status: "active",
-      accountStatus: "trial", // Start with trial
-      trialStartDate,
-      trialEndDate,
       permissionPlanId: defaultPlan?.id || null, // Auto-assign default plan
       emailVerified: false,
       emailVerificationCode: verificationCode,
@@ -220,15 +212,8 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
     };
   }
 
-  // Check account status (trial/expired/suspended)
-  if (user.accountStatus === "suspended") {
-    return { success: false, error: "Your account has been suspended. Please contact support." };
-  }
-  
-  if (user.accountStatus === "expired") {
-    // Allow login but with limited access (handled in frontend)
-    console.log(`[Auth] User ${user.username} logged in with expired account`);
-  }
+  // Balance-based subscription (no more accountStatus check)
+  // User can login regardless of balance
 
   // Update last signed in
   await db
