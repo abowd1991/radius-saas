@@ -5015,3 +5015,15 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] Fix TypeScript errors (0 errors)
 - [ ] Test login functionality (need user to verify)
 - [ ] Verify no more "Failed query" errors
+
+## Smart Namespace Isolation - FreeRADIUS (Mar 2026)
+- [x] إضافة indexes على nas(nasname) و radius_cards(createdBy, username, status)
+- [x] تحديث FreeRADIUS ليتصل بقاعدة بيانات التطبيق (gateway02)
+- [x] تعديل authorize section في FreeRADIUS لتنفيذ Smart Namespace Isolation
+  - [x] استعلام 1: استخراج ownerId من nas بناءً على NAS-IP-Address
+  - [x] استعلام 2: التحقق من radius_cards بشرط (username + createdBy + status)
+  - [x] رفض أي طلب من NAS غير معروف أو كرت لعميل آخر
+- [x] حذف جميع الكروت القديمة من radcheck و radreply و radusergroup
+- [x] تعديل generateCardsV2.ts ليكتفي بـ radius_cards فقط (بدون radcheck/radreply)
+- [x] إضافة معلومة Smart Namespace Isolation في واجهة إنشاء الكروت
+- [x] عرض أجهزة NAS المرتبطة بالعميل في نافذة إنشاء الكروت

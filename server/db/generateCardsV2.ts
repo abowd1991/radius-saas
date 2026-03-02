@@ -1,17 +1,21 @@
 /**
- * Production-Grade Card Generation System
- * 
+ * Production-Grade Card Generation System (v3 - radius_cards only)
+ *
+ * Changes from v2:
+ * - Removed radcheck / radreply / radusergroup writes
+ * - FreeRADIUS now reads directly from radius_cards via SQL XLAT
+ * - Smart Namespace Isolation: each card is tied to createdBy (ownerId)
+ *
  * Features:
- * - 100% Duplicate Prevention (UNIQUE constraints + ULID)
+ * - 100% Duplicate Prevention (UNIQUE constraint on username)
  * - Bulk Insert (thousands of cards in one transaction)
  * - Transaction-based (All-or-Nothing guarantee)
  * - Retry Logic (collision handling)
  * - Performance Optimized (< 15s for 5000 cards)
  */
 
-import { ulid } from 'ulid';
 import { getDb } from '../db';
-import { plans, cardBatches, radiusCards, radcheck, radreply, radusergroup } from '../../drizzle/schema';
+import { plans, cardBatches, radiusCards } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
@@ -49,15 +53,15 @@ interface GeneratedCard {
 
 // Constants
 const MAX_RETRIES = 3;
-const BULK_INSERT_BATCH_SIZE = 25; // Insert 25 rows at a time (safe for large batches)
+const BULK_INSERT_BATCH_SIZE = 50; // radius_cards only → safe to use 50
 
 /**
  * Generate username with digits only + optional prefix
  * Format: {prefix}{digits}
  * Example: prefix="5" + length=5 → "554212"
- * Example: prefix="" + length=6 → "123456"
+ * Example: prefix="" + length=5 → "12345"
  */
-function generateUsername(length: number = 6, prefix: string = ''): string {
+function generateUsername(length: number = 5, prefix: string = ''): string {
   const chars = '0123456789';
   let result = prefix;
   for (let i = 0; i < length; i++) {
@@ -86,46 +90,24 @@ function generateSerialNumber(): string {
 }
 
 /**
- * Format expiration date for FreeRADIUS
- */
-function formatExpirationDate(date: Date): string {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = months[date.getMonth()];
-  const day = date.getDate().toString().padStart(2, '0');
-  const year = date.getFullYear();
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const seconds = date.getSeconds().toString().padStart(2, '0');
-  return `${month} ${day} ${year} ${hours}:${minutes}:${seconds}`;
-}
-
-/**
  * Generate cards data in memory (preparation phase)
+ * Only produces radius_cards rows — no radcheck/radreply/radusergroup
  */
 function generateCardsData(
   quantity: number,
-  plan: any,
   config: {
     prefix: string;
     usernameLength: number;
     passwordLength: number;
-    simultaneousUse: number;
-    subscriberGroup: string;
-    timeFromActivation: boolean;
-    expiresAt: Date | null;
-    sessionTimeout: number | null;
-    rateLimitValue: string | null;
     batchId: string;
+    expiresAt: Date | null;
     usageBudgetSeconds: number;
     windowSeconds: number;
-    hotspotPort?: string;
   },
-  data: GenerateCardsInput
+  data: GenerateCardsInput,
+  plan: any
 ) {
   const generatedCards: GeneratedCard[] = [];
-  const allRadcheckValues: any[] = [];
-  const allRadreplyValues: any[] = [];
-  const allRadusergroupValues: any[] = [];
   const allCardValues: any[] = [];
 
   for (let i = 0; i < quantity; i++) {
@@ -133,92 +115,6 @@ function generateCardsData(
     const password = generatePassword(config.passwordLength);
     const serialNumber = generateSerialNumber();
 
-    // Radcheck values (4 attributes per card)
-    allRadcheckValues.push(
-      { username, attribute: "Cleartext-Password", op: ":=", value: password },
-      { username, attribute: "Simultaneous-Use", op: ":=", value: String(config.simultaneousUse) },
-      { username, attribute: "Auth-Type", op: ":=", value: "Accept" }
-    );
-
-    // Expiration
-    if (!config.timeFromActivation && config.expiresAt) {
-      allRadcheckValues.push({
-        username,
-        attribute: "Expiration",
-        op: ":=",
-        value: formatExpirationDate(config.expiresAt),
-      });
-    } else {
-      allRadcheckValues.push({
-        username,
-        attribute: "Expiration",
-        op: ":=",
-        value: "Jan 01 2099 00:00:00",
-      });
-    }
-
-    // Radreply values
-    if (config.rateLimitValue) {
-      allRadreplyValues.push({
-        username,
-        attribute: "Mikrotik-Rate-Limit",
-        op: "=",
-        value: config.rateLimitValue,
-      });
-    }
-
-    if (config.sessionTimeout && config.sessionTimeout > 0) {
-      allRadreplyValues.push({
-        username,
-        attribute: "Session-Timeout",
-        op: "=",
-        value: String(config.sessionTimeout),
-      });
-    }
-
-    if (plan.mikrotikAddressPool) {
-      allRadreplyValues.push({
-        username,
-        attribute: "Framed-Pool",
-        op: "=",
-        value: plan.mikrotikAddressPool,
-      });
-    }
-
-    if (config.hotspotPort) {
-      allRadreplyValues.push({
-        username,
-        attribute: "Called-Station-Id",
-        op: "==",
-        value: config.hotspotPort,
-      });
-    }
-
-    // Override Session-Timeout with usageBudgetSeconds if provided
-    if (data.usageBudgetSeconds && data.usageBudgetSeconds > 0) {
-      const existingIdx = allRadreplyValues.findIndex(
-        v => v.username === username && v.attribute === 'Session-Timeout'
-      );
-      if (existingIdx >= 0) {
-        allRadreplyValues[existingIdx].value = String(data.usageBudgetSeconds);
-      } else {
-        allRadreplyValues.push({
-          username,
-          attribute: "Session-Timeout",
-          op: "=",
-          value: String(data.usageBudgetSeconds),
-        });
-      }
-    }
-
-    // Radusergroup
-    allRadusergroupValues.push({
-      username,
-      groupname: config.subscriberGroup,
-      priority: 1,
-    });
-
-    // Card record
     allCardValues.push({
       username,
       password,
@@ -238,13 +134,7 @@ function generateCardsData(
     generatedCards.push({ serialNumber, username, password });
   }
 
-  return {
-    generatedCards,
-    allRadcheckValues,
-    allRadreplyValues,
-    allRadusergroupValues,
-    allCardValues,
-  };
+  return { generatedCards, allCardValues };
 }
 
 /**
@@ -271,23 +161,12 @@ export async function generateCardsV2(data: GenerateCardsInput) {
 
   // Configuration
   const batchId = nanoid(10);
-  const passwordLength = data.passwordLength || 8;
-  const usernameLength = data.usernameLength || 6;
+  const passwordLength = data.passwordLength || 4;
+  const usernameLength = data.usernameLength || 5;
   const prefix = data.prefix || '';
   const simultaneousUse = data.simultaneousUse || 1;
   const subscriberGroup = data.subscriberGroup || 'Default group';
   const timeFromActivation = data.timeFromActivation !== false;
-
-  // Calculate session timeout
-  let sessionTimeout: number | null = null;
-  if (data.cardTimeValue && data.cardTimeValue > 0) {
-    if (data.cardTimeUnit === 'days') {
-      sessionTimeout = data.cardTimeValue * 24 * 60 * 60;
-    } else {
-      sessionTimeout = data.cardTimeValue * 60 * 60;
-    }
-  }
-  const finalSessionTimeout = sessionTimeout || plan.sessionTimeout;
 
   // Calculate expiration
   let expiresAt: Date | null = null;
@@ -312,14 +191,6 @@ export async function generateCardsV2(data: GenerateCardsInput) {
     }
   }
 
-  // Prepare rate limit
-  let rateLimitValue: string | null = null;
-  if (plan.mikrotikRateLimit) {
-    rateLimitValue = plan.mikrotikRateLimit;
-  } else if (plan.downloadSpeed && plan.uploadSpeed) {
-    rateLimitValue = `${plan.downloadSpeed}k/${plan.uploadSpeed}k`;
-  }
-
   // Retry logic for collision handling
   let attempt = 0;
   let success = false;
@@ -329,26 +200,20 @@ export async function generateCardsV2(data: GenerateCardsInput) {
     attempt++;
 
     try {
-      // Generate cards data
+      // Generate cards data in memory
       const cardsData = generateCardsData(
         data.quantity,
-        plan,
         {
           prefix,
           usernameLength,
           passwordLength,
-          simultaneousUse,
-          subscriberGroup,
-          timeFromActivation,
-          expiresAt,
-          sessionTimeout: finalSessionTimeout,
-          rateLimitValue,
           batchId,
+          expiresAt,
           usageBudgetSeconds: data.usageBudgetSeconds || 0,
           windowSeconds: data.windowSeconds || 0,
-          hotspotPort: data.hotspotPort,
         },
-        data
+        data,
+        plan
       );
 
       generatedCards = cardsData.generatedCards;
@@ -373,7 +238,7 @@ export async function generateCardsV2(data: GenerateCardsInput) {
           cardTimeUnit: data.cardTimeUnit || 'hours',
           macBinding: data.macBinding || false,
           prefix: prefix || null,
-          usernameLength: data.usernameLength || 6,
+          usernameLength: data.usernameLength || 5,
           passwordLength,
           subscriberGroup,
           cardPrice: data.cardPrice ? String(data.cardPrice) : '0',
@@ -381,21 +246,10 @@ export async function generateCardsV2(data: GenerateCardsInput) {
           windowSeconds: data.windowSeconds || 0,
         } as any);
 
-        // 2. Bulk insert radcheck
-        await bulkInsert(tx, radcheck, cardsData.allRadcheckValues);
-
-        // 3. Bulk insert radreply
-        if (cardsData.allRadreplyValues.length > 0) {
-          await bulkInsert(tx, radreply, cardsData.allRadreplyValues);
-        }
-
-        // 4. Bulk insert radusergroup
-        await bulkInsert(tx, radusergroup, cardsData.allRadusergroupValues);
-
-        // 5. Bulk insert radius_cards
+        // 2. Bulk insert radius_cards only
         await bulkInsert(tx, radiusCards, cardsData.allCardValues);
 
-        // 6. Update batch status
+        // 3. Update batch status
         await tx.update(cardBatches)
           .set({ status: "completed" })
           .where(eq(cardBatches.batchId, batchId));
@@ -403,18 +257,18 @@ export async function generateCardsV2(data: GenerateCardsInput) {
 
       success = true;
     } catch (error: any) {
-      // Handle duplicate key errors
+      // Handle duplicate key errors (username collision)
       if (error.code === 'ER_DUP_ENTRY' || error.message?.includes('Duplicate entry')) {
         console.error(`[generateCardsV2] Attempt ${attempt}/${MAX_RETRIES} failed: Duplicate entry detected`);
-        
+
         if (attempt >= MAX_RETRIES) {
-          throw new Error(`Failed to generate cards after ${MAX_RETRIES} attempts due to duplicate entries. This is very rare with ULID. Please try again.`);
+          throw new Error(`Failed to generate cards after ${MAX_RETRIES} attempts due to duplicate entries. Please try again.`);
         }
-        
-        // Retry with new ULIDs (automatic on next iteration)
+
+        // Retry with new random values
         continue;
       }
-      
+
       // Other errors - throw immediately
       throw error;
     }

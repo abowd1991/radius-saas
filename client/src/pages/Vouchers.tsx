@@ -156,6 +156,8 @@ export default function Vouchers() {
 
   // Fetch subscriber groups
   const { data: subscriberGroups } = trpc.vouchers.getSubscriberGroups.useQuery();
+  // Fetch NAS devices for display info
+  const { data: nasDevices } = trpc.nas.list.useQuery();
 
   // Mutations
   const generateMutation = trpc.vouchers.generate.useMutation({
@@ -742,6 +744,32 @@ export default function Vouchers() {
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                      </div>
+                      {/* NAS Isolation Info */}
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-md p-3">
+                        <div className="flex items-start gap-2">
+                          <Wifi className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-blue-400">
+                              {language === 'ar' ? 'عزل تلقائي بين العملاء (Smart Namespace Isolation)' : 'Automatic Client Isolation (Smart Namespace Isolation)'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {language === 'ar'
+                                ? 'الكروت المُنشأة ستعمل فقط على أجهزة NAS المرتبطة بحسابك. لا يمكن لعميل آخر استخدام نفس الكود.'
+                                : 'Generated cards will only work on NAS devices linked to your account. Other clients cannot use the same code.'
+                              }
+                            </p>
+                            {nasDevices && nasDevices.length > 0 && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                <span className="font-medium text-foreground">
+                                  {language === 'ar' ? 'أجهزة NAS المرتبطة: ' : 'Linked NAS devices: '}
+                                </span>
+                                {nasDevices.slice(0, 3).map((n: any) => n.shortname || n.nasname).join(', ')}
+                                {nasDevices.length > 3 && ` +${nasDevices.length - 3}`}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

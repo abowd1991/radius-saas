@@ -1,0 +1,38 @@
+{
+  "query": "\n-- عرض الأعداد قبل الحذف\nSELECT 'radcheck' as tbl, COUNT(*) as cnt FROM radcheck\nUNION ALL\nSELECT 'radreply', COUNT(*) FROM radreply\nUNION ALL\nSELECT 'radusergroup', COUNT(*) FROM radusergroup;\n\n-- حذف جميع السجلات\nDELETE FROM radcheck;\nDELETE FROM radreply;\nDELETE FROM radusergroup;\n\n-- التحقق بعد الحذف\nSELECT 'radcheck' as tbl, COUNT(*) as cnt FROM radcheck\nUNION ALL\nSELECT 'radreply', COUNT(*) FROM radreply\nUNION ALL\nSELECT 'radusergroup', COUNT(*) FROM radusergroup;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- عرض الأعداد قبل الحذف\nSELECT 'radcheck' as tbl, COUNT(*) as cnt FROM radcheck\nUNION ALL\nSELECT 'radreply', COUNT(*) FROM radreply\nUNION ALL\nSELECT 'radusergroup', COUNT(*) FROM radusergroup;\n\n-- حذف جميع السجلات\nDELETE FROM radcheck;\nDELETE FROM radreply;\nDELETE FROM radusergroup;\n\n-- التحقق بعد الحذف\nSELECT 'radcheck' as tbl, COUNT(*) as cnt FROM radcheck\nUNION ALL\nSELECT 'radreply', COUNT(*) FROM radreply\nUNION ALL\nSELECT 'radusergroup', COUNT(*) FROM radusergroup;\n",
+  "rows": [
+    {
+      "tbl": "radusergroup",
+      "cnt": "2505"
+    },
+    {
+      "tbl": "radreply",
+      "cnt": "4975"
+    },
+    {
+      "tbl": "radcheck",
+      "cnt": "12216"
+    },
+    {
+      "tbl": "tbl",
+      "cnt": "cnt"
+    },
+    {
+      "tbl": "radusergroup",
+      "cnt": "0"
+    },
+    {
+      "tbl": "radreply",
+      "cnt": "0"
+    },
+    {
+      "tbl": "radcheck",
+      "cnt": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\nradusergroup\t2505\nradreply\t4975\nradcheck\t12216\ntbl\tcnt\nradusergroup\t0\nradreply\t0\nradcheck\t0\n",
+  "stderr": "",
+  "execution_time_ms": 882
+}
