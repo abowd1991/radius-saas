@@ -176,6 +176,13 @@
       "when": 1771973571949,
       "tag": "0024_pale_prowler",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1772578795364,
+      "tag": "0025_freezing_toxin",
+      "breakpoints": true
     }
   ]
 }

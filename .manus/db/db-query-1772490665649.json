@@ -1,0 +1,9 @@
+{
+  "query": "\n-- حذف الـ unique constraint القديم على username فقط\nALTER TABLE radius_cards DROP INDEX radius_cards_username_unique;\n\n-- إضافة unique constraint مركب (createdBy, username) لضمان عدم التكرار لنفس العميل فقط\nALTER TABLE radius_cards ADD UNIQUE KEY `uniq_cards_owner_username` (`createdBy`, `username`);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute \n-- حذف الـ unique constraint القديم على username فقط\nALTER TABLE radius_cards DROP INDEX radius_cards_username_unique;\n\n-- إضافة unique constraint مركب (createdBy, username) لضمان عدم التكرار لنفس العميل فقط\nALTER TABLE radius_cards ADD UNIQUE KEY `uniq_cards_owner_username` (`createdBy`, `username`);\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 818
+}

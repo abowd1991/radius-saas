@@ -286,7 +286,7 @@ export type InsertRadpostauth = typeof radpostauth.$inferInsert;
 export const radiusCards = mysqlTable("radius_cards", {
   id: int("id").autoincrement().primaryKey(),
   // RADIUS credentials
-  username: varchar("username", { length: 64 }).notNull().unique(),
+  username: varchar("username", { length: 64 }).notNull(), // Unique per owner only (Smart Namespace Isolation)
   password: varchar("password", { length: 64 }).notNull(),
   // Card info
   serialNumber: varchar("serialNumber", { length: 20 }).notNull().unique(),

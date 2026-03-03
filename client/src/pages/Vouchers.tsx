@@ -114,8 +114,8 @@ export default function Vouchers() {
     batchName: "",
     prefix: "",
     // Card Settings
-    usernameLength: "5",
-    passwordLength: "4",
+    usernameLength: "5", // min 5, max 8
+    passwordLength: "4", // min 2, max 6
     // Service & Group
     planId: "",
     subscriberGroup: "Default group",
@@ -674,8 +674,15 @@ export default function Vouchers() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {[2, 3, 4, 5, 6, 7, 8].map(n => (
-                                <SelectItem key={n} value={String(n)}>{n} {language === 'ar' ? 'أرقام' : 'digits'}</SelectItem>
+                              {[
+                                { n: 5, capacity: '90,000' },
+                                { n: 6, capacity: '900,000' },
+                                { n: 7, capacity: '9,000,000' },
+                                { n: 8, capacity: '90,000,000' },
+                              ].map(({ n, capacity }) => (
+                                <SelectItem key={n} value={String(n)}>
+                                  {n} {language === 'ar' ? 'أرقام' : 'digits'} — {language === 'ar' ? 'حتى' : 'up to'} {capacity}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -697,12 +704,24 @@ export default function Vouchers() {
                           </Select>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
-                        {language === 'ar' 
-                          ? 'مثال: بداية "5" + طول 5 = 554212 | كلمة سر 4 أرقام = 1234'
-                          : 'Example: Prefix "5" + Length 5 = 554212 | Password 4 digits = 1234'
-                        }
-                      </p>
+                      {/* Capacity Info */}
+                      <div className="bg-muted/50 rounded-md p-3 space-y-1">
+                        <p className="text-xs font-medium text-foreground">
+                          {language === 'ar' ? 'الطاقة الاستيعابية لكل عميل (مستقلة):' : 'Capacity per client (isolated):'}
+                        </p>
+                        <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+                          <span>5 {language === 'ar' ? 'خانات' : 'digits'}: 90K</span>
+                          <span>6 {language === 'ar' ? 'خانات' : 'digits'}: 900K</span>
+                          <span>7 {language === 'ar' ? 'خانات' : 'digits'}: 9M</span>
+                          <span>8 {language === 'ar' ? 'خانات' : 'digits'}: 90M</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {language === 'ar'
+                            ? `مثال: بداية "5" + طول 5 → كود مثل 54212 | كلمة سر 4 أرقام → 1234`
+                            : `Example: Prefix "5" + Length 5 → code like 54212 | Password 4 digits → 1234`
+                          }
+                        </p>
+                      </div>
                     </div>
 
                     {/* Section 3: Service & Group */}

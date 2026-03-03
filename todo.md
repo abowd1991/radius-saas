@@ -5027,3 +5027,7 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] تعديل generateCardsV2.ts ليكتفي بـ radius_cards فقط (بدون radcheck/radreply)
 - [x] إضافة معلومة Smart Namespace Isolation في واجهة إنشاء الكروت
 - [x] عرض أجهزة NAS المرتبطة بالعميل في نافذة إنشاء الكروت
+
+## Bug Fix: خطأ insert في radius_cards عند إنشاء الكروت (Mar 2026)
+- [x] تحليل سبب فشل INSERT في radius_cards
+- [x] إصلاح generateCardsV2.ts لحل مشكلة التكرار في username
