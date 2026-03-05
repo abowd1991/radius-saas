@@ -3945,11 +3945,11 @@ const dashboardRouter = router({
     const nasDevices = await nasDb.getNasDevicesByTenant(tenantContext);
     const activeNasCount = nasDevices.length;
     
-    // Estimated Monthly Cost ($10 per NAS per month)
-    const estimatedMonthlyCost = (activeNasCount * 10).toFixed(2);
+    // Estimated Monthly Cost ($15 per NAS per month)
+    const estimatedMonthlyCost = (activeNasCount * 15).toFixed(2);
     
     // Balance Duration (how many days balance will last)
-    const dailyCost = activeNasCount * 0.33; // $0.33 per day per NAS
+    const dailyCost = activeNasCount * 0.50; // $0.50 per day per NAS ($15/month)
     const balanceNum = parseFloat(currentBalance);
     const balanceDuration = dailyCost > 0 ? Math.floor(balanceNum / dailyCost) : 999;
     

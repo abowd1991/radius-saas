@@ -125,8 +125,8 @@ export const createPermissionProcedure = (resource: string, action: string) => {
   );
 };
 
-// Active subscription procedure - blocks write operations when subscription is expired
-// Import this dynamically to avoid circular dependencies
+// Active subscription procedure - blocks write operations when balance is 0 or billing is suspended
+// Checks wallet balance for clients - super_admin and owner bypass this check
 export const activeSubscriptionProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
@@ -135,7 +135,7 @@ export const activeSubscriptionProcedure = t.procedure.use(
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
     }
 
-    // Super admin and owner bypass subscription check
+    // Super admin and owner bypass billing check
     if (ctx.user.role === 'super_admin' || ctx.user.role === 'owner') {
       return next({
         ctx: {
@@ -145,15 +145,27 @@ export const activeSubscriptionProcedure = t.procedure.use(
       });
     }
 
-    // Check subscription status
-    const { isSubscriptionActive } = await import('./tenantSubscriptions');
-    const isActive = await isSubscriptionActive(ctx.user.id);
+    // For clients and resellers: check wallet balance
+    const { getDb } = await import('../db');
+    const { wallets } = await import('../../drizzle/schema');
+    const { eq } = await import('drizzle-orm');
 
-    if (!isActive) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "Your subscription has expired or is inactive. Please contact support to renew your subscription.",
-      });
+    const db = await getDb();
+    if (db) {
+      const [wallet] = await db
+        .select({ balance: wallets.balance })
+        .from(wallets)
+        .where(eq(wallets.userId, ctx.user.id))
+        .limit(1);
+
+      const balance = wallet ? parseFloat(wallet.balance) : 0;
+
+      if (balance <= 0) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "INSUFFICIENT_BALANCE: رصيدك صفر. يرجى إعادة الشحن لمتابعة استخدام الخدمة.",
+        });
+      }
     }
 
     return next({

@@ -5031,3 +5031,10 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 ## Bug Fix: خطأ insert في radius_cards عند إنشاء الكروت (Mar 2026)
 - [x] تحليل سبب فشل INSERT في radius_cards
 - [x] إصلاح generateCardsV2.ts لحل مشكلة التكرار في username
+
+## نظام الخصم التلقائي والتحقق من الرصيد (Mar 2026)
+- [x] فحص نظام الفوترة الحالي في schema.ts و routers.ts
+- [x] تحديث سعر NAS إلى $0.50/يوم ($15/شهر) في systemSettings و billingService.ts و routers.ts
+- [x] تعديل activeSubscriptionProcedure للتحقق من رصيد المحفظة بدلاً من الاشتراك القديم
+- [x] إنشاء مكوّن InsufficientBalanceModal برسالة واضحة وزر الذهاب للمحفظة
+- [x] تطبيق InsufficientBalanceModal على NasDevices.tsx و Vouchers.tsx و Plans.tsx

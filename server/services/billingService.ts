@@ -7,7 +7,7 @@ import { logAudit } from "./auditLogService";
  * SaaS Daily Billing Service
  * 
  * Billing Model:
- * - $0.33/day per active NAS
+ * - $0.50/day per active NAS ($15/month ÷ 30 days)
  * - Billing starts from 1st of month
  * - Daily deduction when NAS is active
  * - Set billing_status = 'past_due' if insufficient balance
@@ -26,7 +26,7 @@ export async function getDailyBillingRate(): Promise<number> {
     .from(systemSettings)
     .where(eq(systemSettings.key, "nas_daily_rate"));
 
-  return setting ? parseFloat(setting.value) : 0.33; // Default: $0.33/day
+  return setting ? parseFloat(setting.value) : 0.50; // Default: $0.50/day ($15/month)
 }
 
 /**

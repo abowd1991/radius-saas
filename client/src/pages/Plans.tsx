@@ -43,12 +43,14 @@ import {
   DollarSign,
 } from "lucide-react";
 import { useState } from "react";
+import { InsufficientBalanceModal, isInsufficientBalanceError } from "@/components/InsufficientBalanceModal";
 
 export default function Plans() {
   const { user } = useAuth();
   const { t, language, direction } = useLanguage();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
+  const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
 
   // Fetch plans
   const { data: plans, isLoading, refetch } = trpc.plans.list.useQuery();
@@ -60,8 +62,12 @@ export default function Plans() {
       setIsAddDialogOpen(false);
       refetch();
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: (error: any) => {
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalance(true);
+      } else {
+        toast.error(error.message);
+      }
     },
   });
 
@@ -140,6 +146,11 @@ export default function Plans() {
 
   return (
     <div className="space-y-6">
+      {/* Insufficient Balance Modal */}
+      <InsufficientBalanceModal
+        open={showInsufficientBalance}
+        onClose={() => setShowInsufficientBalance(false)}
+      />
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>

@@ -63,6 +63,7 @@ import {
   Wifi,
 } from "lucide-react";
 import { useState } from "react";
+import { InsufficientBalanceModal, isInsufficientBalanceError } from "@/components/InsufficientBalanceModal";
 import { usePagination } from "@/hooks/usePagination";
 import { useSorting } from "@/hooks/useSorting";
 import { DataPagination } from "@/components/ui/data-pagination";
@@ -73,6 +74,7 @@ export default function Vouchers() {
   const { user } = useAuth();
   const { t, language, direction } = useLanguage();
   const [activeTab, setActiveTab] = useState("cards");
+  const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [isRedeemDialogOpen, setIsRedeemDialogOpen] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
@@ -196,7 +198,11 @@ export default function Vouchers() {
       if (context?.interval) clearInterval(context.interval);
       setIsGenerating(false);
       setGenerationProgress(0);
-      toast.error(error.message);
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalance(true);
+      } else {
+        toast.error(error.message);
+      }
     },
   });
 
@@ -534,6 +540,11 @@ export default function Vouchers() {
 
   return (
     <div className="space-y-6" dir={direction}>
+      {/* Insufficient Balance Modal */}
+      <InsufficientBalanceModal
+        open={showInsufficientBalance}
+        onClose={() => setShowInsufficientBalance(false)}
+      />
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>

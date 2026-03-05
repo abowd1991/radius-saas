@@ -65,6 +65,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useState, useRef } from "react";
+import { InsufficientBalanceModal, isInsufficientBalanceError } from "@/components/InsufficientBalanceModal";
 import { usePagination } from "@/hooks/usePagination";
 import { useSorting } from "@/hooks/useSorting";
 import { DataPagination } from "@/components/ui/data-pagination";
@@ -188,6 +189,7 @@ export default function NasDevices() {
   const { user } = useAuth();
   const { t, language, direction } = useLanguage();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingDevice, setEditingDevice] = useState<any>(null);
   const [connectionType, setConnectionType] = useState("public_ip");
@@ -240,7 +242,11 @@ export default function NasDevices() {
       refetch();
     },
     onError: (error: any) => {
-      toast.error(error.message);
+      if (isInsufficientBalanceError(error)) {
+        setShowInsufficientBalance(true);
+      } else {
+        toast.error(error.message);
+      }
     },
   });
 
@@ -1053,6 +1059,11 @@ export default function NasDevices() {
 
   return (
     <div className="space-y-6">
+      {/* Insufficient Balance Modal */}
+      <InsufficientBalanceModal
+        open={showInsufficientBalance}
+        onClose={() => setShowInsufficientBalance(false)}
+      />
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
