@@ -1,0 +1,9 @@
+{
+  "query": "SELECT t.id, t.userId, u.username, t.type, t.amount, t.description, t.createdAt FROM transactions t JOIN users u ON u.id = t.userId WHERE t.type IN ('daily_billing', 'nas_billing', 'billing', 'debit') ORDER BY t.createdAt DESC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT t.id, t.userId, u.username, t.type, t.amount, t.description, t.createdAt FROM transactions t JOIN users u ON u.id = t.userId WHERE t.type IN ('daily_billing', 'nas_billing', 'billing', 'debit') ORDER BY t.createdAt DESC LIMIT 20;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 349
+}

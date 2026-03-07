@@ -1,0 +1,70 @@
+{
+  "query": "SELECT \n  u.id, \n  u.username, \n  u.role,\n  u.dailyBillingEnabled,\n  u.billingStartAt,\n  u.billingStatus,\n  (SELECT COUNT(*) FROM nas WHERE ownerId = u.id) as nas_count,\n  w.balance,\n  -- حساب التكلفة اليومية المتوقعة\n  ROUND((SELECT COUNT(*) FROM nas WHERE ownerId = u.id) * 0.50, 2) as daily_cost,\n  -- حساب عدد الأيام المتبقية\n  CASE \n    WHEN (SELECT COUNT(*) FROM nas WHERE ownerId = u.id) > 0 \n    THEN ROUND(COALESCE(w.balance, 0) / ((SELECT COUNT(*) FROM nas WHERE ownerId = u.id) * 0.50), 1)\n    ELSE NULL \n  END as days_remaining\nFROM users u \nLEFT JOIN wallets w ON w.userId = u.id\nWHERE u.role IN ('client', 'reseller')\nORDER BY u.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT \n  u.id, \n  u.username, \n  u.role,\n  u.dailyBillingEnabled,\n  u.billingStartAt,\n  u.billingStatus,\n  (SELECT COUNT(*) FROM nas WHERE ownerId = u.id) as nas_count,\n  w.balance,\n  -- حساب التكلفة اليومية المتوقعة\n  ROUND((SELECT COUNT(*) FROM nas WHERE ownerId = u.id) * 0.50, 2) as daily_cost,\n  -- حساب عدد الأيام المتبقية\n  CASE \n    WHEN (SELECT COUNT(*) FROM nas WHERE ownerId = u.id) > 0 \n    THEN ROUND(COALESCE(w.balance, 0) / ((SELECT COUNT(*) FROM nas WHERE ownerId = u.id) * 0.50), 1)\n    ELSE NULL \n  END as days_remaining\nFROM users u \nLEFT JOIN wallets w ON w.userId = u.id\nWHERE u.role IN ('client', 'reseller')\nORDER BY u.id;",
+  "rows": [
+    {
+      "id": "17",
+      "username": "abowd",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "2026-03-01 00:00:00",
+      "billingStatus": "past_due",
+      "nas_count": "3",
+      "balance": "0.50",
+      "daily_cost": "1.50",
+      "days_remaining": "0.3"
+    },
+    {
+      "id": "30055",
+      "username": "abowd1991",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "2026-03-01 00:00:00",
+      "billingStatus": "active",
+      "nas_count": "1",
+      "balance": "39.00",
+      "daily_cost": "0.50",
+      "days_remaining": "78.0"
+    },
+    {
+      "id": "30056",
+      "username": "prhom",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "billingStatus": "active",
+      "nas_count": "0",
+      "balance": "NULL",
+      "daily_cost": "0.00",
+      "days_remaining": "NULL"
+    },
+    {
+      "id": "30057",
+      "username": "prhom647",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "billingStatus": "active",
+      "nas_count": "0",
+      "balance": "NULL",
+      "daily_cost": "0.00",
+      "days_remaining": "NULL"
+    },
+    {
+      "id": "60001",
+      "username": "nido",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "2026-03-01 00:00:00",
+      "billingStatus": "active",
+      "nas_count": "1",
+      "balance": "1.00",
+      "daily_cost": "0.50",
+      "days_remaining": "2.0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\trole\tdailyBillingEnabled\tbillingStartAt\tbillingStatus\tnas_count\tbalance\tdaily_cost\tdays_remaining\n17\tabowd\tclient\t1\t2026-03-01 00:00:00\tpast_due\t3\t0.50\t1.50\t0.3\n30055\tabowd1991\tclient\t1\t2026-03-01 00:00:00\tactive\t1\t39.00\t0.50\t78.0\n30056\tprhom\tclient\t1\tNULL\tactive\t0\tNULL\t0.00\tNULL\n30057\tprhom647\tclient\t1\tNULL\tactive\t0\tNULL\t0.00\tNULL\n60001\tnido\tclient\t1\t2026-03-01 00:00:00\tactive\t1\t1.00\t0.50\t2.0\n",
+  "stderr": "",
+  "execution_time_ms": 519
+}

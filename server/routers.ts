@@ -1132,6 +1132,21 @@ const nasRouter = router({
       const nasInput = { ...input, ownerId };
       const newNas = await nasDb.createNas(nasInput);
       
+      // Auto-activate daily billing for the NAS owner if not already active
+      try {
+        const { activateDailyBilling } = await import('./services/billingService.js');
+        const dbConn = await getDb();
+        if (dbConn) {
+          const ownerUser = await dbConn.select().from(users).where(eq(users.id, ownerId)).limit(1);
+          if (ownerUser.length > 0 && (!ownerUser[0].dailyBillingEnabled || !ownerUser[0].billingStartAt)) {
+            await activateDailyBilling(ownerId, ctx.user.id);
+            console.log(`[NAS Create] Auto-activated daily billing for user ${ownerId}`);
+          }
+        }
+      } catch (billingError: any) {
+        console.error('[NAS Create] Failed to auto-activate billing:', billingError.message);
+      }
+      
       // Invalidate cache
       const { cache, cacheKeys } = await import('./_core/cache.js');
       cache.deletePattern('nas:*');

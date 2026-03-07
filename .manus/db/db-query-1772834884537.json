@@ -1,0 +1,22 @@
+{
+  "query": "SHOW TABLES LIKE '%transaction%'; SHOW TABLES LIKE '%wallet%'; SHOW TABLES LIKE '%billing%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SHOW TABLES LIKE '%transaction%'; SHOW TABLES LIKE '%wallet%'; SHOW TABLES LIKE '%billing%';",
+  "rows": [
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (%transaction%)": "transactions"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (%transaction%)": "Tables_in_JYruXSQahvP3cr6rPdjNhA (%wallet%)"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (%transaction%)": "wallet_ledger"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA (%transaction%)": "wallets"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_JYruXSQahvP3cr6rPdjNhA (%transaction%)\ntransactions\nTables_in_JYruXSQahvP3cr6rPdjNhA (%wallet%)\nwallet_ledger\nwallets\n",
+  "stderr": "",
+  "execution_time_ms": 444
+}

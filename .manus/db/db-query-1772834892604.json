@@ -1,0 +1,160 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "activity_logs"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "allocated_vpn_ips"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "audit_logs"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "bank_transfer_requests"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "card_batches"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "card_templates"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "chat_messages"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "feature_access_control"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "internal_notifications"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "invoices"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "ip_pool_config"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "nas"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "notifications"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "online_sessions"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "payment_gateways"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "payments"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "permission_groups"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "permission_plan_groups"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "permission_plans"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "plans"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "radacct"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "radcheck"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "radgroupcheck"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "radgroupreply"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "radius_cards"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "radpostauth"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "radreply"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "radusergroup"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "reseller_profiles"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "saas_plans"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "saas_subscriptions"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "site_settings"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "sms_logs"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "sms_notification_tracking"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "sms_templates"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "subscriber_subscriptions"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "subscribers"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "subscription_plans"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "support_tickets"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "system_settings"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "tenant_subscriptions"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "transactions"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "user_permission_overrides"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "users"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "vpn_connections"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "vpn_ip_pool"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "vpn_logs"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "wallet_ledger"
+    },
+    {
+      "Tables_in_JYruXSQahvP3cr6rPdjNhA": "wallets"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_JYruXSQahvP3cr6rPdjNhA\n__drizzle_migrations\nactivity_logs\nallocated_vpn_ips\naudit_logs\nbank_transfer_requests\ncard_batches\ncard_templates\nchat_messages\nfeature_access_control\ninternal_notifications\ninvoices\nip_pool_config\nnas\nnotifications\nonline_sessions\npayment_gateways\npayments\npermission_groups\npermission_plan_groups\npermission_plans\nplans\nradacct\nradcheck\nradgroupcheck\nradgroupreply\nradius_cards\nradpostauth\nradreply\nradusergroup\nreseller_profiles\nsaas_plans\nsaas_subscriptions\nsite_settings\nsms_logs\nsms_notification_tracking\nsms_templates\nsubscriber_subscriptions\nsubscribers\nsubscription_plans\nsupport_tickets\nsystem_settings\ntenant_subscriptions\ntransactions\nuser_permission_overrides\nusers\nvpn_connections\nvpn_ip_pool\nvpn_logs\nwallet_ledger\nwallets\n",
+  "stderr": "",
+  "execution_time_ms": 346
+}

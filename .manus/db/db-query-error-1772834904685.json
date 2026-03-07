@@ -1,0 +1,8 @@
+{
+  "query": "SELECT wl.id, wl.userId, u.username, wl.type, wl.amount, wl.description, wl.balanceBefore, wl.balanceAfter, wl.createdAt FROM wallet_ledger wl LEFT JOIN users u ON u.id = wl.userId ORDER BY wl.createdAt DESC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT wl.id, wl.userId, u.username, wl.type, wl.amount, wl.description, wl.balanceBefore, wl.balanceAfter, wl.createdAt FROM wallet_ledger wl LEFT JOIN users u ON u.id = wl.userId ORDER BY wl.createdAt DESC LIMIT 20;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'wl.description' in 'field list'"
+  ]
+}

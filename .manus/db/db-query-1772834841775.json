@@ -1,0 +1,55 @@
+{
+  "query": "SELECT id, username, role, dailyBillingEnabled, billingStartAt, lastDailyBillingDate, billingStatus FROM users WHERE role IN ('client', 'reseller') LIMIT 15;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT id, username, role, dailyBillingEnabled, billingStartAt, lastDailyBillingDate, billingStatus FROM users WHERE role IN ('client', 'reseller') LIMIT 15;",
+  "rows": [
+    {
+      "id": "17",
+      "username": "abowd",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active"
+    },
+    {
+      "id": "30055",
+      "username": "abowd1991",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active"
+    },
+    {
+      "id": "30056",
+      "username": "prhom",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active"
+    },
+    {
+      "id": "30057",
+      "username": "prhom647",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active"
+    },
+    {
+      "id": "60001",
+      "username": "nido",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\trole\tdailyBillingEnabled\tbillingStartAt\tlastDailyBillingDate\tbillingStatus\n17\tabowd\tclient\t1\tNULL\tNULL\tactive\n30055\tabowd1991\tclient\t1\tNULL\tNULL\tactive\n30056\tprhom\tclient\t1\tNULL\tNULL\tactive\n30057\tprhom647\tclient\t1\tNULL\tNULL\tactive\n60001\tnido\tclient\t1\tNULL\tNULL\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 392
+}

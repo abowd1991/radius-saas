@@ -1,0 +1,65 @@
+{
+  "query": "SELECT u.id, u.username, u.role, u.dailyBillingEnabled, u.billingStartAt, u.lastDailyBillingDate, u.billingStatus, w.balance as wallet_balance, (SELECT COUNT(*) FROM nas WHERE ownerId = u.id) as nas_count FROM users u LEFT JOIN wallets w ON w.userId = u.id WHERE u.role IN ('client', 'reseller') LIMIT 15;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT u.id, u.username, u.role, u.dailyBillingEnabled, u.billingStartAt, u.lastDailyBillingDate, u.billingStatus, w.balance as wallet_balance, (SELECT COUNT(*) FROM nas WHERE ownerId = u.id) as nas_count FROM users u LEFT JOIN wallets w ON w.userId = u.id WHERE u.role IN ('client', 'reseller') LIMIT 15;",
+  "rows": [
+    {
+      "id": "17",
+      "username": "abowd",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active",
+      "wallet_balance": "2.00",
+      "nas_count": "3"
+    },
+    {
+      "id": "30055",
+      "username": "abowd1991",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active",
+      "wallet_balance": "39.00",
+      "nas_count": "1"
+    },
+    {
+      "id": "60001",
+      "username": "nido",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active",
+      "wallet_balance": "2.00",
+      "nas_count": "1"
+    },
+    {
+      "id": "30056",
+      "username": "prhom",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active",
+      "wallet_balance": "NULL",
+      "nas_count": "0"
+    },
+    {
+      "id": "30057",
+      "username": "prhom647",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active",
+      "wallet_balance": "NULL",
+      "nas_count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\trole\tdailyBillingEnabled\tbillingStartAt\tlastDailyBillingDate\tbillingStatus\twallet_balance\tnas_count\n17\tabowd\tclient\t1\tNULL\tNULL\tactive\t2.00\t3\n30055\tabowd1991\tclient\t1\tNULL\tNULL\tactive\t39.00\t1\n60001\tnido\tclient\t1\tNULL\tNULL\tactive\t2.00\t1\n30056\tprhom\tclient\t1\tNULL\tNULL\tactive\tNULL\t0\n30057\tprhom647\tclient\t1\tNULL\tNULL\tactive\tNULL\t0\n",
+  "stderr": "",
+  "execution_time_ms": 380
+}

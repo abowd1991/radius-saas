@@ -1,0 +1,134 @@
+{
+  "query": "DESCRIBE wallet_ledger; SELECT * FROM wallet_ledger ORDER BY createdAt DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute DESCRIBE wallet_ledger; SELECT * FROM wallet_ledger ORDER BY createdAt DESC LIMIT 10;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "userId",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "type",
+      "Type": "enum('credit','debit')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "amount",
+      "Type": "decimal(12,2)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "balanceBefore",
+      "Type": "decimal(12,2)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "balanceAfter",
+      "Type": "decimal(12,2)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "reason",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "reasonAr",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "entityType",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "entityId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "actorId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "actorRole",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "metadata",
+      "Type": "json",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    }
+  ],
+  "messages": [
+    "id\tuserId\ttype\tamount\tbalanceBefore\tbalanceAfter\treason\treasonAr\tentityType\tentityId\tactorId\tactorRole\tmetadata\tcreatedAt",
+    "90001\t60001\tcredit\t2.00\t0.00\t2.00\tCredit activated: $2.00 overdraft\tتفعيل مديونية: $2.00\tcredit\t60001\t60001\tclient\tNULL\t2026-03-05 22:37:07",
+    "60001\t17\tcredit\t2.00\t0.00\t2.00\tCredit activated: $2.00 overdraft\tتفعيل مديونية: $2.00\tcredit\t17\t17\tclient\tNULL\t2026-02-28 01:18:06",
+    "30008\t30055\tcredit\t39.00\t0.00\t39.00\tBank transfer approved (Ref: TEMP-30055-1770982258471)\tتمت الموافقة على التحويل البنكي (المرجع: TEMP-30055-1770982258471)\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-13 11:31:32",
+    "30007\t17\tdebit\t0.48\t0.48\t0.00\tBalance adjustment for bank transfer #22: 33\tتعديل رصيد للتحويل البنكي #22: 33\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-12 22:07:12",
+    "30006\t17\tdebit\t1.00\t1.48\t0.48\tBalance adjustment for bank transfer #22: 33\tتعديل رصيد للتحويل البنكي #22: 33\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-12 22:06:38",
+    "30005\t17\tdebit\t10.00\t11.48\t1.48\tBalance adjustment for bank transfer #22: مشكللا\tتعديل رصيد للتحويل البنكي #22: مشكللا\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-12 22:05:59",
+    "30004\t17\tcredit\t6.48\t5.00\t11.48\tBank transfer approved (Ref: TEMP-17-1770842399754)\tتمت الموافقة على التحويل البنكي (المرجع: TEMP-17-1770842399754)\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-11 20:51:04",
+    "30003\t17\tdebit\t5.00\t10.00\t5.00\tBalance adjustment for bank transfer #16: عدم الدفع\tتعديل رصيد للتحويل البنكي #16: عدم الدفع\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-11 15:57:26",
+    "30002\t17\tcredit\t10.00\t0.00\t10.00\tBank transfer approved (Ref: TEMP-17-1770808096404)\tتمت الموافقة على التحويل البنكي (المرجع: TEMP-17-1770808096404)\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-11 11:08:45",
+    "13\t1\tcredit\t100.00\t10300.00\t10400.00\tTest credit\tإضافة رصيد تجريبي\tNULL\tNULL\t1\towner\tNULL\t2026-02-04 19:52:08"
+  ],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\nuserId\tint\tNO\t\tNULL\t\ntype\tenum('credit','debit')\tNO\t\tNULL\t\namount\tdecimal(12,2)\tNO\t\tNULL\t\nbalanceBefore\tdecimal(12,2)\tNO\t\tNULL\t\nbalanceAfter\tdecimal(12,2)\tNO\t\tNULL\t\nreason\tvarchar(255)\tNO\t\tNULL\t\nreasonAr\tvarchar(255)\tYES\t\tNULL\t\nentityType\tvarchar(50)\tYES\t\tNULL\t\nentityId\tint\tYES\t\tNULL\t\nactorId\tint\tYES\t\tNULL\t\nactorRole\tvarchar(50)\tYES\t\tNULL\t\nmetadata\tjson\tYES\t\tNULL\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nid\tuserId\ttype\tamount\tbalanceBefore\tbalanceAfter\treason\treasonAr\tentityType\tentityId\tactorId\tactorRole\tmetadata\tcreatedAt\n90001\t60001\tcredit\t2.00\t0.00\t2.00\tCredit activated: $2.00 overdraft\tتفعيل مديونية: $2.00\tcredit\t60001\t60001\tclient\tNULL\t2026-03-05 22:37:07\n60001\t17\tcredit\t2.00\t0.00\t2.00\tCredit activated: $2.00 overdraft\tتفعيل مديونية: $2.00\tcredit\t17\t17\tclient\tNULL\t2026-02-28 01:18:06\n30008\t30055\tcredit\t39.00\t0.00\t39.00\tBank transfer approved (Ref: TEMP-30055-1770982258471)\tتمت الموافقة على التحويل البنكي (المرجع: TEMP-30055-1770982258471)\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-13 11:31:32\n30007\t17\tdebit\t0.48\t0.48\t0.00\tBalance adjustment for bank transfer #22: 33\tتعديل رصيد للتحويل البنكي #22: 33\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-12 22:07:12\n30006\t17\tdebit\t1.00\t1.48\t0.48\tBalance adjustment for bank transfer #22: 33\tتعديل رصيد للتحويل البنكي #22: 33\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-12 22:06:38\n30005\t17\tdebit\t10.00\t11.48\t1.48\tBalance adjustment for bank transfer #22: مشكللا\tتعديل رصيد للتحويل البنكي #22: مشكللا\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-12 22:05:59\n30004\t17\tcredit\t6.48\t5.00\t11.48\tBank transfer approved (Ref: TEMP-17-1770842399754)\tتمت الموافقة على التحويل البنكي (المرجع: TEMP-17-1770842399754)\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-11 20:51:04\n30003\t17\tdebit\t5.00\t10.00\t5.00\tBalance adjustment for bank transfer #16: عدم الدفع\tتعديل رصيد للتحويل البنكي #16: عدم الدفع\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-11 15:57:26\n30002\t17\tcredit\t10.00\t0.00\t10.00\tBank transfer approved (Ref: TEMP-17-1770808096404)\tتمت الموافقة على التحويل البنكي (المرجع: TEMP-17-1770808096404)\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-11 11:08:45\n13\t1\tcredit\t100.00\t10300.00\t10400.00\tTest credit\tإضافة رصيد تجريبي\tNULL\tNULL\t1\towner\tNULL\t2026-02-04 19:52:08\n",
+  "stderr": "",
+  "execution_time_ms": 400
+}

@@ -1,0 +1,60 @@
+{
+  "query": "SELECT u.id, u.username, u.role, u.dailyBillingEnabled, u.billingStartAt, u.lastDailyBillingDate, u.billingStatus, w.balance FROM users u LEFT JOIN wallets w ON w.userId = u.id WHERE u.role IN ('client', 'reseller') ORDER BY u.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute SELECT u.id, u.username, u.role, u.dailyBillingEnabled, u.billingStartAt, u.lastDailyBillingDate, u.billingStatus, w.balance FROM users u LEFT JOIN wallets w ON w.userId = u.id WHERE u.role IN ('client', 'reseller') ORDER BY u.id;",
+  "rows": [
+    {
+      "id": "17",
+      "username": "abowd",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active",
+      "balance": "2.00"
+    },
+    {
+      "id": "30055",
+      "username": "abowd1991",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active",
+      "balance": "39.00"
+    },
+    {
+      "id": "30056",
+      "username": "prhom",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active",
+      "balance": "NULL"
+    },
+    {
+      "id": "30057",
+      "username": "prhom647",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active",
+      "balance": "NULL"
+    },
+    {
+      "id": "60001",
+      "username": "nido",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "lastDailyBillingDate": "NULL",
+      "billingStatus": "active",
+      "balance": "2.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\trole\tdailyBillingEnabled\tbillingStartAt\tlastDailyBillingDate\tbillingStatus\tbalance\n17\tabowd\tclient\t1\tNULL\tNULL\tactive\t2.00\n30055\tabowd1991\tclient\t1\tNULL\tNULL\tactive\t39.00\n30056\tprhom\tclient\t1\tNULL\tNULL\tactive\tNULL\n30057\tprhom647\tclient\t1\tNULL\tNULL\tactive\tNULL\n60001\tnido\tclient\t1\tNULL\tNULL\tactive\t2.00\n",
+  "stderr": "",
+  "execution_time_ms": 350
+}

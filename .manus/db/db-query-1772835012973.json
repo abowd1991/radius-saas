@@ -1,0 +1,60 @@
+{
+  "query": "UPDATE users \nSET \n  dailyBillingEnabled = 1,\n  billingStartAt = COALESCE(billingStartAt, DATE_FORMAT(NOW(), '%Y-%m-01')),\n  billingStatus = 'active',\n  updatedAt = NOW()\nWHERE \n  role IN ('client', 'reseller')\n  AND id IN (\n    SELECT DISTINCT ownerId FROM nas WHERE ownerId IS NOT NULL\n  )\n  AND (dailyBillingEnabled = 0 OR billingStartAt IS NULL);\n\nSELECT u.id, u.username, u.role, u.dailyBillingEnabled, u.billingStartAt, u.billingStatus, \n       (SELECT COUNT(*) FROM nas WHERE ownerId = u.id) as nas_count,\n       w.balance\nFROM users u \nLEFT JOIN wallets w ON w.userId = u.id\nWHERE u.role IN ('client', 'reseller')\nORDER BY u.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 38MgGCfAkTTcdrf.ae1ad98e5b22 --database JYruXSQahvP3cr6rPdjNhA --execute UPDATE users \nSET \n  dailyBillingEnabled = 1,\n  billingStartAt = COALESCE(billingStartAt, DATE_FORMAT(NOW(), '%Y-%m-01')),\n  billingStatus = 'active',\n  updatedAt = NOW()\nWHERE \n  role IN ('client', 'reseller')\n  AND id IN (\n    SELECT DISTINCT ownerId FROM nas WHERE ownerId IS NOT NULL\n  )\n  AND (dailyBillingEnabled = 0 OR billingStartAt IS NULL);\n\nSELECT u.id, u.username, u.role, u.dailyBillingEnabled, u.billingStartAt, u.billingStatus, \n       (SELECT COUNT(*) FROM nas WHERE ownerId = u.id) as nas_count,\n       w.balance\nFROM users u \nLEFT JOIN wallets w ON w.userId = u.id\nWHERE u.role IN ('client', 'reseller')\nORDER BY u.id;",
+  "rows": [
+    {
+      "id": "17",
+      "username": "abowd",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "2026-03-01 00:00:00",
+      "billingStatus": "active",
+      "nas_count": "3",
+      "balance": "2.00"
+    },
+    {
+      "id": "30055",
+      "username": "abowd1991",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "2026-03-01 00:00:00",
+      "billingStatus": "active",
+      "nas_count": "1",
+      "balance": "39.00"
+    },
+    {
+      "id": "30056",
+      "username": "prhom",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "billingStatus": "active",
+      "nas_count": "0",
+      "balance": "NULL"
+    },
+    {
+      "id": "30057",
+      "username": "prhom647",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "NULL",
+      "billingStatus": "active",
+      "nas_count": "0",
+      "balance": "NULL"
+    },
+    {
+      "id": "60001",
+      "username": "nido",
+      "role": "client",
+      "dailyBillingEnabled": "1",
+      "billingStartAt": "2026-03-01 00:00:00",
+      "billingStatus": "active",
+      "nas_count": "1",
+      "balance": "2.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\trole\tdailyBillingEnabled\tbillingStartAt\tbillingStatus\tnas_count\tbalance\n17\tabowd\tclient\t1\t2026-03-01 00:00:00\tactive\t3\t2.00\n30055\tabowd1991\tclient\t1\t2026-03-01 00:00:00\tactive\t1\t39.00\n30056\tprhom\tclient\t1\tNULL\tactive\t0\tNULL\n30057\tprhom647\tclient\t1\tNULL\tactive\t0\tNULL\n60001\tnido\tclient\t1\t2026-03-01 00:00:00\tactive\t1\t2.00\n",
+  "stderr": "",
+  "execution_time_ms": 433
+}

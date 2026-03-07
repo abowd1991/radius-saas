@@ -5038,3 +5038,8 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] تعديل activeSubscriptionProcedure للتحقق من رصيد المحفظة بدلاً من الاشتراك القديم
 - [x] إنشاء مكوّن InsufficientBalanceModal برسالة واضحة وزر الذهاب للمحفظة
 - [x] تطبيق InsufficientBalanceModal على NasDevices.tsx و Vouchers.tsx و Plans.tsx
+
+## تفعيل الخصم التلقائي (Mar 2026)
+- [x] تفعيل dailyBillingEnabled لجميع العملاء الحاليين الذين لديهم NAS
+- [x] تعديل procedure إنشاء NAS ليفعّل الخصم تلقائياً للعملاء الجدد
+- [x] اختبار دورة الخصم
