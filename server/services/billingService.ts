@@ -365,12 +365,18 @@ export async function getUserBillingSummary(userId: number): Promise<{
 }
 
 /**
- * Check if user has low balance (≤ $2)
+ * Check if user has low balance (≤ 3 days remaining)
+ * Returns daysRemaining based on active NAS count and current balance
  */
 export async function checkLowBalance(userId: number): Promise<{
   isLow: boolean;
   balance: number;
   shouldNotify: boolean;
+  daysRemaining: number;
+  activeNasCount: number;
+  phone: string | null;
+  name: string | null;
+  language: string;
 }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -379,24 +385,33 @@ export async function checkLowBalance(userId: number): Promise<{
   const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId));
   const balance = wallet ? parseFloat(wallet.balance) : 0;
 
-  const isLow = balance <= 2;
+  // Get user info
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
+  if (!user) {
+    return { isLow: false, balance, shouldNotify: false, daysRemaining: 999, activeNasCount: 0, phone: null, name: null, language: 'ar' };
+  }
+
+  // Calculate daily cost based on active NAS
+  const { activeNasCount, dailyCost } = await calculateDailyCost(userId);
+  const dailyRate = dailyCost > 0 ? dailyCost : 0;
+
+  // Calculate days remaining
+  const daysRemaining = dailyRate > 0 ? Math.floor(balance / dailyRate) : 999;
+
+  // Low balance = 3 days or less remaining
+  const isLow = daysRemaining <= 3 && dailyRate > 0;
 
   if (!isLow) {
-    return { isLow: false, balance, shouldNotify: false };
+    return { isLow: false, balance, shouldNotify: false, daysRemaining, activeNasCount, phone: user.phone || null, name: user.name || null, language: user.language || 'ar' };
   }
 
   // Check if we should notify (last notification was more than 24 hours ago)
-  const [user] = await db.select().from(users).where(eq(users.id, userId));
-  if (!user) {
-    return { isLow, balance, shouldNotify: false };
-  }
-
   const shouldNotify =
     !user.lowBalanceNotifiedAt ||
     new Date().getTime() - new Date(user.lowBalanceNotifiedAt).getTime() >
       24 * 60 * 60 * 1000; // 24 hours
 
-  return { isLow, balance, shouldNotify };
+  return { isLow, balance, shouldNotify, daysRemaining, activeNasCount, phone: user.phone || null, name: user.name || null, language: user.language || 'ar' };
 }
 
 /**

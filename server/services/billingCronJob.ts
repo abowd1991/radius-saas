@@ -7,9 +7,27 @@
 
 import { getUsersDueForDailyBilling, processDailyBilling, checkLowBalance, markLowBalanceNotified } from "./billingService";
 import { notifyOwner } from "../_core/notification";
+import { sendSms } from "./tweetsmsService";
 
 let intervalId: NodeJS.Timeout | null = null;
 let isRunning = false;
+
+/**
+ * Build low balance SMS message for the client
+ */
+function buildLowBalanceMessage(
+  name: string | null,
+  balance: number,
+  daysRemaining: number,
+  activeNasCount: number,
+  language: string
+): string {
+  const clientName = name || "العميل";
+  if (language === "ar") {
+    return `مرحباً ${clientName}،\nتنبيه: رصيدك في RadiusPro أصبح $${balance.toFixed(2)} فقط.\nلديك ${daysRemaining} يوم/أيام متبقية بناءً على ${activeNasCount} جهاز NAS نشط.\nيرجى شحن رصيدك لتجنب انقطاع الخدمة.\nradius-pro.com`;
+  }
+  return `Hello ${clientName},\nAlert: Your RadiusPro balance is $${balance.toFixed(2)}.\nYou have ${daysRemaining} day(s) remaining based on ${activeNasCount} active NAS device(s).\nPlease top up to avoid service interruption.\nradius-pro.com`;
+}
 
 /**
  * Process daily billing for all due users
@@ -66,17 +84,39 @@ async function processDailyBillingCycle(): Promise<{
           console.error(`[DailyBillingCron] Failed to process user ${userId}: ${result.error}`);
         }
 
-        // Check for low balance and send notification
+        // Check for low balance (≤ 3 days remaining) and send notification
         const lowBalanceCheck = await checkLowBalance(userId);
         if (lowBalanceCheck.isLow && lowBalanceCheck.shouldNotify) {
           try {
+            const message = buildLowBalanceMessage(
+              lowBalanceCheck.name,
+              lowBalanceCheck.balance,
+              lowBalanceCheck.daysRemaining,
+              lowBalanceCheck.activeNasCount,
+              lowBalanceCheck.language
+            );
+
+            // 1. Send SMS to client's phone number directly
+            if (lowBalanceCheck.phone) {
+              const smsResult = await sendSms(lowBalanceCheck.phone, message);
+              if (smsResult.success) {
+                console.log(`[DailyBillingCron] SMS sent to user ${userId} (${lowBalanceCheck.phone}): ${lowBalanceCheck.daysRemaining} days remaining`);
+              } else {
+                console.warn(`[DailyBillingCron] SMS failed for user ${userId}: ${smsResult.errorMessage}`);
+              }
+            } else {
+              console.warn(`[DailyBillingCron] User ${userId} has no phone number, skipping SMS`);
+            }
+
+            // 2. Notify owner/admin about the low balance
             await notifyOwner({
-              title: "⚠️ Low Balance Alert",
-              content: `User ID ${userId} has low balance: $${lowBalanceCheck.balance.toFixed(2)}. Please add credit to avoid service interruption.`,
+              title: "⚠️ تحذير رصيد منخفض",
+              content: `المستخدم "${lowBalanceCheck.name || `ID:${userId}`}" لديه رصيد منخفض: $${lowBalanceCheck.balance.toFixed(2)} (${lowBalanceCheck.daysRemaining} يوم متبقي). تم إرسال SMS للعميل.`,
             });
+
             await markLowBalanceNotified(userId);
             lowBalanceNotifications++;
-            console.log(`[DailyBillingCron] Sent low balance notification for user ${userId}`);
+            console.log(`[DailyBillingCron] Low balance notification sent for user ${userId}: ${lowBalanceCheck.daysRemaining} days remaining`);
           } catch (notifyError: any) {
             console.error(`[DailyBillingCron] Failed to send low balance notification for user ${userId}:`, notifyError.message);
           }

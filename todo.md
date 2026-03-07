@@ -5043,3 +5043,9 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] تفعيل dailyBillingEnabled لجميع العملاء الحاليين الذين لديهم NAS
 - [x] تعديل procedure إنشاء NAS ليفعّل الخصم تلقائياً للعملاء الجدد
 - [x] اختبار دورة الخصم
+
+## إشعارات SMS وواتساب قبل نفاد الرصيد (Mar 2026)
+- [x] فحص نظام SMS وواتسآب الموجود
+- [x] تحديث checkLowBalance ليحسب الأيام المتبقية بناءً على NAS والرصيد
+- [x] تحديث billingCronJob لإرسال SMS للعميل مباشرة عند بقاء ≤ 3 أيام
+- [ ] إضافة واتسآب API (بعد توفر API key)
