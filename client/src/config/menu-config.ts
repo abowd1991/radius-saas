@@ -72,9 +72,9 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     requiredPermissionGroup: "network_management",
     items: [
       { icon: Wifi, label: "Active Sessions", labelAr: "الجلسات النشطة", path: "/sessions" },
-      { icon: FileText, label: "RADIUS Logs", labelAr: "سجلات RADIUS", path: "/radius-logs" },
-      { icon: Activity, label: "NAS Health", labelAr: "مراقبة NAS", path: "/nas-health" },
-      { icon: Network, label: "IP Pool Status", labelAr: "حالة IP Pool", path: "/ip-pool" },
+      { icon: FileText, label: "RADIUS Logs", labelAr: "سجلات RADIUS", path: "/radius-logs", requiredRole: ["super_admin", "owner"] },
+      { icon: Activity, label: "NAS Health", labelAr: "مراقبة NAS", path: "/nas-health", requiredRole: ["super_admin", "owner"] },
+      { icon: Network, label: "IP Pool Status", labelAr: "حالة IP Pool", path: "/ip-pool", requiredRole: ["super_admin", "owner"] },
     ],
   },
 
@@ -144,7 +144,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     requiredPermissionGroup: "cards_vouchers",
     items: [
       { icon: Package, label: "Plans", labelAr: "الخطط", path: "/plans" },
-      { icon: Server, label: "RADIUS Control", labelAr: "لوحة تحكم RADIUS", path: "/radius-control" },
+      { icon: Server, label: "RADIUS Control", labelAr: "لوحة تحكم RADIUS", path: "/radius-control", requiredRole: ["super_admin", "owner"] },
     ],
   },
 
@@ -180,7 +180,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
       { icon: Wallet, label: "Wallet", labelAr: "المحفظة", path: "/wallet" },
       { icon: History, label: "Wallet Ledger", labelAr: "سجل المحفظة", path: "/wallet-ledger" },
       { icon: FileText, label: "Invoices", labelAr: "الفواتير", path: "/invoices" },
-      { icon: CreditCard, label: "Subscriptions", labelAr: "الاشتراكات", path: "/tenant-subscriptions" },
+      { icon: CreditCard, label: "Subscriptions", labelAr: "الاشتراكات", path: "/tenant-subscriptions", requiredRole: ["super_admin", "owner"] },
       { 
         icon: LayoutDashboard, 
         label: "Billing Dashboard", 
