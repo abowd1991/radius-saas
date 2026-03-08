@@ -178,7 +178,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
         requiredRole: ["super_admin", "owner"]
       },
       { icon: Wallet, label: "Wallet", labelAr: "المحفظة", path: "/wallet" },
-      { icon: History, label: "Wallet Ledger", labelAr: "سجل المحفظة", path: "/wallet-ledger" },
+      { icon: History, label: "Wallet Ledger", labelAr: "سجل المحفظة", path: "/wallet-ledger", requiredRole: ["super_admin", "owner"] },
       { icon: FileText, label: "Invoices", labelAr: "الفواتير", path: "/invoices" },
       { icon: CreditCard, label: "Subscriptions", labelAr: "الاشتراكات", path: "/tenant-subscriptions", requiredRole: ["super_admin", "owner"] },
       { 

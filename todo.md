@@ -5053,3 +5053,6 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 ## إخفاء صفحات المدير عن العملاء (Mar 2026)
 - [x] فحص DashboardLayout وتحديد عناصر القائمة الجانبية
 - [x] إخفاء (سجلات RADIUS، مراقبة NAS، حالة IP Pool، لوحة تحكم RADIUS، الاشتراكات) من العملاء
+
+## إخفاء سجل المحفظة عن العملاء (Mar 2026)
+- [x] إخفاء "سجل المحفظة" (wallet-ledger) من قائمة العملاء
