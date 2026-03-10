@@ -129,6 +129,7 @@ export default function Vouchers() {
     // Options
     timeFromActivation: true,
     macBinding: false,
+    authType: "password" as "password" | "username-only", // password or username-only
   });
 
   // Progress state for bulk generation
@@ -415,6 +416,7 @@ export default function Vouchers() {
       // Options
       timeFromActivation: true,
       macBinding: false,
+      authType: "password" as "password" | "username-only",
     });
   };
 
@@ -455,6 +457,8 @@ export default function Vouchers() {
       // Time Budget System (actual values)
       usageBudgetSeconds,
       windowSeconds,
+      // Auth type
+      authType: generateForm.authType,
     });
   };
 
@@ -698,23 +702,46 @@ export default function Vouchers() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">{language === 'ar' ? 'طول كلمة السر' : 'Password Length'}</Label>
-                          <Select 
-                            value={generateForm.passwordLength} 
-                            onValueChange={(v) => setGenerateForm(prev => ({ ...prev, passwordLength: v }))}
-                          >
-                            <SelectTrigger className="h-11">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {[2, 3, 4, 5, 6].map(n => (
-                                <SelectItem key={n} value={String(n)}>{n} {language === 'ar' ? 'أرقام' : 'digits'}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        {generateForm.authType !== 'username-only' && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{language === 'ar' ? 'طول كلمة السر' : 'Password Length'}</Label>
+                            <Select 
+                              value={generateForm.passwordLength} 
+                              onValueChange={(v) => setGenerateForm(prev => ({ ...prev, passwordLength: v }))}
+                            >
+                              <SelectTrigger className="h-11">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[2, 3, 4, 5, 6].map(n => (
+                                  <SelectItem key={n} value={String(n)}>{n} {language === 'ar' ? 'أرقام' : 'digits'}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
+                      {/* Auth Type Toggle */}
+                      <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                        <div className="space-y-0.5">
+                          <Label className="text-sm font-medium cursor-pointer">
+                            {language === 'ar' ? 'بدون كلمة مرور (Username فقط)' : 'No Password (Username only)'}
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            {language === 'ar'
+                              ? 'المستخدم يدخل الرقم فقط بدون كلمة مرور — مناسب لـ MikroTik Hotspot'
+                              : 'User enters username only without password — ideal for MikroTik Hotspot'
+                            }
+                          </p>
+                        </div>
+                        <Switch
+                          checked={generateForm.authType === 'username-only'}
+                          onCheckedChange={(checked) =>
+                            setGenerateForm(prev => ({ ...prev, authType: checked ? 'username-only' : 'password' }))
+                          }
+                        />
+                      </div>
+
                       {/* Capacity Info */}
                       <div className="bg-muted/50 rounded-md p-3 space-y-1">
                         <p className="text-xs font-medium text-foreground">
@@ -776,32 +803,7 @@ export default function Vouchers() {
                           </Select>
                         </div>
                       </div>
-                      {/* NAS Isolation Info */}
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-md p-3">
-                        <div className="flex items-start gap-2">
-                          <Wifi className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
-                          <div className="space-y-1">
-                            <p className="text-xs font-medium text-blue-400">
-                              {language === 'ar' ? 'عزل تلقائي بين العملاء (Smart Namespace Isolation)' : 'Automatic Client Isolation (Smart Namespace Isolation)'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {language === 'ar'
-                                ? 'الكروت المُنشأة ستعمل فقط على أجهزة NAS المرتبطة بحسابك. لا يمكن لعميل آخر استخدام نفس الكود.'
-                                : 'Generated cards will only work on NAS devices linked to your account. Other clients cannot use the same code.'
-                              }
-                            </p>
-                            {nasDevices && nasDevices.length > 0 && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                <span className="font-medium text-foreground">
-                                  {language === 'ar' ? 'أجهزة NAS المرتبطة: ' : 'Linked NAS devices: '}
-                                </span>
-                                {nasDevices.slice(0, 3).map((n: any) => n.shortname || n.nasname).join(', ')}
-                                {nasDevices.length > 3 && ` +${nasDevices.length - 3}`}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      {/* NAS Isolation Info - hidden */}
                     </div>
 
                     {/* Section 4: Time Budget */}

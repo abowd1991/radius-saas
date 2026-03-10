@@ -5056,3 +5056,18 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 
 ## إخفاء سجل المحفظة عن العملاء (Mar 2026)
 - [x] إخفاء "سجل المحفظة" (wallet-ledger) من قائمة العملاء
+
+## Username-only Auth + إخفاء Smart Namespace Isolation (Mar 2026)
+- [ ] إخفاء بطاقة Smart Namespace Isolation من صفحة إنشاء الكروت
+- [ ] إضافة خيار auth_type (username-only vs password) في schema وإنشاء الكروت
+- [ ] تحديث FreeRADIUS authorize section لدعم username-only
+
+## Username-only Authentication Feature (Mar 10, 2026)
+- [x] إخفاء بطاقة Smart Namespace Isolation من Vouchers.tsx
+- [x] إضافة عمود authType في radius_cards (password / username-only)
+- [x] تحديث generateCardsV2.ts لدعم username-only (كلمة مرور فارغة)
+- [x] إضافة authType إلى zod schema في routers.ts
+- [x] إضافة Toggle Switch في واجهة إنشاء الكروت (بدون كلمة مرور)
+- [x] إخفاء حقل طول كلمة السر عند تفعيل username-only
+- [x] تحديث FreeRADIUS authorize section لدعم Auth-Type := Accept عند username-only
+- [x] إعادة تشغيل FreeRADIUS بنجاح على VPS

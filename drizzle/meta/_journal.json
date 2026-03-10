@@ -183,6 +183,13 @@
       "when": 1772578795364,
       "tag": "0025_freezing_toxin",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1773092070784,
+      "tag": "0026_conscious_the_twelve",
+      "breakpoints": true
     }
   ]
 }

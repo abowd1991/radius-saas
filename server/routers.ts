@@ -2804,6 +2804,8 @@ const vouchersRouter = router({
       // New Time Budget System
       usageBudgetSeconds: z.number().min(0).default(0),
       windowSeconds: z.number().min(0).default(0),
+      // Auth type: 'password' (default) or 'username-only' (no password required)
+      authType: z.enum(['password', 'username-only']).default('password'),
     }))
     .mutation(async ({ ctx, input }) => {
       // Check billing status - block if past_due

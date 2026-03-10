@@ -51,6 +51,7 @@ export interface GenerateCardsInput {
   cardPrice?: number;
   usageBudgetSeconds?: number;
   windowSeconds?: number;
+  authType?: 'password' | 'username-only'; // username-only = no password required (Auth-Type := Accept)
 }
 
 interface GeneratedCard {
@@ -202,6 +203,7 @@ export async function generateCardsV2(data: GenerateCardsInput) {
 
   // ── Configuration ──
   const batchId = nanoid(10);
+  const authType = data.authType || 'password';
   const passwordLength = Math.max(2, Math.min(6, data.passwordLength || 4));
   const usernameLength = Math.max(5, Math.min(8, data.usernameLength || 5));
   const prefix = (data.prefix || '').trim();
@@ -251,12 +253,14 @@ export async function generateCardsV2(data: GenerateCardsInput) {
   const allCardValues: any[] = [];
 
   for (const username of usernames) {
-    const password = generatePassword(passwordLength);
+    // For username-only auth, use empty string as password (FreeRADIUS will use Auth-Type := Accept)
+    const password = authType === 'username-only' ? '' : generatePassword(passwordLength);
     const serialNumber = generateSerialNumber();
 
     allCardValues.push({
       username,
       password,
+      authType,
       serialNumber,
       batchId,
       planId: data.planId,
@@ -272,7 +276,7 @@ export async function generateCardsV2(data: GenerateCardsInput) {
       windowSeconds: data.windowSeconds || 0,
     });
 
-    generatedCards.push({ serialNumber, username, password });
+    generatedCards.push({ serialNumber, username, password: authType === 'username-only' ? '(no password)' : password });
   }
 
   // ── Step 4: Single Transaction - All-or-Nothing ──

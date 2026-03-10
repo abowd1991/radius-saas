@@ -288,6 +288,7 @@ export const radiusCards = mysqlTable("radius_cards", {
   // RADIUS credentials
   username: varchar("username", { length: 64 }).notNull(), // Unique per owner only (Smart Namespace Isolation)
   password: varchar("password", { length: 64 }).notNull(),
+  authType: mysqlEnum("authType", ["password", "username-only"]).default("password").notNull(), // username-only = no password required (Auth-Type := Accept)
   // Card info
   serialNumber: varchar("serialNumber", { length: 20 }).notNull().unique(),
   batchId: varchar("batchId", { length: 50 }),
