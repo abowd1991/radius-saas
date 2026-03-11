@@ -21,7 +21,7 @@
  */
 
 import { getDb } from '../db';
-import { plans, cardBatches, radiusCards } from '../../drizzle/schema';
+import { plans, cardBatches, radiusCards, radcheck } from '../../drizzle/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { sql } from 'drizzle-orm';
@@ -251,6 +251,7 @@ export async function generateCardsV2(data: GenerateCardsInput) {
   // ── Step 3: Build card rows in memory ──
   const generatedCards: GeneratedCard[] = [];
   const allCardValues: any[] = [];
+  const radcheckValues: any[] = [];
 
   for (const username of usernames) {
     // For username-only auth, use empty string as password (FreeRADIUS will use Auth-Type := Accept)
@@ -277,6 +278,23 @@ export async function generateCardsV2(data: GenerateCardsInput) {
     });
 
     generatedCards.push({ serialNumber, username, password: authType === 'username-only' ? '(no password)' : password });
+
+    // Build radcheck entries for FreeRADIUS authentication
+    if (authType === 'username-only') {
+      radcheckValues.push({
+        username,
+        attribute: 'Auth-Type',
+        op: ':=',
+        value: 'Accept',
+      });
+    } else {
+      radcheckValues.push({
+        username,
+        attribute: 'Cleartext-Password',
+        op: ':=',
+        value: password,
+      });
+    }
   }
 
   // ── Step 4: Single Transaction - All-or-Nothing ──
@@ -310,7 +328,12 @@ export async function generateCardsV2(data: GenerateCardsInput) {
     // 4b. Bulk insert radius_cards (500 rows per batch)
     await bulkInsert(tx, radiusCards, allCardValues);
 
-    // 4c. Update batch status to completed
+    // 4c. Bulk insert radcheck entries for FreeRADIUS authentication
+    if (radcheckValues.length > 0) {
+      await bulkInsert(tx, radcheck, radcheckValues);
+    }
+
+    // 4d. Update batch status to completed
     await tx.update(cardBatches)
       .set({ status: "completed" })
       .where(eq(cardBatches.batchId, batchId));
