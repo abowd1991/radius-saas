@@ -5071,3 +5071,10 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] إخفاء حقل طول كلمة السر عند تفعيل username-only
 - [x] تحديث FreeRADIUS authorize section لدعم Auth-Type := Accept عند username-only
 - [x] إعادة تشغيل FreeRADIUS بنجاح على VPS
+
+## SMS One-Time Low Balance Alert (Mar 11, 2026)
+- [x] تغيير عتبة التنبيه من "3 أيام متبقية" إلى "رصيد $1 أو أقل"
+- [x] إضافة عمود smsLowBalanceSentAt في جدول users لتتبع الإرسال
+- [x] تعديل checkLowBalance: SMS يُرسل مرة واحدة فقط عند وصول الرصيد لـ $1
+- [x] إعادة تعيين smsLowBalanceSentAt تلقائياً عندما يشحن العميل رصيده فوق $1
+- [x] تحديث رسالة SMS لتكون مختصرة ومباشرة

@@ -190,6 +190,13 @@
       "when": 1773092070784,
       "tag": "0026_conscious_the_twelve",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1773263913869,
+      "tag": "0027_chief_the_anarchist",
+      "breakpoints": true
     }
   ]
 }

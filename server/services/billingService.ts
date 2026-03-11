@@ -365,8 +365,9 @@ export async function getUserBillingSummary(userId: number): Promise<{
 }
 
 /**
- * Check if user has low balance (≤ 3 days remaining)
- * Returns daysRemaining based on active NAS count and current balance
+ * Check if user has low balance (≤ $1)
+ * Sends SMS ONCE when balance drops to $1 or below.
+ * Resets when balance is topped up above $1.
  */
 export async function checkLowBalance(userId: number): Promise<{
   isLow: boolean;
@@ -398,24 +399,30 @@ export async function checkLowBalance(userId: number): Promise<{
   // Calculate days remaining
   const daysRemaining = dailyRate > 0 ? Math.floor(balance / dailyRate) : 999;
 
-  // Low balance = 3 days or less remaining
-  const isLow = daysRemaining <= 3 && dailyRate > 0;
+  // Low balance threshold = $1
+  const LOW_BALANCE_THRESHOLD = 1.0;
+  const isLow = balance <= LOW_BALANCE_THRESHOLD && dailyRate > 0;
 
   if (!isLow) {
+    // If balance is above $1 again, reset the SMS flag so it can be sent again next time
+    if (user.smsLowBalanceSentAt && balance > LOW_BALANCE_THRESHOLD) {
+      await db.update(users)
+        .set({ smsLowBalanceSentAt: null, updatedAt: new Date() })
+        .where(eq(users.id, userId));
+    }
     return { isLow: false, balance, shouldNotify: false, daysRemaining, activeNasCount, phone: user.phone || null, name: user.name || null, language: user.language || 'ar' };
   }
 
-  // Check if we should notify (last notification was more than 24 hours ago)
-  const shouldNotify =
-    !user.lowBalanceNotifiedAt ||
-    new Date().getTime() - new Date(user.lowBalanceNotifiedAt).getTime() >
-      24 * 60 * 60 * 1000; // 24 hours
+  // shouldNotify = true ONLY if SMS was never sent before (smsLowBalanceSentAt is null)
+  // This ensures SMS is sent exactly ONCE per low-balance event
+  const shouldNotify = !user.smsLowBalanceSentAt;
 
   return { isLow, balance, shouldNotify, daysRemaining, activeNasCount, phone: user.phone || null, name: user.name || null, language: user.language || 'ar' };
 }
 
 /**
  * Mark user as notified for low balance
+ * Sets both lowBalanceNotifiedAt AND smsLowBalanceSentAt to prevent re-sending
  */
 export async function markLowBalanceNotified(userId: number): Promise<void> {
   const db = await getDb();
@@ -425,6 +432,7 @@ export async function markLowBalanceNotified(userId: number): Promise<void> {
     .update(users)
     .set({ 
       lowBalanceNotifiedAt: new Date(),
+      smsLowBalanceSentAt: new Date(), // Prevent re-sending SMS until balance is topped up above $1
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId));

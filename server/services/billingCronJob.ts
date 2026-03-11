@@ -24,9 +24,9 @@ function buildLowBalanceMessage(
 ): string {
   const clientName = name || "العميل";
   if (language === "ar") {
-    return `مرحباً ${clientName}،\nتنبيه: رصيدك في RadiusPro أصبح $${balance.toFixed(2)} فقط.\nلديك ${daysRemaining} يوم/أيام متبقية بناءً على ${activeNasCount} جهاز NAS نشط.\nيرجى شحن رصيدك لتجنب انقطاع الخدمة.\nradius-pro.com`;
+    return `مرحباً ${clientName}،\nتنبيه: رصيدك في RadiusPro وصل إلى $${balance.toFixed(2)} فقط.\nيرجى شحن رصيدك فوراً لتجنب انقطاع الخدمة.\nradius-pro.com`;
   }
-  return `Hello ${clientName},\nAlert: Your RadiusPro balance is $${balance.toFixed(2)}.\nYou have ${daysRemaining} day(s) remaining based on ${activeNasCount} active NAS device(s).\nPlease top up to avoid service interruption.\nradius-pro.com`;
+  return `Hello ${clientName},\nAlert: Your RadiusPro balance has reached $${balance.toFixed(2)}.\nPlease top up immediately to avoid service interruption.\nradius-pro.com`;
 }
 
 /**

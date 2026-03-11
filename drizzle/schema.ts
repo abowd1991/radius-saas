@@ -28,6 +28,7 @@ export const users = mysqlTable("users", {
   dailyBillingEnabled: boolean("dailyBillingEnabled").default(true).notNull(),
   billingStatus: mysqlEnum("billingStatus", ["active", "past_due", "suspended"]).default("active").notNull(),
   lowBalanceNotifiedAt: timestamp("lowBalanceNotifiedAt"), // Last low balance notification time
+  smsLowBalanceSentAt: timestamp("smsLowBalanceSentAt"), // SMS sent once when balance reaches $1 - reset when balance topped up above $1
   language: mysqlEnum("language", ["ar", "en"]).default("ar").notNull(),
   avatarUrl: text("avatarUrl"),
   emailVerified: boolean("emailVerified").default(false),
