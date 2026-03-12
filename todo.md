@@ -5078,3 +5078,9 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] تعديل checkLowBalance: SMS يُرسل مرة واحدة فقط عند وصول الرصيد لـ $1
 - [x] إعادة تعيين smsLowBalanceSentAt تلقائياً عندما يشحن العميل رصيده فوق $1
 - [x] تحديث رسالة SMS لتكون مختصرة ومباشرة
+
+## Welcome Bonus & Dashboard Cleanup (Mar 13, 2026)
+- [x] إزالة رسالة "تحذير: اشتراكك سينتهي" من SubscriptionBanner.tsx
+- [x] إزالة AccountStatusBanner من جميع أقسام Dashboard.tsx
+- [x] إضافة رسالة ترحيبية جميلة (gradient banner) للمستخدمين الجدد تُظهر الرصيد المجاني
+- [x] إضافة $2 رصيد تلقائي لكل مستخدم جديد عند التسجيل في authService.ts

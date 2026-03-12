@@ -149,6 +149,29 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
     notes: "7-day free trial",
   });
 
+  // Add $2 welcome bonus to new user's wallet
+  try {
+    const { wallets, walletLedger } = await import("../../drizzle/schema");
+    // Create wallet with $2 welcome bonus
+    await db.insert(wallets).values({ userId: createdUser.id, balance: "2.00" });
+    // Record ledger entry
+    await db.insert(walletLedger).values({
+      userId: createdUser.id,
+      type: "credit",
+      amount: "2.00",
+      balanceBefore: "0.00",
+      balanceAfter: "2.00",
+      reason: "Welcome bonus - $2 free credit to explore the system",
+      reasonAr: "رصيد ترحيبي - $2 مجاني لتجربة النظام",
+      actorId: createdUser.id,
+      actorRole: "system",
+    } as any);
+    console.log(`[Auth] ✅ Welcome bonus $2 added to wallet for user ${createdUser.id}`);
+  } catch (err) {
+    console.error(`[Auth] ❌ Failed to add welcome bonus:`, err);
+    // Non-fatal: user is created, wallet bonus failed
+  }
+
   // Send verification email (async, don't wait)
   console.log(`[Auth] Attempting to send verification email to ${input.email} with code ${verificationCode}`);
   sendVerificationEmail(input.email, input.name || input.username, verificationCode)

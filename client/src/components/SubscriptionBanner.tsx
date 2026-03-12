@@ -16,20 +16,7 @@ export function SubscriptionBanner() {
 
   // Don't show if subscription is active
   if (status?.isActive) {
-    // Show warning if expiring soon (within 7 days)
-    if (status.daysRemaining !== null && status.daysRemaining <= 7 && status.daysRemaining > 0) {
-      return (
-        <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-3">
-          <div className="flex items-center justify-center gap-2 text-yellow-700 dark:text-yellow-400">
-            <AlertTriangle className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              تحذير: اشتراكك سينتهي خلال {status.daysRemaining} يوم. يرجى التواصل مع الدعم للتجديد.
-            </span>
-          </div>
-        </div>
-      );
-    }
-    return null;
+    return null; // No warning banner for active subscriptions
   }
 
   // Show frozen banner

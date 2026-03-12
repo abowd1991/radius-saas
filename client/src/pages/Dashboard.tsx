@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { BillingInfo } from "@/components/BillingInfo";
-import { AccountStatusBanner } from "@/components/AccountStatusBanner";
+// AccountStatusBanner removed - no trial warnings shown to users
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,9 +91,6 @@ export default function Dashboard() {
   if (user?.role === "client_owner") {
     return (
       <div className="space-y-6">
-        {/* Account Status Banner */}
-        <AccountStatusBanner />
-        
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -237,9 +234,6 @@ export default function Dashboard() {
   if (user?.role === "owner" || user?.role === "super_admin") {
     return (
       <div className="space-y-6">
-        {/* Account Status Banner */}
-        <AccountStatusBanner />
-        
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -598,9 +592,6 @@ export default function Dashboard() {
   if (user?.role === "reseller") {
     return (
       <div className="space-y-6">
-        {/* Account Status Banner */}
-        <AccountStatusBanner />
-        
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -712,9 +703,36 @@ export default function Dashboard() {
   // Client Dashboard
   return (
     <div className="space-y-6">
-      {/* Account Status Banner */}
-      <AccountStatusBanner />
-      
+      {/* Welcome Banner for new users with free credit */}
+      {clientStats && parseFloat(clientStats.currentBalance) <= 2.5 && parseFloat(clientStats.currentBalance) > 0 && clientStats.activeNasCount === 0 && (
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-5 text-white shadow-lg">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djZoNnYtNmgtNnptMCAwdi02aC02djZoNnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-2xl">
+                🎉
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">
+                  {language === "ar" ? `مرحباً ${user?.name}! 👋` : `Welcome ${user?.name}! 👋`}
+                </h3>
+                <p className="text-sm text-white/80 mt-0.5">
+                  {language === "ar"
+                    ? `تم إضافة رصيد مجاني $${parseFloat(clientStats.currentBalance).toFixed(2)} لحسابك لتجربة النظام`
+                    : `$${parseFloat(clientStats.currentBalance).toFixed(2)} free credit added to your account to explore the system`}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setLocation("/nas")}
+              className="shrink-0 rounded-lg bg-white/20 hover:bg-white/30 transition-colors px-4 py-2 text-sm font-semibold backdrop-blur-sm border border-white/20"
+            >
+              {language === "ar" ? "ابدأ الآن ←" : "Get Started →"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
