@@ -18,6 +18,7 @@ import * as templateDb from "./db/cardTemplates";
 import { generateCardsPDFHTML, generateCardsCSV, saveBatchPDF, saveBatchPDFWithTemplate, generateCardsPDFHTMLWithTemplate } from "./services/pdfGenerator";
 import { storagePut } from "./storage";
 import * as mikrotikApi from "./services/mikrotikApi";
+import { allocateWinboxPort, enableWinboxForward, disableWinboxForward, checkWinboxStatus } from "./services/winboxService";
 import * as coaService from "./services/coaService";
 import * as vpnApi from "./services/vpnApiService";
 import * as sshVpn from "./services/sshVpnService";
@@ -7086,6 +7087,109 @@ const bankTransferRouter = router({
 });
 
 // ============================================================================
+// WINBOX ROUTER
+// ============================================================================
+const winboxRouter = router({
+  // Get all NAS devices with winbox info for current user
+  getMyNasDevices: protectedProcedure.query(async ({ ctx }) => {
+    const db2 = await db.getDb();
+    if (!db2) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+    const { nasDevices } = await import('../drizzle/schema');
+    const { eq, or, and } = await import('drizzle-orm');
+    let query;
+    if (ctx.user.role === 'owner' || ctx.user.role === 'super_admin') {
+      query = db2.select().from(nasDevices);
+    } else {
+      query = db2.select().from(nasDevices).where(eq(nasDevices.ownerId, ctx.user.id));
+    }
+    const devices = await query;
+    return devices.map((d: any) => ({
+      id: d.id,
+      name: d.shortname || d.nasname,
+      nasname: d.nasname,
+      vpnIp: d.vpnTunnelIp,
+      winboxPort: d.winboxPort,
+      winboxEnabled: d.winboxEnabled,
+      status: d.status,
+      lastSeen: d.lastSeen,
+    }));
+  }),
+
+  // Enable Winbox forwarding for a NAS
+  enableForward: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db2 = await db.getDb();
+      if (!db2) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+      const { nasDevices } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+
+      // Get NAS and verify ownership
+      const [nas] = await db2.select().from(nasDevices).where(eq(nasDevices.id, input.nasId)).limit(1);
+      if (!nas) throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS not found' });
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+      if (!nas.vpnTunnelIp) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'NAS has no VPN IP assigned. Connect via VPN first.' });
+      }
+
+      // Allocate port if not already assigned
+      let port = nas.winboxPort;
+      if (!port) {
+        port = await allocateWinboxPort();
+      }
+
+      const result = await enableWinboxForward(input.nasId, nas.vpnTunnelIp, port);
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to enable Winbox forward' });
+      }
+      return { success: true, port };
+    }),
+
+  // Disable Winbox forwarding for a NAS
+  disableForward: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db2 = await db.getDb();
+      if (!db2) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+      const { nasDevices } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+
+      const [nas] = await db2.select().from(nasDevices).where(eq(nasDevices.id, input.nasId)).limit(1);
+      if (!nas) throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS not found' });
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+
+      const result = await disableWinboxForward(input.nasId);
+      if (!result.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to disable Winbox forward' });
+      }
+      return { success: true };
+    }),
+
+  // Check live status of socat service
+  checkStatus: protectedProcedure
+    .input(z.object({ nasId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db2 = await db.getDb();
+      if (!db2) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+      const { nasDevices } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+
+      const [nas] = await db2.select().from(nasDevices).where(eq(nasDevices.id, input.nasId)).limit(1);
+      if (!nas) throw new TRPCError({ code: 'NOT_FOUND', message: 'NAS not found' });
+      if (ctx.user.role !== 'owner' && ctx.user.role !== 'super_admin' && nas.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+
+      const status = await checkWinboxStatus(input.nasId);
+      return { status, port: nas.winboxPort };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 export const appRouter = router({
@@ -7128,6 +7232,7 @@ export const appRouter = router({
   userPermissionOverrides: userPermissionOverridesRouter,
   userEffectivePermissions: userEffectivePermissionsRouter,
   bankTransfer: bankTransferRouter,
+  winbox: winboxRouter,
 });
 
 export type AppRouter = typeof appRouter;

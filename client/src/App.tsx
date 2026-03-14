@@ -57,6 +57,7 @@ import DefaultPlans from "./pages/DefaultPlans";
 import EmailVerification from "./pages/EmailVerification";
 
 import ActivityTimeline from "./pages/ActivityTimeline";
+import WinboxAccess from "./pages/WinboxAccess";
 import { Redirect } from "wouter";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -152,6 +153,11 @@ function Router() {
       <Route path="/nas">
         <DashboardLayout>
           <NasDevices />
+        </DashboardLayout>
+      </Route>
+      <Route path="/winbox">
+        <DashboardLayout>
+          <WinboxAccess />
         </DashboardLayout>
       </Route>
       <Route path="/settings">

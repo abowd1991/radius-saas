@@ -153,6 +153,9 @@ export const nasDevices = mysqlTable("nas", {
   mikrotikApiPort: int("mikrotikApiPort").default(8728),
   mikrotikApiUser: varchar("mikrotikApiUser", { length: 64 }),
   mikrotikApiPassword: varchar("mikrotikApiPassword", { length: 128 }),
+  // Winbox Remote Access (TCP Port Forward via socat on VPS)
+  winboxPort: int("winboxPort"), // Unique port on VPS for Winbox access (e.g. 45000-49999)
+  winboxEnabled: boolean("winboxEnabled").default(false), // Whether socat forward is active
   status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
   lastSeen: timestamp("lastSeen"),
   // Two-Phase Auto Provisioning fields

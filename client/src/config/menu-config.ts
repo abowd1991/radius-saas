@@ -87,6 +87,7 @@ export const ALL_MENU_SECTIONS: MenuSection[] = [
     requiredPermissionGroup: "infrastructure_nas",
     items: [
       { icon: Server, label: "NAS Devices", labelAr: "أجهزة NAS", path: "/nas" },
+      { icon: Monitor, label: "Winbox Access", labelAr: "Winbox عن بُعد", path: "/winbox" },
       { icon: Link2, label: "MikroTik Setup", labelAr: "إعداد MikroTik", path: "/mikrotik-setup" },
     ],
   },

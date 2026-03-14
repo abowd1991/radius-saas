@@ -5084,3 +5084,11 @@ Convert MySQL SUM result to number using `Number()` or `parseInt()` before arith
 - [x] إزالة AccountStatusBanner من جميع أقسام Dashboard.tsx
 - [x] إضافة رسالة ترحيبية جميلة (gradient banner) للمستخدمين الجدد تُظهر الرصيد المجاني
 - [x] إضافة $2 رصيد تلقائي لكل مستخدم جديد عند التسجيل في authService.ts
+
+## Winbox Access Feature (Mar 13, 2026)
+- [x] إضافة حقل winboxPort في جدول nas في schema.ts
+- [x] تحديث قاعدة البيانات بالعمود الجديد
+- [x] إضافة procedure لتخصيص port وإنشاء/حذف socat forwarding
+- [x] إنشاء WinboxService.ts لإدارة socat على VPS عبر SSH
+- [x] إنشاء صفحة WinboxAccess.tsx احترافية
+- [x] تسجيل الصفحة في App.tsx والـ sidebar
